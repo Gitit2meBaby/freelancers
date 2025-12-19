@@ -43,3 +43,5 @@ next-env.d.ts
 media/
 cleanedMedia/
 duplicates/
+downloaded_media/
+logos/
