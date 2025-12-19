@@ -1,3 +1,57 @@
+:root {
+  /* Color Palette */
+  --color-brand-primary: #a4a566;
+  --color-brand-secondary: #676900;
+  --color-text-primary: #292a00;
+  --color-text-secondary: #676900;
+  --color-text-white: #ffffff;
+  --color-background-primary: #ffffff;
+  --color-background-blue: #bfe3ee;
+
+  /* Semantic Colors */
+  --color-success: #4caf50;
+  --color-error: #f44336;
+  --color-warning: #ff9800;
+  --color-info: #2196f3;
+
+  /* Typography - Font Families */
+  --font-primary: "Clash Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-secondary: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+
+  /* Typography - Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Typography - Font Sizes */
+  --font-size-xxs: 0.625rem; /* 10px */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+
+  /* Spacing Scale (works for padding, margin, gap) */
+  --spacing-5: 0.3125rem; /* 5px */
+  --spacing-10: 0.625rem; /* 10px */
+  --spacing-15: 0.9375rem; /* 15px */
+  --spacing-20: 1.25rem; /* 20px */
+  --spacing-25: 1.5625rem; /* 25px */
+  --spacing-30: 1.875rem; /* 30px */
+  --spacing-35: 2.1875rem; /* 35px */
+  --spacing-40: 2.5rem; /* 40px */
+  --spacing-45: 2.8125rem; /* 45px */
+  --spacing-50: 3.125rem; /* 50px */
+  --spacing-60: 3.75rem; /* 60px */
+  --spacing-70: 4.375rem; /* 70px */
+  --spacing-80: 5rem; /* 80px */
+}
+
 html,
 body {
   max-width: 100vw;
@@ -6,5 +60,20 @@ body {
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-primary);
+}
+
+button,
+a {
+  cursor: pointer;
+}
