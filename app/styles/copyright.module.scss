@@ -1,0 +1,12 @@
+.copyright {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-40) 0;
+    text-align: center;
+    p {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-white);
+        background-color: var(--color-brand-secondary);
+    }
+}

@@ -1,0 +1,21 @@
+.header {
+    background-color: transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-20) var(--spacing-60);
+}
+
+.deskLogo {
+    display: block;
+    @media screen and (max-width: 800px) {
+        display : none;
+    }
+}
+
+.mobLogo {
+    display: block;
+    @media screen and (min-width: 801px) {
+        display : none;
+    }
+}

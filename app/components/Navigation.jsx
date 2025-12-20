@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import styles from './Navigation.module.scss'
+import styles from './styles/navigation.module.scss'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -24,7 +24,7 @@ const Navigation = () => {
       {/* Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className={styles.hamburger}
+        className={styles.close}
         aria-label="Open navigation menu"
         aria-expanded={isOpen}
         aria-controls="main-navigation"

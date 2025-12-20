@@ -1,22 +1,27 @@
 import localFont from "next/font/local";
 import { Roboto } from "next/font/google";
+
+import { AuthProvider } from "./AuthContext";
+
+import Header from "./components/Header";
+
 import "./globals.css";
 
 // Load Clash Grotesk locally
 const clashGrotesk = localFont({
   src: [
     {
-      path: "./fonts/clash-grotesk/ClashGrotesk-Regular.woff2",
+      path: "./fonts/ClashGrotesk-Regular.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "./fonts/clash-grotesk/ClashGrotesk-Semibold.woff2",
+      path: "./fonts/ClashGrotesk-Semibold.woff2",
       weight: "600",
       style: "normal",
     },
     {
-      path: "./fonts/clash-grotesk/ClashGrotesk-Bold.woff2",
+      path: "./fonts/ClashGrotesk-Bold.woff2",
       weight: "700",
       style: "normal",
     },
@@ -150,9 +155,12 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${clashGrotesk.variable} ${roboto.variable}`}>
+        <AuthProvider>
+          <Header />
+        </AuthProvider>
         {children}
         {/* Google Tag Manager */}
-        <Script
+        <script
           id="google-gtag-init"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
@@ -166,7 +174,7 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        <Script
+        <script
           src="https://www.googletagmanager.com/gtag/js?id=GT-P3J394W5"
           strategy="afterInteractive"
         />
