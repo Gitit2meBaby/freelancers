@@ -1,0 +1,131 @@
+// Hide the checkbox input
+.navToggle {
+  display: none;
+}
+
+// Hamburger button (label)
+.hamburger {
+  cursor: pointer;
+
+  svg {
+    color: var(--color-brand-secondary);
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+// Overlay backdrop
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.5s ease, visibility 0.3s ease;
+}
+
+// Navigation menu
+.navigation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 45vw;
+  background-color: #525400;
+  z-index: 1002;
+  transform: translateX(-100%);
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 60px 40px 60px 80px;
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  // IE and Edge
+  -ms-overflow-style: none;
+
+  // Chrome, Safari, Opera
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media screen and (max-width: 770px) {
+    width: 100vw;
+  }
+}
+
+// Close button (label)
+.closeButton {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 50px;
+
+  svg {
+    color: #ffffff;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: var(--color-brand-third);
+    }
+  }
+}
+
+// Navigation list
+.navList {
+  list-style: none;
+  padding: 0;
+  margin: 60px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.navLink {
+  display: block;
+  color: #ffffff;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-medium);
+  padding: 20px 0;
+  text-decoration: none;
+  transition: color 0.3s ease, padding-left 0.3s ease;
+  letter-spacing: 0.5px;
+
+  &:hover {
+    color: var(--color-brand-third);
+  }
+
+  &.active {
+    color: var(--color-brand-third);
+  }
+}
+
+// When checkbox is checked, show the navigation
+.navToggle:checked {
+  // Slide in the navigation
+  ~ .navigation {
+    transform: translateX(0);
+  }
+
+  // Show the overlay
+  ~ .overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}

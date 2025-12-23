@@ -1,107 +1,79 @@
-'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import styles from './styles/navigation.module.scss'
+import styles from '../styles/navigation.module.scss'
 
-const Navigation = ( isOpen) => {
-  const [isOpen, setIsOpen] = useState(false)
+import ActiveNavLink from './ActiveNavLink'
 
-  const toggleMenu = () => setIsOpen(!isOpen)
-  const closeMenu = () => setIsOpen(false)
-
+const Navigation = () => {
   const navLinks = [
-    { href: '/crew-directory', label: 'Crew Directory' },
-    { href: '/screen-services', label: 'Screen Services' },
-    { href: '/booking-guidelines', label: 'Booking Guidelines' },
-    { href: '/about-us', label: 'About Us' },
-    { href: '/contact-us', label: 'Contact Us' },
-    { href: '/member-login', label: 'Member Login' },
+    { href: '/crew-directory', label: 'CREW DIRECTORY' },
+    { href: '/screen-services', label: 'SCREEN SERVICES' },
+    { href: '/booking-guidelines', label: 'BOOKING GUIDELINES' },
+    { href: '/about-us', label: 'ABOUT US' },
+    { href: '/contact-us', label: 'CONTACT US' },
+    { href: '/member-login', label: 'MEMBER LOGIN' },
   ]
 
   return (
     <>
-      {/* Hamburger Button */}
-      <button
-        onClick={toggleMenu}
-        className={styles.close}
-        aria-label="Open navigation menu"
-        aria-expanded={isOpen}
-        aria-controls="main-navigation"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </button>
-
-      {/* Overlay */}
-      {isOpen && (
-        <div
-          className={styles.overlay}
-          onClick={closeMenu}
-          aria-hidden="true"
-        />
-      )}
+      {/* Hidden checkbox that controls the nav state */}
+      <input 
+        type="checkbox" 
+        id="nav-toggle" 
+        className={styles.navToggle}
+      />
+      
+      {/* Overlay - clicking it closes the menu */}
+      <label 
+        htmlFor="nav-toggle" 
+        className={styles.overlay}
+        aria-label="Close navigation"
+      />
 
       {/* Slide-in Navigation */}
       <nav
         id="main-navigation"
-        className={`${styles.navigation} ${isOpen ? styles.open : ''}`}
+        className={styles.navigation}
         aria-label="Main navigation"
       >
         {/* Close Button */}
-        <button
-          onClick={closeMenu}
+        <label 
+          htmlFor="nav-toggle" 
           className={styles.closeButton}
           aria-label="Close navigation menu"
         >
           <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
+            width="40"
+            height="40"
+            viewBox="0 0 40 40"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
           >
             <path
-              d="M18 6L6 18"
+              d="M28 12L12 28"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
             />
             <path
-              d="M6 6L18 18"
+              d="M12 12L28 28"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
             />
           </svg>
-        </button>
+        </label>
 
         {/* Navigation Links */}
-        <ol className={styles.navList}>
-          {navLinks.map((link, index) => (
+       <ul className={styles.navList}>
+          {navLinks.map((link) => (
             <li key={link.href} className={styles.navItem}>
-              <Link
-                href={link.href}
-                onClick={closeMenu}
-                className={styles.navLink}
-                aria-current={undefined} // You can set this dynamically based on current page
-              >
+              <ActiveNavLink href={link.href} className={styles.navLink}>
                 {link.label}
-              </Link>
+              </ActiveNavLink>
             </li>
           ))}
-        </ol>
+        </ul>
       </nav>
     </>
   )

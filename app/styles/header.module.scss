@@ -27,18 +27,6 @@
   }
 }
 
-.hamburger {
-  svg {
-    cursor: pointer;
-    color: var(--color-brand-secondary);
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: var(--color-text-primary);
-    }
-  }
-}
-
 .deskLogo {
   display: block;
   @media screen and (max-width: 800px) {

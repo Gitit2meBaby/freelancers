@@ -6,6 +6,7 @@ import { AuthProvider } from "./AuthContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Copyright from "./components/Copyright";
+import Navigation from "./components/Navigation";
 
 import "./globals.css";
 
@@ -157,6 +158,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${clashGrotesk.variable} ${roboto.variable}`}>
+        <Navigation />
         <AuthProvider>
           <Header />
         </AuthProvider>
