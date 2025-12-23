@@ -30,7 +30,7 @@
 
   h2 {
     font-size: 2rem;
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-medium);
     margin-bottom: 2rem;
     color: var(--color-text-dark);
 
@@ -51,7 +51,7 @@
 .content {
   h1 {
     font-size: 48px;
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-medium);
     margin: 2rem 0;
     color: var(--color-text-dark);
 
@@ -69,7 +69,7 @@
   margin-bottom: 1.5rem;
 
   p:first-child {
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-medium);
     font-size: var(--font-size-base);
     color: #6b7280;
     margin-bottom: 0.25rem;
@@ -186,7 +186,7 @@
   background-color: transparent;
   color: var(--color-text-secondary);
   border-radius: 8px;
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   font-size: var(--font-size-base);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -228,7 +228,7 @@
   border: none;
   border-radius: 8px;
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   background-color: all 0.3s ease;
 

@@ -18,6 +18,11 @@ const clashGrotesk = localFont({
       style: "normal",
     },
     {
+      path: "./fonts/ClashGrotesk-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
       path: "./fonts/ClashGrotesk-Semibold.woff2",
       weight: "600",
       style: "normal",

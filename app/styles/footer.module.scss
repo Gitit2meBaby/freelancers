@@ -2,13 +2,13 @@
   background-color: var(--color-brand-third);
   padding: var(--spacing-80) var(--spacing-60);
   display: grid;
-  grid-template-columns: 3fr 1fr 1fr 1.5fr;
+  grid-template-columns: 2.5fr 1fr 1fr 1.5fr;
   gap: var(--spacing-60);
   border-top: 1px solid var(--color-background-primary);
 
   h3 {
     font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-medium);
     margin: 0 0 var(--spacing-25) 0;
     color: var(--color-text-primary);
   }
@@ -27,7 +27,7 @@
     color: var(--color-text-primary);
     text-decoration: none;
     font-size: --font-size-base;
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-medium);
     transition: color 0.3s ease;
 
     &:hover {
@@ -51,6 +51,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-20);
+  margin: 0 2vw 0 8vw;
 
   img {
     width: 40px;
@@ -68,6 +69,10 @@
   @media screen and (max-width: 1024px) {
     grid-column: span 2;
     padding: 0 2rem 0 0;
+  }
+
+  @media screen and (max-width: 770px) {
+    margin: 0 0 2rem 0;
   }
 }
 

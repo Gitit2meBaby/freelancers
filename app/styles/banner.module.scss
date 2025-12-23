@@ -26,12 +26,12 @@
   align-items: center;
   justify-content: center;
   h2 {
-    font-size: clamp(1.25rem, 1.5vw + 1rem, 3rem);
+    font-size: clamp(1.25rem, 1.4vw + 1rem, 3rem);
     color: var(--color-text-white);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.5;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.3;
     text-align: center;
-    padding: var(--spacing-60);
+    padding: var(--spacing-60) var(--spacing-100);
   }
 
   @media screen and (max-width: 770px) {

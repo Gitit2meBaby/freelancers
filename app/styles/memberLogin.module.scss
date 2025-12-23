@@ -1,0 +1,182 @@
+.memberLogin {
+  display: grid;
+  grid-template-columns: 1fr 50%;
+  min-height: calc(100vh - 125px);
+
+  @media screen and (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.imageContainer {
+  background-image: url("../../public/member/Melbourne-Screen-Hub.jpg");
+  background-size: cover;
+  background-position: center;
+
+  @media screen and (max-width: 1024px) {
+    display: none;
+  }
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  background-color: #f1f5ff;
+
+  @media screen and (max-width: 1024px) {
+    padding: 3rem 2rem;
+  }
+
+  @media screen and (max-width: 768px) {
+    padding: 2rem 1.5rem;
+  }
+}
+
+.content {
+  width: 100%;
+
+  h1 {
+    font-size: 48px;
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 3rem;
+    color: var(--color-text-dark);
+
+    @media screen and (max-width: 768px) {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+    }
+  }
+}
+
+.form {
+  width: 100%;
+  max-width: 540px;
+}
+
+// Form styles matching contact form
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-secondary, #666666);
+  margin-bottom: 0.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 2px solid var(--border-color, #e5e5e5);
+  border-radius: 12px;
+  background-color: var(--input-background, #f8f9fa);
+  color: var(--text-primary, #1a1a1a);
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: var(--text-tertiary, #b3b3b3);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-color, #5a6c00);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(90, 108, 0, 0.1);
+  }
+
+  &:hover:not(:focus) {
+    border-color: var(--border-hover, #cccccc);
+  }
+}
+
+// Password field with toggle
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text-secondary, #666666);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--text-primary, #1a1a1a);
+  }
+
+  &:focus {
+    outline: none;
+    color: var(--accent-color, #5a6c00);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Submit button
+.formActions {
+  margin-top: 2rem;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 1rem 2rem;
+  background-color: #666a01;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:disabled {
+    background-color: var(--text-tertiary, #999999);
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+// Forgot password link
+.forgotPassword {
+  margin-top: 1.5rem;
+  text-align: center;
+
+  a {
+    color: var(--text-secondary, #888888);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus {
+      outline: 2px solid var(--accent-color, #5a6c00);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  }
+}
