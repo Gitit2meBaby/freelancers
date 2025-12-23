@@ -4,6 +4,8 @@ import { Roboto } from "next/font/google";
 import { AuthProvider } from "./AuthContext";
 
 import Header from "./components/Header";
+import Footer from "./components/Footer";
+import Copyright from "./components/Copyright";
 
 import "./globals.css";
 
@@ -159,6 +161,8 @@ export default function RootLayout({ children }) {
           <Header />
         </AuthProvider>
         {children}
+        <Footer />
+        <Copyright />
         {/* Google Tag Manager */}
         <script
           id="google-gtag-init"

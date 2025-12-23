@@ -1,9 +1,32 @@
+// Target header when home page exists
+:has([data-page="home"]) .header {
+    background: linear-gradient(
+    to right, 
+    var(--color-background-blue) 0%, 
+    var(--color-background-blue) 36%, 
+    var(--color-brand-primary) 36%, 
+    var(--color-brand-primary) 100%
+  );
+}
+
 .header {
     background-color: transparent;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-20) var(--spacing-60);
+    padding: var(--spacing-20) var(--spacing-60) var(--spacing-40) var(--spacing-60);
+}
+
+.hamburger {
+    svg {
+        cursor: pointer;
+        color: var(--color-brand-secondary); 
+        transition: color 0.2s ease; 
+        
+        &:hover {
+            color: var(--color-text-primary);
+        }
+    }
 }
 
 .deskLogo {

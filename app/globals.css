@@ -1,7 +1,8 @@
 :root {
   /* Color Palette */
-  --color-brand-primary: #a4a566;
+  --color-brand-primary: #c5c69f;
   --color-brand-secondary: #676900;
+  --color-brand-third: #a4a566;
   --color-text-primary: #292a00;
   --color-text-secondary: #676900;
   --color-text-white: #ffffff;
@@ -69,7 +70,10 @@ h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+li,
+a,
+p {
   font-family: var(--font-primary);
 }
 

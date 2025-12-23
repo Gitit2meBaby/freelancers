@@ -1,0 +1,6 @@
+.sliderContainer {
+    padding: var(--spacing-80) var(--spacing-60);
+    @media screen and (max-width: 770px) {
+        padding: var(--spacing-80) 0;
+    }
+}
