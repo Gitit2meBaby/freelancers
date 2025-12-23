@@ -6,8 +6,10 @@
   --color-text-primary: #292a00;
   --color-text-secondary: #676900;
   --color-text-white: #ffffff;
+  --color-text-dark: #1f2937;
   --color-background-primary: #ffffff;
   --color-background-blue: #bfe3ee;
+  --color-background-offWhite: #f4f4ec;
 
   /* Semantic Colors */
   --color-success: #4caf50;

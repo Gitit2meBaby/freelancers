@@ -9,6 +9,11 @@
   );
 }
 
+// Target header with plain colour, no Profile Pic
+:has([data-page="plain"]) .header {
+    background: var(--color-brand-primary) 
+}
+
 .header {
     background-color: transparent;
     display: flex;
