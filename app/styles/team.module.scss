@@ -1,0 +1,155 @@
+// team.module.scss - For Team-with-close.jsx version
+
+.team {
+  padding: 4rem 1rem;
+
+  h2 {
+    font-size: 48px;
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: 3rem;
+    color: var(--color-text-primary);
+  }
+}
+
+.cardContainer {
+  display: flex;
+  gap: 2rem;
+
+  @media (max-width: 768px) {
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  max-width: 311px;
+
+  h3 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary);
+  }
+
+  h4 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: #6b7280;
+    margin-bottom: 1rem;
+  }
+}
+
+.teamImage {
+  width: 100%;
+  max-width: 311px;
+  height: auto;
+  object-fit: cover;
+}
+
+// Details/Summary styling for Read More functionality
+.bio {
+  width: 100%;
+  font-size: var(--font-size-base, 1rem);
+  line-height: 1.7;
+  color: var(--color-text-primary, #333);
+
+  // Remove default marker/arrow
+  summary {
+    list-style: none;
+    cursor: pointer;
+    position: relative;
+
+    // Remove default marker in different browsers
+    &::-webkit-details-marker {
+      display: none;
+    }
+    &::marker {
+      display: none;
+    }
+  }
+
+  // Closed state - show truncated text
+  &:not([open]) {
+    summary {
+      .truncated {
+        display: -webkit-box;
+        -webkit-line-clamp: 3; // Show 3 lines
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.5rem;
+      }
+
+      .readMore {
+        display: inline-block;
+        color: var(--color-accent, #8b7355);
+        font-weight: var(--font-weight-semibold);
+        margin-top: 0.5rem;
+
+        &:hover {
+          cursor: pointer;
+        }
+      }
+    }
+
+    .fullText {
+      display: none;
+    }
+  }
+
+  // Open state - show full text
+  &[open] {
+    summary {
+      .truncated {
+        display: none;
+      }
+
+      .readMore {
+        display: none;
+      }
+    }
+
+    .fullText {
+      display: block;
+      margin-top: 0.5rem;
+
+      p {
+        margin-bottom: 1rem;
+      }
+    }
+  }
+}
+
+.showLess {
+  display: inline-block;
+  background: none;
+  border: none;
+  color: var(--color-accent, #8b7355);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  margin-top: 0.5rem;
+  padding: 0;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .team {
+    padding: 4rem 0.5rem;
+  }
+  .cardContainer {
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .card {
+    h3 {
+      font-size: 30px;
+    }
+
+    h4 {
+      font-size: var(--font-size-base, 1rem);
+    }
+  }
+}

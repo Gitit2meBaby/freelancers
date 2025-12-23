@@ -1,18 +1,42 @@
 .banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--color-brand-secondary);
-    border-top: 1px solid  var(--color-background-primary);
-    padding: var(--spacing-15);
-   h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-brand-secondary);
+  border-top: 1px solid var(--color-background-primary);
+  padding: var(--spacing-15);
+  h3 {
     font-size: var(--font-size-2xl);
     color: var(--color-text-white);
     font-weight: var(--font-weight-medium);
     text-align: center;
     padding: var(--spacing-15) 0;
     @media screen and (max-width: 770px) {
-     font-size: var(--font-size-lg);
+      font-size: var(--font-size-lg);
     }
-   } 
+  }
+}
+
+// About Us page ******************************
+.bannerAbout {
+  background-image: url("../../public/about/bannerBG.webp");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  h2 {
+    font-size: clamp(1.25rem, 1.5vw + 1rem, 3rem);
+    color: var(--color-text-white);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.5;
+    text-align: center;
+    padding: var(--spacing-60);
+  }
+
+  @media screen and (max-width: 770px) {
+    h2 {
+      padding: var(--spacing-60) var(--spacing-15);
+    }
+  }
 }

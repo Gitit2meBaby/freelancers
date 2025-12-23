@@ -1,49 +1,54 @@
 // Target header when home page exists
 :has([data-page="home"]) .header {
-    background: linear-gradient(
-    to right, 
-    var(--color-background-blue) 0%, 
-    var(--color-background-blue) 36%, 
-    var(--color-brand-primary) 36%, 
+  background: linear-gradient(
+    to right,
+    var(--color-background-blue) 0%,
+    var(--color-background-blue) 36%,
+    var(--color-brand-primary) 36%,
     var(--color-brand-primary) 100%
   );
 }
 
 // Target header with plain colour, no Profile Pic
 :has([data-page="plain"]) .header {
-    background: var(--color-brand-primary) 
+  background: var(--color-brand-primary);
 }
 
 .header {
-    background-color: transparent;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-20) var(--spacing-60) var(--spacing-40) var(--spacing-60);
+  background-color: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-20) var(--spacing-60) var(--spacing-40)
+    var(--spacing-60);
+
+  @media screen and (max-width: 770px) {
+    padding: var(--spacing-30) var(--spacing-20);
+  }
 }
 
 .hamburger {
-    svg {
-        cursor: pointer;
-        color: var(--color-brand-secondary); 
-        transition: color 0.2s ease; 
-        
-        &:hover {
-            color: var(--color-text-primary);
-        }
+  svg {
+    cursor: pointer;
+    color: var(--color-brand-secondary);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-text-primary);
     }
+  }
 }
 
 .deskLogo {
-    display: block;
-    @media screen and (max-width: 800px) {
-        display : none;
-    }
+  display: block;
+  @media screen and (max-width: 800px) {
+    display: none;
+  }
 }
 
 .mobLogo {
-    display: block;
-    @media screen and (min-width: 801px) {
-        display : none;
-    }
+  display: block;
+  @media screen and (min-width: 801px) {
+    display: none;
+  }
 }

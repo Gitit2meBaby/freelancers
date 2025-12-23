@@ -75,7 +75,8 @@ h5,
 h6,
 li,
 a,
-p {
+p,
+summary {
   font-family: var(--font-primary);
 }
 

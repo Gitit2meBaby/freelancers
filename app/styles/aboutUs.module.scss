@@ -1,0 +1,109 @@
+// aboutUs.module.scss
+
+.aboutUs {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.hero {
+  width: 100%;
+  min-height: 100vh;
+
+  @media (max-width: 768px) {
+    min-height: auto;
+  }
+}
+
+.heroGrid {
+  display: grid;
+  width: 100%;
+  min-height: 100vh;
+
+  // Desktop: Overlay layout - both in same grid cell
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+
+    // Place both children in the same cell
+    > * {
+      grid-column: 1;
+      grid-row: 1;
+    }
+  }
+
+  // Mobile: Stacked layout
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    min-height: auto;
+  }
+}
+
+// Image Container
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+
+  // Desktop: Full screen
+  @media (min-width: 769px) {
+    z-index: 1;
+  }
+
+  // Mobile: Fixed height
+  @media (max-width: 768px) {
+    min-height: 400px;
+    height: 60vh;
+    max-height: 500px;
+  }
+}
+
+.heroImage {
+  object-fit: cover;
+  object-position: center;
+
+  // Mobile: Adjust focal point if needed
+  @media (max-width: 768px) {
+    object-position: center top;
+  }
+}
+
+.contentBox {
+  max-width: 27vw;
+  width: fit-content;
+  margin: 6rem clamp(2rem, 12vw - 3.75rem, 12vw) 6rem auto;
+  background-color: rgb(from var(--color-background-blue) r g b / 0.8);
+  padding: 2.5rem;
+  z-index: 2;
+
+  @media screen and (max-width: 1024px) {
+    min-width: 100vw;
+    padding: 3rem 5vw 3rem 2rem;
+    background-color: var(--color-background-blue);
+    margin: 0;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 1.5vw + 1.5rem, 3rem);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.2;
+    color: var(--color-text-primary);
+    max-width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    font-size: var(--font-size-lg);
+    line-height: 1.7;
+    color: var(--color-text-primary);
+    max-width: 100%;
+    text-wrap: pretty;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-size-base);
+      padding-right: 1rem;
+    }
+  }
+}
