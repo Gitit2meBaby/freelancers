@@ -1,0 +1,86 @@
+.crewDirectory {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem;
+  background-color: var(--color-background-pale-blue);
+  h1 {
+    font-size: clamp(1.75rem, 1vw + 1rem, 3rem);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+  }
+}
+
+.buttonSection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+
+  button {
+    background-color: var(--color-brand-third);
+    color: var(--color-text-primary);
+    border: none;
+    padding: 1rem 2rem;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: var(--color-text-secondary);
+      transform: scale(1.1);
+      color: #ffffff;
+    }
+
+    &:active {
+      transform: scale(1.1);
+    }
+  }
+}
+
+.downloadSection {
+  display: flex;
+  justify-content: center;
+  margin: 1rem auto 3rem auto;
+  padding: 2rem 0;
+}
+
+.downloadSelect {
+  background-color: var(--color-text-secondary);
+  color: #ffffff;
+  padding: 1rem 2.5rem;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  appearance: none;
+
+  option {
+    background-color: white;
+    color: #2d2d2d;
+    padding: 1rem;
+    line-height: 1.5;
+    cursor: pointer;
+  }
+}
+
+// Screen Services ******************************************
+
+:has([data-spacing="large"]) .buttonSection {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+:has([data-spacing="large"]) .crewHead {
+  padding-top: 2rem;
+}

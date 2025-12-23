@@ -23,7 +23,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 4rem;
-  background-color: #f1f5ff;
+  background-color: var(--color-background-pale-blue);
 
   @media screen and (max-width: 1024px) {
     padding: 3rem 2rem;

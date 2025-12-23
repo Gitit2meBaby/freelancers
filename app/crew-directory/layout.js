@@ -1,50 +1,54 @@
-// app/member-login/layout.js
+// app/crew-directory/layout.js
 export const metadata = {
-  title: "Member Login - Freelancers Promotions",
-  description: "Member Login",
+  title: "Crew Directory - Freelancers Promotions",
+  description:
+    "Discover top-tier film crew freelancers across Australia with Freelancers Promotion. Connect with experienced professionals in cinematography, sound, editing, and more. Find the perfect fit for your film crew needs today!",
   alternates: {
-    canonical: "https://freelancers.com.au/member-login",
+    canonical: "https://freelancers.com.au/crew-directory",
   },
   openGraph: {
     locale: "en_US",
     type: "article",
-    title: "Member Login - Freelancers Promotions",
-    description: "Member Login",
-    url: "https://freelancers.com.au/member-login",
+    title: "Crew Directory - Freelancers Promotions",
+    description:
+      "Discover top-tier film crew freelancers across Australia with Freelancers Promotion. Connect with experienced professionals in cinematography, sound, editing, and more. Find the perfect fit for your film crew needs today!",
+    url: "https://freelancers.com.au/crew-directory",
     siteName: "Freelancers Promotions",
-    modifiedTime: "2026-01-01T08:02:15+00:00",
+    modifiedTime: "2026-01-01T00:00:00+00:00",
   },
   twitter: {
     card: "summary_large_image",
   },
 };
 
-export default function MemberLoginLayout({ children }) {
+export default function CrewDirectoryLayout({ children }) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebPage",
-        "@id": "https://freelancers.com.au/member-login",
-        url: "https://freelancers.com.au/member-login",
-        name: "Member Login - Freelancers Promotions",
+        "@id": "https://freelancers.com.au/crew-directory",
+        url: "https://freelancers.com.au/crew-directory",
+        name: "Crew Directory - Freelancers Promotions",
         isPartOf: { "@id": "https://freelancers.com.au/#website" },
-        datePublished: "2026-01-01T02:21:52+00:00",
-        dateModified: "2026-01-01T08:02:15+00:00",
+        datePublished: "2026-01-01T00:00:00+00:00",
+        dateModified: "2026-01-01T00:00:00+00:00",
+        description:
+          "Discover top-tier film crew freelancers across Australia with Freelancers Promotion. Connect with experienced professionals in cinematography, sound, editing, and more. Find the perfect fit for your film crew needs today!",
         breadcrumb: {
-          "@id": "https://freelancers.com.au/member-login#breadcrumb",
+          "@id": "https://freelancers.com.au/crew-directory#breadcrumb",
         },
         inLanguage: "en-US",
         potentialAction: [
           {
             "@type": "ReadAction",
-            target: ["https://freelancers.com.au/member-login"],
+            target: ["https://freelancers.com.au/crew-directory"],
           },
         ],
       },
       {
         "@type": "BreadcrumbList",
-        "@id": "https://freelancers.com.au/member-login#breadcrumb",
+        "@id": "https://freelancers.com.au/crew-directory#breadcrumb",
         itemListElement: [
           {
             "@type": "ListItem",
@@ -55,7 +59,7 @@ export default function MemberLoginLayout({ children }) {
           {
             "@type": "ListItem",
             position: 2,
-            name: "Member Login",
+            name: "Crew Directory",
           },
         ],
       },
