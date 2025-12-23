@@ -1,0 +1,258 @@
+.contactUs {
+  display: grid;
+  grid-template-columns: 1fr 50%;
+  min-height: 100vh;
+
+  @media screen and (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.imageContainer {
+  background-image: url("../../public/contact/docklands-studios.webp");
+  background-size: cover;
+  background-position: center;
+
+  @media screen and (max-width: 1024px) {
+    display: none;
+  }
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 1fr 50%;
+  gap: 1rem;
+}
+
+.formContainer {
+  padding: 4rem;
+  background-color: var(--background-color, #ffffff);
+
+  h2 {
+    font-size: 2rem;
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: 2rem;
+    color: var(--color-text-dark);
+
+    @media screen and (max-width: 768px) {
+      font-size: 1.75rem;
+    }
+  }
+
+  @media screen and (max-width: 1024px) {
+    padding: 3rem 2rem;
+  }
+
+  @media screen and (max-width: 768px) {
+    padding: 1rem 0.8rem 2rem 0.8rem;
+  }
+}
+
+.content {
+  h1 {
+    font-size: 48px;
+    font-weight: var(--font-weight-semibold);
+    margin: 2rem 0;
+    color: var(--color-text-dark);
+
+    @media screen and (max-width: 768px) {
+      font-size: var(--font-size-2xl);
+    }
+  }
+}
+
+.form {
+  margin: 1rem 0 2rem 0;
+}
+
+.details {
+  margin-bottom: 1.5rem;
+
+  p:first-child {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    @media screen and (max-width: 770px) {
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  p:last-child,
+  a {
+    font-size: 1.1rem;
+    color: #6b7280;
+    text-decoration: none;
+    @media screen and (max-width: 770px) {
+      font-size: var(--font-size-sm);
+    }
+
+    &:hover {
+      color: var(--accent-color, #5a6c00);
+      cursor: pointer;
+    }
+  }
+}
+
+// Form styles
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.required {
+  color: var(--color-error);
+  margin-left: 0.25rem;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: var(--font-size-base);
+  border: 1px solid #6b7280;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: var(--text-primary, #1a1a1a);
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: var(--text-tertiary, #b3b3b3);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-color, #5a6c00);
+    box-shadow: 0 0 0 3px rgba(90, 108, 0, 0.1);
+  }
+
+  &:hover:not(:focus) {
+    border-color: var(--border-hover, #cccccc);
+  }
+}
+
+.inputError {
+  border-color: var(--error-color, #dc2626) !important;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 150px;
+  line-height: 1.5;
+}
+
+.errorMessage {
+  display: block;
+  color: var(--error-color, #dc2626);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.helpText {
+  display: block;
+  color: var(--text-tertiary, #999999);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+// File upload styles
+.fileUpload {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  @media screen and (max-width: 768px) {
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.fileLabel {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border-radius: 8px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: #a4a566;
+  }
+
+  @media screen and (max-width: 770px) {
+    font-size: var(--font-size-sm);
+    padding: 0.75rem 1rem;
+  }
+}
+
+.fileHint {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.fileInput {
+  display: none;
+}
+
+// Submit button
+.formActions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submitButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: var(--spacing-10) var(--spacing-20);
+  background-color: var(--color-text-secondary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  background-color: all 0.3s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background-color: #a4a566;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(90, 108, 0, 0.3);
+  }
+
+  &:disabled {
+    background-color: var(--text-tertiary, #999999);
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}

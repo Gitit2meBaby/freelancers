@@ -1,24 +1,24 @@
 .bookingGuidelines {
-    background-color: #E5F4F8;
-    padding: var(--spacing-80);
-        @media screen and (max-width: 1024px) {
-            padding: var(--spacing-80) var(--spacing-15);
-        }
+  background-color: #e5f4f8;
+  padding: var(--spacing-80);
+  @media screen and (max-width: 1024px) {
+    padding: var(--spacing-60) var(--spacing-15);
+  }
 }
 
 .container {
-    position: relative;
-background-color: var(--color-background-offWhite);
-display: flex;
-flex-direction: column;
-padding: var(--spacing-60) var(--spacing-80);
-        @media screen and (max-width: 900px) {
-            padding: var(--spacing-60) var(--spacing-40);
-        }
-        @media screen and (max-width: 600px) {
-            padding: var(--spacing-60) var(--spacing-20);
-        }
-h1 {
+  position: relative;
+  background-color: var(--color-background-offWhite);
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-60) var(--spacing-80);
+  @media screen and (max-width: 900px) {
+    padding: var(--spacing-60) var(--spacing-40);
+  }
+  @media screen and (max-width: 600px) {
+    padding: var(--spacing-60) var(--spacing-20);
+  }
+  h1 {
     text-align: center;
     font-size: 48px;
     line-height: 60px;
@@ -27,54 +27,55 @@ h1 {
     letter-spacing: -2px;
     margin-bottom: 2rem;
     @media screen and (max-width: 1024px) {
-        font-size: 36px;
-        line-height: 48px;
+      font-size: 36px;
+      line-height: 48px;
     }
     @media screen and (max-width: 770px) {
-        font-size: var(--font-size-2xl);
-        line-height: 32px;
-        letter-spacing: 0px;
+      font-size: var(--font-size-2xl);
+      line-height: 32px;
+      letter-spacing: 0px;
+      margin-bottom: 1rem;
     }
-}
+  }
 
-p {
+  p {
     text-align: center;
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-regular);
     line-height: 28px;
     color: var(--color-text-dark);
-        @media screen and (max-width: 770px) {
-        font-size: var(--font-size-base);
+    @media screen and (max-width: 770px) {
+      font-size: var(--font-size-base);
     }
-}
+  }
 }
 
 .btns {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 3rem;
-    @media screen and (max-width: 615px) {
-        flex-direction: column;
-    }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 3rem;
+  @media screen and (max-width: 615px) {
+    flex-direction: column;
+  }
 }
 
 .linkButton {
-        background-color: var(--color-brand-secondary);
-    color: var(--color-text-white);
-    padding: var(--spacing-15) var(--spacing-30);
-    width: fit-content;
-    border: none;
-    border-radius: 8px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    cursor: pointer;
-    transition: scale 0.3s ease;
-    text-decoration: none;
-    text-align: center;
-    
-    &:hover {
-        scale: 1.4;
-    }
+  background-color: var(--color-brand-secondary);
+  color: var(--color-text-white);
+  padding: var(--spacing-15) var(--spacing-30);
+  width: fit-content;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: scale 0.3s ease;
+  text-decoration: none;
+  text-align: center;
+
+  &:hover {
+    scale: 1.4;
+  }
 }

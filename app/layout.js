@@ -1,5 +1,4 @@
 import localFont from "next/font/local";
-import { Roboto } from "next/font/google";
 
 import { AuthProvider } from "./AuthContext";
 
@@ -30,14 +29,6 @@ const clashGrotesk = localFont({
     },
   ],
   variable: "--font-primary",
-  display: "swap",
-});
-
-// Load Roboto from Google
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-secondary",
   display: "swap",
 });
 
@@ -157,7 +148,7 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      <body className={`${clashGrotesk.variable} ${roboto.variable}`}>
+      <body className={`${clashGrotesk.variable}`}>
         <Navigation />
         <AuthProvider>
           <Header />

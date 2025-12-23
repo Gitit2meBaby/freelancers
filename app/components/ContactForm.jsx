@@ -1,0 +1,376 @@
+"use client";
+
+import React, { useState, useRef } from "react";
+
+import styles from "../styles/contactUs.module.scss";
+
+const ContactForm = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    cv: null,
+  });
+
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    subject: "",
+  });
+
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    subject: false,
+  });
+
+  // Refs for inputs
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const subjectRef = useRef(null);
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const scrollToError = (fieldName) => {
+    const refs = {
+      name: nameRef,
+      email: emailRef,
+      subject: subjectRef,
+    };
+
+    const ref = refs[fieldName];
+    if (ref && ref.current) {
+      ref.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      // Focus the input for better UX
+      ref.current.focus();
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {
+      name: "",
+      email: "",
+      subject: "",
+    };
+
+    let isValid = true;
+    let firstErrorField = null;
+
+    // Validate Name
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "name";
+    }
+
+    // Validate Email
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "email";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "email";
+    }
+
+    // Validate Subject
+    if (!formData.subject.trim()) {
+      newErrors.subject = "Subject is required";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "subject";
+    }
+
+    setErrors(newErrors);
+
+    // Scroll to first error field
+    if (!isValid && firstErrorField) {
+      setTimeout(() => {
+        scrollToError(firstErrorField);
+      }, 100);
+    }
+
+    return isValid;
+  };
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+
+    if (name === "cv") {
+      setFormData((prev) => ({
+        ...prev,
+        cv: files[0] || null,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+
+      // Clear error when user starts typing
+      if (errors[name] && touched[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      }
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+
+    // Validate individual field on blur
+    if (name === "name" && !formData.name.trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        name: "Name is required",
+      }));
+    }
+
+    if (name === "email") {
+      if (!formData.email.trim()) {
+        setErrors((prev) => ({
+          ...prev,
+          email: "Email is required",
+        }));
+      } else if (!emailRegex.test(formData.email)) {
+        setErrors((prev) => ({
+          ...prev,
+          email: "Please enter a valid email address",
+        }));
+      }
+    }
+
+    if (name === "subject" && !formData.subject.trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        subject: "Subject is required",
+      }));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({
+      name: true,
+      email: true,
+      subject: true,
+    });
+
+    // Validate form
+    if (validateForm()) {
+      // Submission logic to be implemented
+      console.log("Form is valid, submitting...", formData);
+    } else {
+      console.log("Form has errors");
+    }
+  };
+
+  return (
+    <section className={styles.form}>
+      <h2>Send us a message</h2>
+      <form onSubmit={handleSubmit} aria-label="Contact form" noValidate>
+        {/* Name Field */}
+        <div className={styles.formGroup}>
+          <label htmlFor="name" className={styles.label}>
+            Name
+            <span className={styles.required} aria-label="required">
+              *
+            </span>
+          </label>
+          <input
+            ref={nameRef}
+            type="text"
+            id="name"
+            name="name"
+            className={`${styles.input} ${
+              errors.name && touched.name ? styles.inputError : ""
+            }`}
+            placeholder="Enter name"
+            value={formData.name}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            aria-required="true"
+            aria-invalid={errors.name && touched.name ? "true" : "false"}
+            aria-describedby={
+              errors.name && touched.name ? "name-error" : undefined
+            }
+          />
+          {errors.name && touched.name && (
+            <span
+              id="name-error"
+              className={styles.errorMessage}
+              role="alert"
+              aria-live="polite"
+            >
+              {errors.name}
+            </span>
+          )}
+        </div>
+
+        {/* Email Field */}
+        <div className={styles.formGroup}>
+          <label htmlFor="email" className={styles.label}>
+            Email
+            <span className={styles.required} aria-label="required">
+              *
+            </span>
+          </label>
+          <input
+            ref={emailRef}
+            type="email"
+            id="email"
+            name="email"
+            className={`${styles.input} ${
+              errors.email && touched.email ? styles.inputError : ""
+            }`}
+            placeholder="Enter email"
+            value={formData.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            aria-required="true"
+            aria-invalid={errors.email && touched.email ? "true" : "false"}
+            aria-describedby={
+              errors.email && touched.email ? "email-error" : undefined
+            }
+          />
+          {errors.email && touched.email && (
+            <span
+              id="email-error"
+              className={styles.errorMessage}
+              role="alert"
+              aria-live="polite"
+            >
+              {errors.email}
+            </span>
+          )}
+        </div>
+
+        {/* Subject Field */}
+        <div className={styles.formGroup}>
+          <label htmlFor="subject" className={styles.label}>
+            Subject
+            <span className={styles.required} aria-label="required">
+              *
+            </span>
+          </label>
+          <input
+            ref={subjectRef}
+            type="text"
+            id="subject"
+            name="subject"
+            className={`${styles.input} ${
+              errors.subject && touched.subject ? styles.inputError : ""
+            }`}
+            placeholder="Enter Subject"
+            value={formData.subject}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            required
+            aria-required="true"
+            aria-invalid={errors.subject && touched.subject ? "true" : "false"}
+            aria-describedby={
+              errors.subject && touched.subject ? "subject-error" : undefined
+            }
+          />
+          {errors.subject && touched.subject && (
+            <span
+              id="subject-error"
+              className={styles.errorMessage}
+              role="alert"
+              aria-live="polite"
+            >
+              {errors.subject}
+            </span>
+          )}
+        </div>
+
+        {/* Message Field */}
+        <div className={styles.formGroup}>
+          <label htmlFor="message" className={styles.label}>
+            Message
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            className={styles.textarea}
+            placeholder="Enter your message"
+            rows="8"
+            value={formData.message}
+            onChange={handleChange}
+            aria-describedby="message-help"
+          />
+        </div>
+
+        {/* CV Upload Field */}
+        <div className={styles.formGroup}>
+          <label htmlFor="cv" className={styles.label}>
+            CV
+          </label>
+          <div className={styles.fileUpload}>
+            <label htmlFor="cv" className={styles.fileLabel}>
+              {formData.cv ? formData.cv.name : "Upload CV"}
+            </label>
+            <span className={styles.fileHint}>
+              PDF, Maximum file size is 1MB
+            </span>
+            <input
+              type="file"
+              id="cv"
+              name="cv"
+              className={styles.fileInput}
+              accept=".pdf"
+              onChange={handleChange}
+              aria-describedby="cv-help"
+            />
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className={styles.formActions}>
+          <button
+            type="submit"
+            className={styles.submitButton}
+            aria-label="Send message"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Send message
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+};
+
+export default ContactForm;

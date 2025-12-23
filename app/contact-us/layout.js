@@ -1,66 +1,52 @@
-import { Metadata } from "next";
-
+// app/contact-us/layout.js
 export const metadata = {
-  title: "Booking Guidelines - Freelancers Promotions",
+  title: "Contact Us - Freelancers Promotions",
   description:
-    "This guide has been produced to provide a reference of best practice processes for the engagement of crew in Victoria. We trust all production companies understand our booking guidelines and if not please call Freelancers Promotions on +613 9682 2722.",
-
-  // Canonical URL
+    "Contact Freelancers Promotions - Address PO Box 5010, South Melbourne, Vic 3205 Email info@freelancers.com.au Phone +613 9682 2722 Send us a message",
   alternates: {
-    canonical: "https://freelancers.com.au/booking-guidelines/",
+    canonical: "https://freelancers.com.au/contact-us/",
   },
-
-  // Open Graph metadata
   openGraph: {
-    type: "article",
     locale: "en_US",
-    url: "https://freelancers.com.au/booking-guidelines/",
-    siteName: "Freelancers Promotions",
-    title: "Booking Guidelines - Freelancers Promotions",
+    type: "article",
+    title: "Contact Us - Freelancers Promotions",
     description:
-      "This guide has been produced to provide a reference of best practice processes for the engagement of crew in Victoria. We trust all production companies understand our booking guidelines and if not please call Freelancers Promotions on +613 9682 2722.",
-    modifiedTime: "2025-08-29T05:00:04+00:00",
+      "Contact Freelancers Promotions - Address PO Box 5010, South Melbourne, Vic 3205 Email info@freelancers.com.au Phone +613 9682 2722 Send us a message",
+    url: "https://freelancers.com.au/contact-us/",
+    siteName: "Freelancers Promotions",
+    modifiedTime: "2025-08-29T05:01:03+00:00",
   },
-
-  // Twitter Card metadata
   twitter: {
     card: "summary_large_image",
   },
-
-  // Additional metadata
-  other: {
-    "twitter:label1": "Est. reading time",
-    "twitter:data1": "1 minute",
-  },
 };
 
-// JSON-LD structured data
-export function generateJsonLd() {
-  return {
+export default function ContactUsLayout({ children }) {
+  const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebPage",
-        "@id": "https://freelancers.com.au/booking-guidelines",
-        url: "https://freelancers.com.au/booking-guidelines",
-        name: "Booking Guidelines - Freelancers Promotions",
+        "@id": "https://freelancers.com.au/contact-us",
+        url: "https://freelancers.com.au/contact-us",
+        name: "Contact Us - Freelancers Promotions",
         isPartOf: { "@id": "https://freelancers.com.au/#website" },
-        datePublished: "2026-01-01T12:23:31+00:00",
-        dateModified: "2026-01-01T05:00:04+00:00",
+        datePublished: "2023-08-23T13:58:07+00:00",
+        dateModified: "2025-08-29T05:01:03+00:00",
         breadcrumb: {
-          "@id": "https://freelancers.com.au/booking-guidelines/#breadcrumb",
+          "@id": "https://freelancers.com.au/contact-us/#breadcrumb",
         },
         inLanguage: "en-US",
         potentialAction: [
           {
             "@type": "ReadAction",
-            target: ["https://freelancers.com.au/booking-guidelines"],
+            target: ["https://freelancers.com.au/contact-us"],
           },
         ],
       },
       {
         "@type": "BreadcrumbList",
-        "@id": "https://freelancers.com.au/booking-guidelines/#breadcrumb",
+        "@id": "https://freelancers.com.au/contact-us/#breadcrumb",
         itemListElement: [
           {
             "@type": "ListItem",
@@ -71,7 +57,7 @@ export function generateJsonLd() {
           {
             "@type": "ListItem",
             position: 2,
-            name: "Booking Guidelines",
+            name: "Contact Us",
           },
         ],
       },
@@ -117,10 +103,6 @@ export function generateJsonLd() {
       },
     ],
   };
-}
-
-export default function BookingGuidelinesLayout({ children }) {
-  const jsonLd = generateJsonLd();
 
   return (
     <>
