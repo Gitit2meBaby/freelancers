@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Copyright from "./components/Copyright";
 import Navigation from "./components/Navigation";
+import CookieConsent from "./components/CookieConsent";
 
 import "./globals.css";
 
@@ -25,11 +26,6 @@ const clashGrotesk = localFont({
     {
       path: "./fonts/ClashGrotesk-Semibold.woff2",
       weight: "600",
-      style: "normal",
-    },
-    {
-      path: "./fonts/ClashGrotesk-Bold.woff2",
-      weight: "700",
       style: "normal",
     },
   ],
@@ -161,6 +157,7 @@ export default function RootLayout({ children }) {
         {children}
         <Footer />
         <Copyright />
+        <CookieConsent />
         {/* Google Tag Manager */}
         <script
           id="google-gtag-init"
