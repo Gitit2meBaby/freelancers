@@ -56,7 +56,7 @@ function generateStructuredData() {
         breadcrumb: {
           "@id": "https://freelancers.com.au/about-us/#breadcrumb",
         },
-        inLanguage: "en-US",
+        inLanguage: "en-AU",
         potentialAction: [
           {
             "@type": "ReadAction",

@@ -36,7 +36,7 @@ export default function ContactUsLayout({ children }) {
         breadcrumb: {
           "@id": "https://freelancers.com.au/contact-us/#breadcrumb",
         },
-        inLanguage: "en-US",
+        inLanguage: "en-AU",
         potentialAction: [
           {
             "@type": "ReadAction",
@@ -82,7 +82,7 @@ export default function ContactUsLayout({ children }) {
             },
           },
         ],
-        inLanguage: "en-US",
+        inLanguage: "en-AU",
       },
       {
         "@type": "Organization",
@@ -91,7 +91,7 @@ export default function ContactUsLayout({ children }) {
         url: "https://freelancers.com.au",
         logo: {
           "@type": "ImageObject",
-          inLanguage: "en-US",
+          inLanguage: "en-AU",
           "@id": "https://freelancers.com.au/#/schema/logo/image/",
           url: "https://freelancers.com.au/logo.png",
           contentUrl: "https://freelancers.com.au/logo.png",

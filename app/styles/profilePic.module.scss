@@ -1,0 +1,99 @@
+// styles/profilePic.module.scss
+
+.profilePicContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.profilePic {
+  margin: 1rem 0 -1rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileImageDisplay {
+  position: relative;
+  z-index: 1;
+}
+
+.profilePic {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: all 0.3s ease; // Smooth transition for hover effect
+}
+
+.profileDropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdownButton {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+
+  // Apply hover effect to the button wrapper
+  &:hover .profilePic {
+    border: 2px solid #666a01;
+    box-shadow: 0px 0px 10px 2px #666a01;
+  }
+
+  &:focus {
+    outline: none; // Remove default outline
+
+    .profilePic {
+      outline: 2px solid #666a01;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  z-index: 1000;
+  overflow: hidden;
+
+  &Hidden {
+    display: none;
+  }
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--font-size-base, 1rem);
+  color: var(--color-text-primary, #2d2d2d);
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-background-hover, #f5f5f5);
+  }
+
+  &:focus {
+    outline: none;
+    background-color: var(--color-background-hover, #f5f5f5);
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--color-border, #e0e0e0);
+  }
+}

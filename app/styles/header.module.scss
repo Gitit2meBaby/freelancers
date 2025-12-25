@@ -19,8 +19,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-20) var(--spacing-60) var(--spacing-40)
-    var(--spacing-60);
+  padding: var(--spacing-20) 10vw var(--spacing-40) 14vw;
 
   @media screen and (max-width: 770px) {
     padding: var(--spacing-30) var(--spacing-20);

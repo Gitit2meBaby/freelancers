@@ -16,8 +16,6 @@ function EditProfileForm() {
   const [formData, setFormData] = useState({
     photo: null,
     photoPreview: null,
-    name: "",
-    role: "",
     website: "",
     equipmentList: null,
     instagram: "",
@@ -29,16 +27,16 @@ function EditProfileForm() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      router.push("/member-login");
-      return;
-    }
+  // useEffect(() => {
+  //   if (!authLoading && !isLoggedIn) {
+  //     router.push("/member-login");
+  //     return;
+  //   }
 
-    if (userId) {
-      loadUserProfile(userId);
-    }
-  }, [authLoading, isLoggedIn, userId, router]);
+  //   if (userId) {
+  //     loadUserProfile(userId);
+  //   }
+  // }, [authLoading, isLoggedIn, userId, router]);
 
   const loadUserProfile = async (id) => {
     setLoading(true);
@@ -202,7 +200,11 @@ function EditProfileForm() {
   }
 
   return (
-    <div className={styles.editProfilePage}>
+    <div
+      className={styles.editProfilePage}
+      data-footer="noBorder"
+      data-page="plain"
+    >
       <h1 className={styles.pageTitle}>Crew Information</h1>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -222,20 +224,22 @@ function EditProfileForm() {
                   <p>No photo uploaded</p>
                 </div>
               )}
-              <label htmlFor="photo" className={styles.uploadButton}>
-                Upload Photo
-              </label>
-              <input
-                type="file"
-                id="photo"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handlePhotoUpload}
-                className={styles.fileInput}
-              />
-              <p className={styles.helpText}>
-                PNG or JPG, Maximum File size is 2MB
-              </p>
-              {errors.photo && <p className={styles.error}>{errors.photo}</p>}
+              <div className={styles.flexBox}>
+                <label htmlFor="photo" className={styles.uploadButton}>
+                  Upload Photo
+                </label>
+                <input
+                  type="file"
+                  id="photo"
+                  accept="image/png,image/jpeg,image/jpg, image/gif, image/webp"
+                  onChange={handlePhotoUpload}
+                  className={styles.fileInput}
+                />
+                <p className={styles.helpText}>
+                  PNG, Webp or JPG, Maximum File size is 2MB
+                </p>
+                {errors.photo && <p className={styles.error}>{errors.photo}</p>}
+              </div>
             </div>
           </div>
 
@@ -251,10 +255,9 @@ function EditProfileForm() {
               value={formData.name}
               onChange={handleInputChange}
               className={styles.input}
-              placeholder="Dan Thomas"
-              required
             />
           </div>
+          {/* TODO *********** Auto Populate field */}
 
           {/* Role */}
           <div className={styles.formGroup}>
@@ -268,10 +271,9 @@ function EditProfileForm() {
               value={formData.role}
               onChange={handleInputChange}
               className={styles.input}
-              placeholder="Stills Photographer"
-              required
             />
           </div>
+          {/* TODO *********** Auto Populate field */}
 
           {/* Website */}
           <div className={styles.formGroup}>
@@ -306,7 +308,9 @@ function EditProfileForm() {
               onChange={handleEquipmentUpload}
               className={styles.fileInput}
             />
-            <p className={styles.helpText}>PDF, Maximum File size is 2MB</p>
+            <p style={{ marginTop: ".5rem" }} className={styles.helpText}>
+              PDF, Maximum File size is 2MB
+            </p>
             {errors.equipment && (
               <p className={styles.error}>{errors.equipment}</p>
             )}

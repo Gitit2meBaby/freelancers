@@ -18,19 +18,19 @@ export default function AccountLayout({ children }) {
   const { isLoggedIn, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !isLoggedIn) {
-      router.push("/member-login");
-    }
-  }, [isLoggedIn, loading, router]);
+  // useEffect(() => {
+  //   if (!loading && !isLoggedIn) {
+  //     router.push("/member-login");
+  //   }
+  // }, [isLoggedIn, loading, router]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  // if (loading) {
+  //   return <div>Loading...</div>;
+  // }
 
-  if (!isLoggedIn) {
-    return null;
-  }
+  // if (!isLoggedIn) {
+  //   return null;
+  // }
 
   return (
     <>

@@ -1,9 +1,7 @@
-import { Metadata } from "next";
-
 export const metadata = {
   title: "Booking Guidelines - Freelancers Promotions",
   description:
-    "This guide has been produced to provide a reference of best practice processes for the engagement of crew in Victoria. We trust all production companies understand our booking guidelines and if not please call Freelancers Promotions on +613 9682 2722.",
+    "This guide has been produced to provide a reference of best practice processes for the engagement of crew in Victoria. We trust all production companies understand our booking guidelines.",
 
   // Canonical URL
   alternates: {
@@ -18,19 +16,13 @@ export const metadata = {
     siteName: "Freelancers Promotions",
     title: "Booking Guidelines - Freelancers Promotions",
     description:
-      "This guide has been produced to provide a reference of best practice processes for the engagement of crew in Victoria. We trust all production companies understand our booking guidelines and if not please call Freelancers Promotions on +613 9682 2722.",
-    modifiedTime: "2025-08-29T05:00:04+00:00",
+      "This guide has been produced to provide a reference of best practice processes for the engagement of crew in Victoria. We trust all production companies understand our booking guidelines.",
+    modifiedTime: "2026-01-01T05:00:04+00:00",
   },
 
   // Twitter Card metadata
   twitter: {
     card: "summary_large_image",
-  },
-
-  // Additional metadata
-  other: {
-    "twitter:label1": "Est. reading time",
-    "twitter:data1": "1 minute",
   },
 };
 
@@ -50,7 +42,7 @@ export function generateJsonLd() {
         breadcrumb: {
           "@id": "https://freelancers.com.au/booking-guidelines/#breadcrumb",
         },
-        inLanguage: "en-US",
+        inLanguage: "en-AU",
         potentialAction: [
           {
             "@type": "ReadAction",
@@ -96,7 +88,7 @@ export function generateJsonLd() {
             },
           },
         ],
-        inLanguage: "en-US",
+        inLanguage: "en-AU",
       },
       {
         "@type": "Organization",
@@ -105,7 +97,7 @@ export function generateJsonLd() {
         url: "https://freelancers.com.au",
         logo: {
           "@type": "ImageObject",
-          inLanguage: "en-US",
+          inLanguage: "en-AU",
           "@id": "https://freelancers.com.au/#/schema/logo/image/",
           url: "https://freelancers.com.au/logo.png",
           contentUrl: "https://freelancers.com.au/logo.png",

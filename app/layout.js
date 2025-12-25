@@ -153,8 +153,8 @@ export default function RootLayout({ children }) {
         <Navigation />
         <AuthProvider>
           <Header />
+          {children}
         </AuthProvider>
-        {children}
         <Footer />
         <Copyright />
         <CookieConsent />
