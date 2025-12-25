@@ -1,16 +1,66 @@
 .homeContainer {
   display: flex;
-  
+  position: relative;
+
   .buttonContainer {
     flex: 0 0 36%; // flex-grow: 0, flex-shrink: 0, flex-basis: 36%
     background-color: var(--color-background-blue);
   }
-  
+
   .carouselContainer {
     flex: 1;
     background-color: var(--color-brand-primary);
+    min-width: 0; // ← This is the key! Allows flex child to shrink
+    overflow: hidden;
   }
   @media screen and (max-width: 770px) {
     flex-direction: column;
+  }
+}
+
+.circleWrapper {
+  right: -5rem;
+  top: -15rem;
+  position: absolute;
+  width: 688px;
+  height: 688px;
+  content: "";
+  animation: homeMoveTopRight 1s linear forwards;
+  z-index: 1;
+}
+
+.circleAnimate {
+  position: relative;
+
+  &::before,
+  &::after {
+    z-index: 1;
+    content: "";
+    border-radius: 100%;
+    border: 1.51px solid #a4a566;
+    position: absolute;
+  }
+
+  &::before {
+    right: 25.5px;
+    top: 25.5px;
+    width: 611px;
+    height: 611px;
+  }
+
+  &::after {
+    width: 662px;
+    top: 0px;
+    height: 662px;
+    right: 0px;
+  }
+}
+
+@keyframes homeMoveTopRight {
+  from {
+    transform: translateX(50%) translateY(-50%);
+  }
+  to {
+    transform: translateX(50%) translateY(-50%);
   }
 }

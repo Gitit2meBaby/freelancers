@@ -1,5 +1,13 @@
+.carouselWrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+}
+
 .carouselContainer {
-  overflow: hidden; 
+  width: 100%;
+  overflow: hidden;
 }
 
 :has([data-row="top"]) .carouselContainer {
@@ -13,20 +21,20 @@
 .carouselTrack {
   display: flex;
   gap: var(--spacing-15);
-  padding: 7.5px var(--spacing-40) 7.5px 0;
+  padding: 7.5px var(--spacing-40);
   will-change: transform;
-  
+
   &[data-direction="left"] {
-    animation: scrollLeft 60s linear infinite;
-  }
-  
-  &[data-direction="right"] {
-    animation: scrollRight 60s linear infinite;
+    animation: scrollLeft 7s linear infinite;
   }
 
-      @media screen and (max-width: 770px) {
-  padding: 7.5px 0;
-    }
+  &[data-direction="right"] {
+    animation: scrollRight 7s linear infinite;
+  }
+
+  @media screen and (max-width: 770px) {
+    padding: 7.5px 0;
+  }
 }
 
 @keyframes scrollLeft {

@@ -17,6 +17,9 @@ export default function Home() {
         <div className={styles.carouselContainer}>
           <HomeSlider />
         </div>
+        <div className={styles.circleWrapper}>
+          <div className={styles.circleAnimate}></div>
+        </div>
       </div>
     </main>
   );

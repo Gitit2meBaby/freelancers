@@ -1,38 +1,45 @@
 .homeButtonsContainer {
-    display: flex;
-    // justify-content: center;
-    // align-items: center;
-    margin-left: var(--spacing-40);
-    height: 100%;
+  display: flex;
+  // justify-content: center;
+  // align-items: center;
+  margin-left: var(--spacing-40);
+  height: 100%;
 }
 
 .homeButtons {
-    background-color: var(--color-background-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-      @media screen and (max-width: 770px) {
-        padding: var(--spacing-40) 0;
-      }
-
+  background-color: var(--color-background-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-left: clamp(0.1rem, 10vw, 10vw);
+  @media screen and (max-width: 1240px) {
+    margin-left: 5vw;
+  }
+  @media screen and (max-width: 970px) {
+    margin-left: 2vw;
+  }
+  @media screen and (max-width: 770px) {
+    padding: var(--spacing-40) 0;
+    margin-left: 0;
+  }
 }
 
 .homeButton {
-    background-color: var(--color-brand-secondary);
-    color: var(--color-text-white);
-    padding: var(--spacing-15) var(--spacing-30);
-    width: fit-content;
-    border: none;
-    border-radius: 8px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    
-    &:hover {
-        background-color: var(--color-brand-third);
-    }
+  background-color: var(--color-brand-secondary);
+  color: var(--color-text-white);
+  padding: var(--spacing-20) var(--spacing-35);
+  width: fit-content;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: var(--color-brand-third);
+  }
 }

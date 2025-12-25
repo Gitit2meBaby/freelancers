@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "eslint"
   },
@@ -16,6 +17,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "mssql": "^12.2.0",
     "next": "16.0.5",
+    "next-sitemap": "^1.6.16",
     "puppeteer": "^24.31.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
