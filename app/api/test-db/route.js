@@ -1,3 +1,4 @@
+// /api/test-db/route.js
 import sql from "mssql";
 import { NextResponse } from "next/server";
 

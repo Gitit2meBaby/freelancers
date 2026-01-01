@@ -12,18 +12,22 @@ Current Domain Provider, Need DNS Records
 
 What happens with the password reset link?
 
-Clear Image of logo's
+Where is the longform guidelines link?
+
+# From Pauls Email
+
+Get verified access to database, whitelist IP
+Establish azure blob connection
 
 ## TODO
 
-Get verified access to database, whitelist IP
-
 Create ODCB connections
 
-Establish azure blob connection
-
 Find links between ID's in database and azure blob for frontend fetch.
+\*Note - Paul has outlined this in the email.
 
 Test Portals for members
+
+Create .env file
 
 Create email API with credentials.

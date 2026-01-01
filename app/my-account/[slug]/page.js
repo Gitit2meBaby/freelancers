@@ -54,7 +54,11 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className={styles.profilePage}>
+    <section
+      className={styles.profilePage}
+      data-footer="noBorder"
+      data-page="plain"
+    >
       <h1 className={styles.pageTitle}>Crew Profile</h1>
 
       <div className={styles.profileContainer}>
@@ -87,6 +91,6 @@ export default function UserProfilePage() {
           <p className={styles.role}>{profileData.role}</p>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -1,3 +1,5 @@
+// /api/test-query/route.js
+
 import sql from "mssql";
 import { NextResponse } from "next/server";
 import { dbConfig, VIEWS } from "@/lib/db";

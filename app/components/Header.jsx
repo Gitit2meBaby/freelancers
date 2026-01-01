@@ -8,7 +8,7 @@ import Hamburger from "./Hamburger";
 import ProfilePic from "./ProfilePic";
 
 import deskLogo from "../logo.png";
-import mobLogo from "../../public/logos/logo40x50.png";
+import mobLogo from "../../public/logos/logoMob.png";
 
 const Header = () => {
   return (
