@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
-  reactCompiler: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "fpsblobstorage.blob.core.windows.net",
+        port: "",
+        pathname: "/fpsblob/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

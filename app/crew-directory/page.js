@@ -1,15 +1,37 @@
-"use client";
-import React from "react";
+// app/crew-directory/page.js
+import Link from "next/link";
 
 import SearchBar from "../components/SearchBar";
-import ButtonSection from "../components/ButtonSection";
+import DownloadSelect from "./(components)/DownloadSelect";
 
 import styles from "../styles/crewDirectory.module.scss";
 
-import { CATEGORY_HIERARCHY } from "../../categoryHierarchy.js";
+// Enable static generation with revalidation
+export const revalidate = 3600; // Revalidate every hour (3600 seconds)
 
-const page = () => {
-  const topLevelCategories = Object.keys(CATEGORY_HIERARCHY);
+async function getCrewDirectory() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/crew-directory`, {
+      // Cache for 1 hour on the server
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch crew directory");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching crew directory:", error);
+    return { departments: [] };
+  }
+}
+
+export default async function CrewDirectoryPage() {
+  const data = await getCrewDirectory();
+  const departments = data.departments || [];
 
   return (
     <section
@@ -22,32 +44,19 @@ const page = () => {
         <SearchBar />
       </div>
 
-      <ButtonSection list={topLevelCategories} />
-
-      <div className={styles.downloadSection}>
-        <select
-          className={styles.downloadSelect}
-          onChange={(e) => {
-            if (e.target.value) {
-              const link = document.createElement("a");
-              link.href = e.target.value;
-              link.download = "";
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              e.target.value = ""; // Reset the select
-            }
-          }}
-        >
-          <option value="" disabled selected hidden>
-            Download Crew Directory ▼
-          </option>
-          <option value="/pdf/crew-list.pdf">Download PDF</option>
-          <option value="/csv/crew-list.xlsx">Download XLS</option>
-        </select>
+      <div className={styles.buttonSection}>
+        {departments.map((department) => (
+          <Link
+            key={department.id}
+            href={`/crew-directory/${department.slug}`}
+            prefetch={true}
+          >
+            <button>{department.name}</button>
+          </Link>
+        ))}
       </div>
+
+      <DownloadSelect />
     </section>
   );
-};
-
-export default page;
+}

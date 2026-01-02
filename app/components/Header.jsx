@@ -22,6 +22,7 @@ const Header = () => {
             width={300}
             height={66}
             className={styles.deskLogo}
+            priority
           />
         </Link>
         <Link href={"/"}>
@@ -31,6 +32,7 @@ const Header = () => {
             width={40}
             height={50}
             className={styles.mobLogo}
+            priority
           />
         </Link>
       </div>

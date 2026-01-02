@@ -1,72 +1,65 @@
 // app/screen-services/[slug]/page.js
-"use client";
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import styles from "../../styles/screenService.module.scss";
+import { notFound } from "next/navigation";
 
-import ScreenServiceCard from "@/app/components/ScreenServiceCard";
-import styles from "@/app/styles/screenService.module.scss";
+// Enable static generation with revalidation
+export const revalidate = 3600; // Revalidate every hour
 
-export default function CategoryPage() {
-  const params = useParams();
-  const router = useRouter();
-  const [categoryData, setCategoryData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Generate static params for all categories at build time
+export async function generateStaticParams() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/screen-services`, {
+      next: { revalidate: 3600 },
+    });
 
-  useEffect(() => {
-    async function fetchCategoryServices() {
-      try {
-        const response = await fetch(`/api/screen-services/${params.slug}`);
-        const result = await response.json();
+    if (!res.ok) return [];
 
-        if (!result.success) {
-          throw new Error(result.error || "Failed to fetch category");
-        }
+    const data = await res.json();
+    const categories = data.categories || [];
 
-        setCategoryData(result.data);
-      } catch (err) {
-        console.error("Error fetching category:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+    // Return array of params for each category
+    return categories.map((category) => ({
+      slug: category.slug,
+    }));
+  } catch (error) {
+    console.error("Error generating static params:", error);
+    return [];
+  }
+}
+
+async function getCategoryServices(slug) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/screen-services/${slug}`, {
+      // Cache for 1 hour on the server
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) {
+      return null;
     }
 
-    if (params.slug) {
-      fetchCategoryServices();
-    }
-  }, [params.slug]);
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching category services:", error);
+    return null;
+  }
+}
 
-  if (loading) {
-    return (
-      <section
-        className={styles.categoryPage}
-        data-page="plain"
-        data-footer="noBorder"
-      >
-        <div className={styles.loading}>Loading...</div>
-      </section>
-    );
+export default async function CategoryPage({ params }) {
+  const { slug } = await params;
+  const data = await getCategoryServices(slug);
+
+  // Show 404 if category not found
+  if (!data) {
+    notFound();
   }
 
-  if (error) {
-    return (
-      <section
-        className={styles.categoryPage}
-        data-page="plain"
-        data-footer="noBorder"
-      >
-        <div className={styles.error}>
-          <h2>Error</h2>
-          <p>{error}</p>
-          <Link href="/screen-services" style={{ marginTop: "2rem" }}>
-            ← Back to Screen Services
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  const { category, services } = data;
 
   return (
     <section
@@ -74,34 +67,75 @@ export default function CategoryPage() {
       data-page="plain"
       data-footer="noBorder"
     >
-      {/* Header with back link */}
-      <div className={styles.categoryHeader}>
-        <Link href="/screen-services" className={styles.backLink}>
-          <span className={styles.backArrow}>←</span>
-        </Link>
-        <h1>
-          <Link
-            href="/screen-services"
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            Screen Service: {categoryData?.category.name}
-          </Link>
+      {/* Clickable header to return to main screen services page */}
+      <Link href="/screen-services" className={styles.backLink}>
+        <h1 className={styles.categoryHeader}>
+          ← Screen Services: {category.name}
         </h1>
-      </div>
+      </Link>
 
-      {/* Services Grid */}
-      <div className={styles.servicesGrid}>
-        {categoryData?.services.map((service) => (
-          <ScreenServiceCard key={service.id} service={service} />
-        ))}
-      </div>
-
-      {/* No services message */}
-      {categoryData?.services.length === 0 && (
-        <div style={{ textAlign: "center", padding: "4rem" }}>
+      {services.length === 0 ? (
+        <div className={styles.noServices}>
           <p>No services found in this category.</p>
+        </div>
+      ) : (
+        <div className={styles.servicesGrid}>
+          {services.map((service) => (
+            <div key={service.id} className={styles.serviceCard}>
+              {/* Service Logo */}
+              {service.logoUrl ? (
+                <div className={styles.logoContainer}>
+                  <Image
+                    src={service.logoUrl}
+                    alt={`${service.name} logo`}
+                    width={300}
+                    height={150}
+                    className={styles.logo}
+                    priority={false}
+                  />
+                </div>
+              ) : (
+                <div className={styles.logoPlaceholder}>
+                  <span>{service.name.charAt(0)}</span>
+                </div>
+              )}
+
+              {/* Service Info */}
+              <div className={styles.serviceInfo}>
+                <h2>{service.name}</h2>
+
+                {service.websiteUrl && (
+                  <a
+                    href={service.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.websiteLink}
+                  >
+                    Visit Website →
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </section>
   );
+}
+
+// Generate metadata for each page
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const data = await getCategoryServices(slug);
+
+  if (!data) {
+    return {
+      title: "Category Not Found",
+    };
+  }
+
+  return {
+    title: `${data.category.name} - Screen Services | Freelancers Promotions`,
+    description: `Find professional ${data.category.name.toLowerCase()} services for your film production needs.`,
+  };
 }

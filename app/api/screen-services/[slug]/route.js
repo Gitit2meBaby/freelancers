@@ -1,5 +1,7 @@
 // app/api/screen-services/[slug]/route.js
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
+
 import { executeQuery, VIEWS } from "../../../lib/db";
 import { getBlobUrl } from "../../../lib/azureBlob";
 
@@ -14,12 +16,11 @@ function generateSlug(name) {
     .replace(/^-|-$/g, "");
 }
 
-export async function GET(request, { params }) {
-  try {
-    const { slug } = params;
-    console.log(`📊 Fetching services for category slug: ${slug}`);
-
-    // Fetch all service-category data from the denormalized view
+/**
+ * Cached function to get all screen services data
+ */
+const getAllScreenServices = unstable_cache(
+  async () => {
     const query = `
       SELECT 
         ServiceCategoryID,
@@ -33,9 +34,26 @@ export async function GET(request, { params }) {
       ORDER BY Service
     `;
 
-    const allResults = await executeQuery(query);
+    return await executeQuery(query);
+  },
+  ["screen-services-raw-data"],
+  {
+    revalidate: 3600, // Cache for 1 hour
+    tags: ["screen-services"],
+  }
+);
 
-    console.log(`📊 Total rows from database: ${allResults.length}`);
+export async function GET(request, { params }) {
+  try {
+    // IMPORTANT: In Next.js 15+, params is a Promise
+    const { slug } = await params;
+
+    console.log(`📊 Fetching services for category slug: ${slug}`);
+
+    // Get cached data
+    const allResults = await getAllScreenServices();
+
+    console.log(`📊 Total rows from cache: ${allResults.length}`);
 
     // Find all rows that match the category slug
     const matchingRows = allResults.filter((row) => {
@@ -47,9 +65,6 @@ export async function GET(request, { params }) {
 
     if (matchingRows.length === 0) {
       console.log(`❌ No category found with slug: ${slug}`);
-      console.log(`Available slugs:`, [
-        ...new Set(allResults.map((r) => generateSlug(r.Category))),
-      ]);
       return NextResponse.json(
         { success: false, error: "Category not found" },
         { status: 404 }
@@ -88,6 +103,7 @@ export async function GET(request, { params }) {
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
+      cached: true,
       data: {
         category: matchedCategory,
         services: servicesForCategory,
