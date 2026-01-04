@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
 import { executeQuery, VIEWS, STATUS_CODES, LINK_TYPES } from "../../../lib/db";
-import { getPublicBlobUrl } from "../../../lib/azureBlob";
+import { getBlobUrl } from "../../../lib/azureBlob";
 
 /**
  * Generates a URL-friendly slug from a name
@@ -22,18 +22,18 @@ function generateSlug(name) {
 const getAllFreelancerData = unstable_cache(
   async () => {
     // Query to get all freelancers (view already filters by ShowOnWebsite = True)
+    // Paul has now added FreelancerBio to this view
     const freelancersQuery = `
       SELECT 
-        f.FreelancerID,
-        f.Slug,
-        f.DisplayName,
-        f.PhotoBlobID,
-        f.PhotoStatusID,
-        f.CVBlobID,
-        f.CVStatusID,
-        w.FreelancerBio
-      FROM ${VIEWS.FREELANCERS} f
-      LEFT JOIN tblFreelancerWebsiteData w ON f.FreelancerID = w.FreelancerID
+        FreelancerID,
+        Slug,
+        DisplayName,
+        FreelancerBio,
+        PhotoBlobID,
+        PhotoStatusID,
+        CVBlobID,
+        CVStatusID
+      FROM ${VIEWS.FREELANCERS}
     `;
 
     // Query to get all freelancer skills
@@ -52,13 +52,13 @@ const getAllFreelancerData = unstable_cache(
         AND fs.SkillSlug = ds.SkillSlug
     `;
 
-    // Query to get all freelancer links
+    // Query to get all freelancer links - Paul has fixed this view
     const linksQuery = `
       SELECT 
         FreelancerID,
         LinkName,
         LinkURL
-      FROM tblFreelancerWebsiteDataLinks
+      FROM ${VIEWS.FREELANCER_LINKS}
       WHERE LinkURL IS NOT NULL AND LinkURL != ''
     `;
 
@@ -100,8 +100,6 @@ export async function GET(request, { params }) {
       );
     }
 
-    console.log(`✅ Found freelancer: ${freelancer.DisplayName}`);
-
     // Get freelancer's skills
     const freelancerSkills = skills
       .filter((s) => s.FreelancerID === freelancer.FreelancerID)
@@ -132,11 +130,11 @@ export async function GET(request, { params }) {
       photoUrl:
         freelancer.PhotoStatusID === STATUS_CODES.VERIFIED &&
         freelancer.PhotoBlobID
-          ? getPublicBlobUrl(freelancer.PhotoBlobID)
+          ? getBlobUrl(freelancer.PhotoBlobID)
           : null,
       cvUrl:
         freelancer.CVStatusID === STATUS_CODES.VERIFIED && freelancer.CVBlobID
-          ? getPublicBlobUrl(freelancer.CVBlobID)
+          ? getBlobUrl(freelancer.CVBlobID)
           : null,
       photoBlobId: freelancer.PhotoBlobID,
       cvBlobId: freelancer.CVBlobID,

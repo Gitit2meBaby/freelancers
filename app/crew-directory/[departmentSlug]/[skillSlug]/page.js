@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import FreelancerButtons from "./(components)/FreelancerButtons";
+import DownloadSelect from "../../(components)/DownloadSelect";
+
 import styles from "../../../styles/crewDirectory.module.scss";
 
 // Enable static generation with revalidation
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 3600;
 
 // Generate static params for all department/skill combinations at build time
 export async function generateStaticParams() {
@@ -36,11 +38,11 @@ export async function generateStaticParams() {
         const skillsData = await skillsRes.json();
         const skills = skillsData.data?.skills || [];
 
-        // Add params for each skill in this department
+        // Add params for each skill in this department - encode for URL safety
         skills.forEach((skill) => {
           allParams.push({
-            departmentSlug: department.slug,
-            skillSlug: skill.slug,
+            departmentSlug: encodeURIComponent(department.slug),
+            skillSlug: encodeURIComponent(skill.slug),
           });
         });
       }
@@ -78,7 +80,12 @@ async function getSkillFreelancers(departmentSlug, skillSlug) {
 
 export default async function SkillPage({ params }) {
   const { departmentSlug, skillSlug } = await params;
-  const data = await getSkillFreelancers(departmentSlug, skillSlug);
+
+  // Decode URL-encoded slugs
+  const decodedDeptSlug = decodeURIComponent(departmentSlug);
+  const decodedSkillSlug = decodeURIComponent(skillSlug);
+
+  const data = await getSkillFreelancers(decodedDeptSlug, decodedSkillSlug);
 
   // Show 404 if skill not found
   if (!data) {
@@ -88,45 +95,44 @@ export default async function SkillPage({ params }) {
   const { skill, freelancers } = data;
 
   return (
-    <section
-      className={styles.crewDirectory}
-      data-page="plain"
-      data-footer="noBorder"
-    >
-      {/* Breadcrumb navigation */}
-      <div className={styles.breadcrumb}>
-        <Link href="/crew-directory" className={styles.breadcrumbLink}>
-          Crew Directory
-        </Link>
-        <span className={styles.breadcrumbSeparator}>/</span>
-        <Link
-          href={`/crew-directory/${departmentSlug}`}
-          className={styles.breadcrumbLink}
-        >
-          {skill.department.name}
-        </Link>
-        <span className={styles.breadcrumbSeparator}>/</span>
-        <span className={styles.breadcrumbCurrent}>{skill.name}</span>
+    <>
+      {/* Background circles wrapper */}
+      <div className={styles.skillPageWrapper}>
+        <div className={styles.skillCircleAnimate}></div>
       </div>
 
-      {/* Page Header */}
-      <div className={styles.skillHeader}>
-        <h1>{skill.name}</h1>
-        <p className={styles.freelancerCount}>
-          {freelancers.length}{" "}
-          {freelancers.length === 1 ? "freelancer" : "freelancers"} found
-        </p>
-      </div>
-
-      {/* Freelancers List */}
-      {freelancers.length === 0 ? (
-        <div className={styles.noFreelancers}>
-          <p>No freelancers found with this skill.</p>
+      <section
+        className={styles.skillPageContent}
+        data-page="plain"
+        data-footer="noBorder"
+      >
+        {/* Simplified breadcrumb - just back arrow and current path */}
+        {/* Page Header */}
+        <div className={styles.skillHeader}>
+          <Link href="/crew-directory">
+            <h1>‹ Crew Directory: {" " + skill.name}</h1>
+          </Link>
         </div>
-      ) : (
-        <FreelancerButtons freelancers={freelancers} />
-      )}
-    </section>
+
+        {/* Freelancers List */}
+        {freelancers.length === 0 ? (
+          <div className={styles.noFreelancers}>
+            <p>No freelancers found with this skill.</p>
+          </div>
+        ) : (
+          <FreelancerButtons freelancers={freelancers} />
+        )}
+
+        {/* Download Section */}
+        <DownloadSelect
+          title={"Download Crew List"}
+          pdfValue="/pdf/crew-list.pdf"
+          xlsxValue="/csv/crew-list.xlsx"
+          crewPdfValue={skill.slug}
+          crewXlsxValue={skill.slug}
+        />
+      </section>
+    </>
   );
 }
 

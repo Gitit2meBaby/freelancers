@@ -35,7 +35,7 @@ export default async function CrewDirectoryPage() {
 
   return (
     <section
-      className={styles.crewDirectory}
+      className={`${styles.crewDirectory}`}
       data-page="plain"
       data-footer="noBorder"
     >
@@ -56,7 +56,11 @@ export default async function CrewDirectoryPage() {
         ))}
       </div>
 
-      <DownloadSelect />
+      <DownloadSelect
+        title={"Download Crew Directory"}
+        pdfValue="/pdf/crew-list.pdf"
+        xlsValue="/csv/crew-list.xlsx"
+      />
     </section>
   );
 }

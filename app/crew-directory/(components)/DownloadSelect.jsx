@@ -3,7 +3,13 @@ import React from "react";
 
 import styles from "../../styles/crewDirectory.module.scss";
 
-export default function DownloadSelect() {
+export default function DownloadSelect(
+  title,
+  pdfValue,
+  xlsxValue,
+  crewPdfValue,
+  crewXlsxValue
+) {
   const handleDownload = (e) => {
     if (e.target.value) {
       const link = document.createElement("a");
@@ -24,10 +30,16 @@ export default function DownloadSelect() {
         defaultValue=""
       >
         <option value="" disabled hidden>
-          Download Crew Directory ▼
+          {`${title.title} ▼`}
         </option>
-        <option value="/pdf/crew-list.pdf">Download PDF</option>
-        <option value="/csv/crew-list.xlsx">Download XLS</option>
+        {pdfValue && <option value={pdfValue}>Download PDF</option>}
+        {xlsxValue && <option value={xlsxValue}>Download XLS</option>}
+        {crewPdfValue && (
+          <option value={crewPdfValue}>Download Crew PDF</option>
+        )}
+        {crewXlsxValue && (
+          <option value={crewXlsxValue}>Download Crew XLS</option>
+        )}
       </select>
     </div>
   );

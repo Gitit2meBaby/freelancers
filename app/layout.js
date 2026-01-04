@@ -1,12 +1,11 @@
 import localFont from "next/font/local";
 
-import { AuthProvider } from "./AuthContext";
-
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Copyright from "./components/Copyright";
 import Navigation from "./components/Navigation";
 import CookieConsent from "./components/CookieConsent";
+import AuthProvider from "./components/SessionProvider";
 
 import "./globals.css";
 

@@ -11,6 +11,7 @@ const ContactForm = () => {
     subject: "",
     message: "",
     cv: null,
+    honeypot: "",
   });
 
   const [errors, setErrors] = useState({
@@ -23,6 +24,12 @@ const ContactForm = () => {
     name: false,
     email: false,
     subject: false,
+  });
+
+  const [submitStatus, setSubmitStatus] = useState({
+    loading: false,
+    success: false,
+    error: null,
   });
 
   // Refs for inputs
@@ -60,6 +67,12 @@ const ContactForm = () => {
 
     let isValid = true;
     let firstErrorField = null;
+
+    // Check honeypot
+    if (honeypot !== "") {
+      alert("Bot submission detected");
+      return false;
+    }
 
     // Validate Name
     if (!formData.name.trim()) {
@@ -160,7 +173,7 @@ const ContactForm = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Mark all fields as touched
@@ -171,11 +184,56 @@ const ContactForm = () => {
     });
 
     // Validate form
-    if (validateForm()) {
-      // Submission logic to be implemented
-      console.log("Form is valid, submitting...", formData);
-    } else {
+    if (!validateForm()) {
       console.log("Form has errors");
+      return;
+    }
+
+    setSubmitStatus({ loading: true, success: false, error: null });
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      // Success!
+      setSubmitStatus({ loading: false, success: true, error: null });
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        cv: null,
+      });
+      setTouched({
+        name: false,
+        email: false,
+        subject: false,
+      });
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setSubmitStatus({ loading: false, success: false, error: null });
+      }, 3000);
+    } catch (error) {
+      console.error("Submit error:", error);
+      setSubmitStatus({
+        loading: false,
+        success: false,
+        error: error.message,
+      });
     }
   };
 
@@ -183,6 +241,19 @@ const ContactForm = () => {
     <section className={styles.form}>
       <h2>Send us a message</h2>
       <form onSubmit={handleSubmit} aria-label="Contact form" noValidate>
+        {/* Honeypot Input */}
+        <div className={styles.hidden}>
+          <input
+            type="text"
+            name="honeypot"
+            value={formData.honeypot}
+            onChange={handleChange}
+            className={styles.honeypot}
+            aria-hidden="true"
+            tabIndex="-1"
+          />
+        </div>
+
         {/* Name Field */}
         <div className={styles.formGroup}>
           <label htmlFor="name" className={styles.label}>
@@ -341,11 +412,49 @@ const ContactForm = () => {
           </div>
         </div>
 
+        {/* Success Message */}
+        {submitStatus.success && (
+          <div className={styles.successMessage} role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+            </svg>
+            <span>Message sent successfully! We'll get back to you soon.</span>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {submitStatus.error && (
+          <div className={styles.errorMessageBox} role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M12 8v4M12 16h.01"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+            </svg>
+            <span>{submitStatus.error}</span>
+          </div>
+        )}
+
         {/* Submit Button */}
         <div className={styles.formActions}>
           <button
             type="submit"
             className={styles.submitButton}
+            disabled={submitStatus.loading}
+            aria-busy={submitStatus.loading}
             aria-label="Send message"
           >
             <svg
@@ -365,7 +474,7 @@ const ContactForm = () => {
                 strokeLinejoin="round"
               />
             </svg>
-            Send message
+            {submitStatus.loading ? "Sending..." : "Send message"}
           </button>
         </div>
       </form>

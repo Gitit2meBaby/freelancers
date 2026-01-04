@@ -2,24 +2,28 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "../AuthContext";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import styles from "../styles/editProfile.module.scss";
 
 function EditProfileForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user, isLoggedIn, loading: authLoading } = useAuth();
-  const userId = searchParams.get("id");
+  const { data: session, status } = useSession();
+
+  const isLoggedIn = status === "authenticated";
+  const isLoading = status === "loading";
 
   const [formData, setFormData] = useState({
     photo: null,
     photoPreview: null,
+    name: "",
+    role: "",
     website: "",
     equipmentList: null,
     instagram: "",
     imdb: "",
+    linkedin: "",
     description: "",
     cv: null,
   });
@@ -27,41 +31,80 @@ function EditProfileForm() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // useEffect(() => {
-  //   if (!authLoading && !isLoggedIn) {
-  //     router.push("/member-login");
-  //     return;
-  //   }
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.push("/member-login");
+    }
+  }, [isLoading, isLoggedIn, router]);
 
-  //   if (userId) {
-  //     loadUserProfile(userId);
-  //   }
-  // }, [authLoading, isLoggedIn, userId, router]);
+  // Load user profile data
+  useEffect(() => {
+    if (isLoggedIn && session?.user?.slug) {
+      loadUserProfile(session.user.slug);
+    }
+  }, [isLoggedIn, session]);
 
-  const loadUserProfile = async (id) => {
+  /**
+   * Upload a file to Azure Blob Storage via API
+   * @param {File} file - The file to upload
+   * @param {string} blobId - The blob identifier
+   * @param {string} type - File type ('image', 'cv', 'equipment')
+   * @returns {Promise<string>} The blob ID from Azure
+   */
+  const uploadToAzureBlob = async (file, blobId, type) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("blobId", blobId);
+    formData.append("type", type);
+
+    const response = await fetch("/api/upload-blob", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to upload file");
+    }
+
+    const result = await response.json();
+    return result.blobId;
+  };
+
+  const loadUserProfile = async (slug) => {
     setLoading(true);
     try {
-      // TODO: Fetch user data from database via API
-      // const response = await fetch(`/api/profile/${id}`);
-      // const data = await response.json();
+      // Fetch user data from the freelancer API
+      const response = await fetch(`/api/freelancer/${slug}`);
 
-      // TODO: Populate form with existing data
-      // setFormData({
-      //   photo: null,
-      //   photoPreview: data.image_url || null,
-      //   name: data.name || '',
-      //   role: data.role || '',
-      //   website: data.website || '',
-      //   equipmentList: null,
-      //   instagram: data.instagram || '',
-      //   imdb: data.imdb || '',
-      //   description: data.description || '',
-      //   cv: null,
-      // });
+      if (!response.ok) {
+        throw new Error("Failed to load profile");
+      }
 
-      console.log("TODO: Load user profile for ID:", id);
+      const result = await response.json();
+      const data = result.data;
+
+      // Populate form with existing data
+      setFormData({
+        photo: null,
+        photoPreview: data.photoUrl || null,
+        name: data.name || "",
+        role: data.skills?.[0]?.skillName || "", // First skill as primary role
+        website: data.links?.website || "",
+        equipmentList: null,
+        instagram: data.links?.instagram || "",
+        imdb: data.links?.imdb || "",
+        linkedin: data.links?.linkedin || "",
+        description: data.bio || "",
+        cv: null,
+      });
     } catch (error) {
       console.error("Error loading profile:", error);
+      setErrors((prev) => ({
+        ...prev,
+        load: "Failed to load profile data",
+      }));
     } finally {
       setLoading(false);
     }
@@ -79,10 +122,10 @@ function EditProfileForm() {
     const file = e.target.files[0];
     if (file) {
       // Validate file type and size
-      if (!file.type.match(/image\/(png|jpg|jpeg)/)) {
+      if (!file.type.match(/image\/(png|jpg|jpeg|gif|webp)/)) {
         setErrors((prev) => ({
           ...prev,
-          photo: "Please upload PNG or JPG only",
+          photo: "Please upload PNG, JPG, GIF, or WebP only",
         }));
         return;
       }
@@ -153,49 +196,72 @@ function EditProfileForm() {
     setLoading(true);
 
     try {
-      // TODO: Create FormData object for file uploads
-      // const submitData = new FormData();
-      // if (formData.photo) submitData.append('photo', formData.photo);
-      // if (formData.equipmentList) submitData.append('equipment', formData.equipmentList);
-      // if (formData.cv) submitData.append('cv', formData.cv);
-      // submitData.append('name', formData.name);
-      // submitData.append('role', formData.role);
-      // submitData.append('website', formData.website);
-      // submitData.append('instagram', formData.instagram);
-      // submitData.append('imdb', formData.imdb);
-      // submitData.append('description', formData.description);
+      const freelancerId = session?.user?.id;
+      if (!freelancerId) {
+        throw new Error("User ID not found");
+      }
 
-      // TODO: Upload files to Azure Blob Storage
-      // const photoUrl = await uploadToAzureBlob(formData.photo, 'images');
-      // const equipmentUrl = await uploadToAzureBlob(formData.equipmentList, 'equipment');
-      // const cvUrl = await uploadToAzureBlob(formData.cv, 'resumes');
+      // Upload files to Azure Blob Storage if new files were selected
+      let photoBlobId = null;
+      let cvBlobId = null;
 
-      // TODO: Save data to Access database via API
-      // const response = await fetch(`/api/profile/${userId}`, {
-      //   method: 'PUT',
-      //   body: submitData,
-      // });
+      if (formData.photo) {
+        const photoFileName = `photo-${freelancerId}-${Date.now()}`;
+        photoBlobId = await uploadToAzureBlob(
+          formData.photo,
+          photoFileName,
+          "image"
+        );
+      }
 
-      // if (!response.ok) throw new Error('Failed to save profile');
+      if (formData.cv) {
+        const cvFileName = `cv-${freelancerId}-${Date.now()}`;
+        cvBlobId = await uploadToAzureBlob(formData.cv, cvFileName, "cv");
+      }
 
-      console.log("TODO: Submit form data:", formData);
+      // Prepare update data
+      const updateData = {
+        displayName: formData.name,
+        bio: formData.description,
+        photoBlobId,
+        cvBlobId,
+        links: {
+          website: formData.website,
+          instagram: formData.instagram,
+          imdb: formData.imdb,
+          linkedin: formData.linkedin,
+        },
+      };
 
-      // TODO: Redirect back to profile on success
-      // router.push(`/my-account/${user.slug}`);
+      // Save data to database via API
+      const response = await fetch("/api/profile/update", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      });
 
-      alert("Profile saved successfully! (TODO: Implement actual save)");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save profile");
+      }
+
+      // Redirect back to profile on success
+      router.push(`/my-account/${session.user.slug}`);
+      router.refresh();
     } catch (error) {
       console.error("Error saving profile:", error);
       setErrors((prev) => ({
         ...prev,
-        submit: "Failed to save profile. Please try again.",
+        submit: error.message || "Failed to save profile. Please try again.",
       }));
     } finally {
       setLoading(false);
     }
   };
 
-  if (authLoading || loading) {
+  if (isLoading || !isLoggedIn) {
     return <div className={styles.loading}>Loading...</div>;
   }
 
@@ -206,6 +272,8 @@ function EditProfileForm() {
       data-page="plain"
     >
       <h1 className={styles.pageTitle}>Crew Information</h1>
+
+      {errors.load && <div className={styles.errorBanner}>{errors.load}</div>}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formCard}>
@@ -231,19 +299,19 @@ function EditProfileForm() {
                 <input
                   type="file"
                   id="photo"
-                  accept="image/png,image/jpeg,image/jpg, image/gif, image/webp"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
                   onChange={handlePhotoUpload}
                   className={styles.fileInput}
                 />
                 <p className={styles.helpText}>
-                  PNG, Webp or JPG, Maximum File size is 2MB
+                  PNG, WebP or JPG, Maximum File size is 2MB
                 </p>
                 {errors.photo && <p className={styles.error}>{errors.photo}</p>}
               </div>
             </div>
           </div>
 
-          {/* Name */}
+          {/* Name - Auto Populated */}
           <div className={styles.formGroup}>
             <label htmlFor="name" className={styles.label}>
               Name
@@ -255,14 +323,15 @@ function EditProfileForm() {
               value={formData.name}
               onChange={handleInputChange}
               className={styles.input}
+              placeholder="Your full name"
+              required
             />
           </div>
-          {/* TODO *********** Auto Populate field */}
 
-          {/* Role */}
+          {/* Role - Auto Populated from primary skill */}
           <div className={styles.formGroup}>
             <label htmlFor="role" className={styles.label}>
-              Role
+              Primary Role
             </label>
             <input
               type="text"
@@ -271,9 +340,10 @@ function EditProfileForm() {
               value={formData.role}
               onChange={handleInputChange}
               className={styles.input}
+              placeholder="e.g., Stills Photographer"
             />
+            <p className={styles.helpText}>Your main role or specialty</p>
           </div>
-          {/* TODO *********** Auto Populate field */}
 
           {/* Website */}
           <div className={styles.formGroup}>
@@ -345,6 +415,22 @@ function EditProfileForm() {
               onChange={handleInputChange}
               className={styles.input}
               placeholder="https://imdb.com/yourprofile"
+            />
+          </div>
+
+          {/* LinkedIn */}
+          <div className={styles.formGroup}>
+            <label htmlFor="linkedin" className={styles.label}>
+              LinkedIn
+            </label>
+            <input
+              type="url"
+              id="linkedin"
+              name="linkedin"
+              value={formData.linkedin}
+              onChange={handleInputChange}
+              className={styles.input}
+              placeholder="https://linkedin.com/in/yourprofile"
             />
           </div>
 

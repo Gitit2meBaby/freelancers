@@ -1,10 +1,11 @@
 .crewDirectory {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 4rem;
-  background-color: var(--color-background-pale-blue);
+  background-color: #fefefe;
   h1 {
     font-size: clamp(1.75rem, 1vw + 1rem, 3rem);
     font-weight: var(--font-weight-medium);
@@ -70,6 +71,262 @@
     padding: 1rem;
     line-height: 1.5;
     cursor: pointer;
+  }
+}
+
+// ========================================
+// SKILL PAGE STYLES
+// ========================================
+
+// Background wrapper with circles
+.skillPageWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Circle decorations positioned in all four corners
+.skillCircleAnimate {
+  position: relative;
+  width: 100%;
+  height: 100%;
+
+  // Top-left circles (2 circles)
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 611px;
+    height: 611px;
+    border-radius: 100%;
+    border: 1.51px solid #a4a566;
+    transform: translate(-50%, -50%);
+  }
+
+  // Bottom-right circles (2 circles)
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 662px;
+    height: 662px;
+    border-radius: 100%;
+    border: 1.51px solid #a4a566;
+    transform: translate(50%, 50%);
+  }
+}
+
+// Add additional circles using a pseudo-element approach
+// We need 4 total circles (2 in top-left, 2 in bottom-right)
+// Using a wrapper div approach would be cleaner, but we can use box-shadow for additional circles
+.skillCircleAnimate {
+  &::before {
+    // This creates the first top-left circle
+    box-shadow: -25px -25px 0 0 transparent, -25px -25px 0 1.51px #a4a566; // Second slightly offset circle
+  }
+
+  &::after {
+    // This creates the first bottom-right circle
+    box-shadow: 25px 25px 0 0 transparent, 25px 25px 0 1.51px #a4a566; // Second slightly offset circle
+  }
+}
+
+// Content container with proper z-index
+.skillPageContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 4rem;
+  background-color: #f5f5e6;
+  min-height: 100vh;
+
+  @media (max-width: 768px) {
+    padding: 2rem 1.5rem;
+  }
+}
+
+// Simplified breadcrumb styling
+.skillBreadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-self: flex-start;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto 2rem auto;
+}
+
+.backArrow {
+  font-size: 2.5rem;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: color 0.3s ease;
+  line-height: 1;
+  padding-right: 0.5rem;
+
+  &:hover {
+    color: var(--color-brand-third);
+  }
+}
+
+.breadcrumbPath {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+
+  @media (max-width: 768px) {
+    font-size: var(--font-size-base);
+  }
+}
+
+// Skill header
+.skillHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+  width: 100%;
+
+  h1 {
+    font-size: clamp(24px, 28px, 3.5rem);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+    margin: 3rem 0 0 0;
+  }
+}
+
+// Freelancer grid (for buttons)
+.freelancerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto 3rem auto;
+  padding: 0 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0 0.5rem;
+  }
+}
+
+.freelancerCell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// Individual freelancer button
+.freelancerButton {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: none;
+  padding: 12px 24px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  &:hover {
+    background-color: var(--color-brand-third);
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    min-width: fit-content;
+  }
+}
+
+.freelancerButtonContent {
+  width: 100%;
+}
+
+.freelancerName {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+  line-height: 1.3;
+
+  @media (max-width: 768px) {
+    font-size: var(--font-size-lg);
+  }
+}
+
+// No freelancers message
+.noFreelancers {
+  text-align: center;
+  padding: 4rem 2rem;
+  width: 100%;
+
+  p {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
+  }
+}
+
+// ================
+// EXISTING STYLES
+// ================
+
+.circleWrapper {
+  right: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  position: absolute;
+  min-width: 100vw;
+  height: 80vw;
+  content: "";
+  animation: moveTopRight 1s linear forwards;
+  z-index: 1;
+}
+
+.circleAnimate {
+  position: relative;
+
+  &::before,
+  &::after {
+    z-index: 1;
+    content: "";
+    border-radius: 100%;
+    border: 1.51px solid #a4a566;
+    position: absolute;
+  }
+
+  &::before {
+    right: 0px;
+    top: 25.5px;
+    width: 611px;
+    height: 611px;
+  }
+
+  &::after {
+    width: 662px;
+    bottom: 0px;
+    height: 662px;
+    right: 0px;
+  }
+}
+
+@keyframes moveTopRight {
+  from {
+    transform: translateX(50%) translateY(-50%);
+  }
+  to {
+    transform: translateX(50%) translateY(-50%);
   }
 }
 

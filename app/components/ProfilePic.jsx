@@ -2,9 +2,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-
-import { useAuth } from "../AuthContext";
 
 import defaultAvatar from "../../public/member/default-avatar.jpg";
 
@@ -13,19 +12,22 @@ import styles from "../styles/profilePic.module.scss";
 const ProfilePic = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, user, logout } = useAuth();
+  const { data: session, status } = useSession();
   const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const isLoggedIn = status === "authenticated";
+  const isLoading = status === "loading";
 
   // Show profile pic on all pages except home page when logged in
   const shouldRender = pathname !== "/" && isLoggedIn;
 
   useEffect(() => {
-    if (isLoggedIn && user?.profileImageId) {
-      fetchProfileImage(user.profileImageId).then(setProfileImageUrl);
+    if (isLoggedIn && session?.user?.image) {
+      setProfileImageUrl(session.user.image);
     }
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, session]);
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -44,29 +46,22 @@ const ProfilePic = () => {
     };
   }, [isOpen]);
 
-  const fetchProfileImage = async (imageId) => {
-    // TODO: Your Azure Blob fetch logic
-    // const url = await getAzureBlobUrl(imageId);
-    // return url;
-  };
-
   const handleViewProfile = () => {
     setIsOpen(false);
-    router.push(`/my-account/${user?.slug || ""}`);
+    router.push(`/my-account/${session?.user?.slug || ""}`);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsOpen(false);
-    logout();
-    router.push("/");
+    await signOut({ callbackUrl: "/" });
   };
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
   };
 
-  // Early return - component doesn't render at all
-  if (!shouldRender) return null;
+  // Don't render while checking auth status
+  if (isLoading || !shouldRender) return null;
 
   return (
     <div className={styles.profileDropdown} ref={dropdownRef}>
@@ -79,7 +74,7 @@ const ProfilePic = () => {
         {profileImageUrl ? (
           <Image
             src={profileImageUrl}
-            alt={user?.name || "Profile"}
+            alt={session?.user?.name || "Profile"}
             width={56}
             height={56}
             className={styles.profilePic}
@@ -87,7 +82,7 @@ const ProfilePic = () => {
         ) : (
           <Image
             src={defaultAvatar}
-            alt={user?.name || "Profile"}
+            alt={session?.user?.name || "Profile"}
             width={56}
             height={56}
             className={styles.profilePic}

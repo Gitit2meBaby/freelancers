@@ -60,6 +60,20 @@
   margin-bottom: 1.5rem;
 }
 
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+
+  // Prevent autocomplete from revealing it
+  &:focus {
+    outline: none;
+  }
+}
+
 .label {
   display: block;
   font-size: 0.95rem;
@@ -134,6 +148,7 @@
   margin-top: 2rem;
 }
 
+.googleButton,
 .submitButton {
   width: 100%;
   padding: 1rem 2rem;
@@ -261,4 +276,12 @@
       display: none;
     }
   }
+}
+
+.googleButton {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5vw;
 }

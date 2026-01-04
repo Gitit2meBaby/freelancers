@@ -65,6 +65,20 @@
   margin: 1rem 0 2rem 0;
 }
 
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+
+  // Prevent autocomplete from revealing it
+  &:focus {
+    outline: none;
+  }
+}
+
 .details {
   margin-bottom: 1.5rem;
 
@@ -165,6 +179,51 @@
   color: var(--text-tertiary, #999999);
   font-size: 0.875rem;
   margin-top: 0.5rem;
+}
+
+.successMessage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  background-color: #f0fdf4;
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  color: #4caf50;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.errorMessageBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  background-color: #fef2f2;
+  border: 1px solid var(--color-error);
+  border-radius: 6px;
+  color: var(--color-error);
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 // File upload styles

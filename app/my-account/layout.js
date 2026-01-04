@@ -3,34 +3,29 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../AuthContext";
-
+import { useSession } from "next-auth/react";
 import News from "../components/News";
 
-export const metadata = {
-  title: "My Account",
-  description: "Manage your account settings and profile.",
-  name: "robots",
-  content: "noindex, nofollow",
-};
-
 export default function AccountLayout({ children }) {
-  const { isLoggedIn, loading } = useAuth();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
-  // useEffect(() => {
-  //   if (!loading && !isLoggedIn) {
-  //     router.push("/member-login");
-  //   }
-  // }, [isLoggedIn, loading, router]);
+  const isLoggedIn = status === "authenticated";
+  const loading = status === "loading";
 
-  // if (loading) {
-  //   return <div>Loading...</div>;
-  // }
+  useEffect(() => {
+    if (!loading && !isLoggedIn) {
+      router.push("/member-login");
+    }
+  }, [isLoggedIn, loading, router]);
 
-  // if (!isLoggedIn) {
-  //   return null;
-  // }
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isLoggedIn) {
+    return null;
+  }
 
   return (
     <>

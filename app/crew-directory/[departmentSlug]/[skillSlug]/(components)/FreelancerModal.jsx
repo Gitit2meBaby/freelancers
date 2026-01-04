@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect } from "react";
 import styles from "../../../../styles/freelancerModal.module.scss";
+import Link from "next/link";
 
 export default function FreelancerModal({ freelancer, onClose }) {
   // Close modal on Escape key
@@ -75,15 +76,32 @@ export default function FreelancerModal({ freelancer, onClose }) {
             )}
           </div>
 
+          {/* No Photo Alternative */}
+          {/* <div className={styles.photoColumn}>
+            {freelancer.photoUrl ? (
+              <img
+                src={freelancer.photoUrl}
+                alt={freelancer.name}
+                className={styles.photo}
+              />
+            ) : (
+              <div></div>
+            )}
+          </div> */}
+
           {/* Right Column - Details */}
           <div className={styles.detailsColumn}>
             {/* Name */}
             <h2 className={styles.name}>{freelancer.name}</h2>
 
             {/* Bio */}
-            {freelancer.bio && (
+            {freelancer.bio ? (
               <div className={styles.bio}>
                 <p>{freelancer.bio}</p>
+              </div>
+            ) : (
+              <div className={styles.bio}>
+                <span>Bio not available...</span>
               </div>
             )}
 
