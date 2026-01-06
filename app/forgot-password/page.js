@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import styles from "../styles/memberLogin.module.scss";
+import styles from "../styles/forgotPassword.module.scss";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -35,9 +35,7 @@ export default function ForgotPasswordPage() {
 
       if (response.ok) {
         setStatus("success");
-        setMessage(
-          "If an account exists with that email, you will receive password reset instructions."
-        );
+        setMessage("You will receive password reset instructions.");
         setEmail(""); // Clear the form
       } else {
         setStatus("error");
@@ -58,12 +56,18 @@ export default function ForgotPasswordPage() {
     >
       <div className={styles.loginContainer}>
         <div className={styles.loginCard}>
-          <h1 className={styles.loginTitle}>Reset Your Password</h1>
+          <h1 className={styles.loginTitle}>
+            {status !== "success"
+              ? "Reset Your Password"
+              : "Password Reset Link Sent..."}
+          </h1>
 
-          <p className={styles.loginSubtitle}>
-            Enter your email address and we'll send you instructions to reset
-            your password.
-          </p>
+          {status !== "success" ? (
+            <p className={styles.loginSubtitle}>
+              Enter your email address and we'll send you instructions to reset
+              your password.
+            </p>
+          ) : null}
 
           {status === "success" ? (
             <div className={styles.successMessage}>
@@ -111,10 +115,6 @@ export default function ForgotPasswordPage() {
               >
                 {status === "loading" ? "Sending..." : "Send Reset Link"}
               </button>
-
-              <div className={styles.formDivider}>
-                <span>OR</span>
-              </div>
 
               <div className={styles.linkGroup}>
                 <Link href="/member-login" className={styles.secondaryLink}>

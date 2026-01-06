@@ -4,7 +4,8 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import styles from "../styles/memberLogin.module.scss";
+
+import styles from "../styles/forgotPassword.module.scss";
 
 export default function ResetPasswordPage() {
   const router = useRouter();

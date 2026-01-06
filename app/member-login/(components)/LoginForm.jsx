@@ -119,7 +119,7 @@ const LoginForm = () => {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", {
-        callbackUrl: "/",
+        redirect: false,
       });
     } catch (error) {
       console.error("Google sign in error:", error);
