@@ -1,0 +1,205 @@
+// app/components/VerificationModal.module.scss
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  padding: 40px 32px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  text-align: center;
+
+  @media (max-width: 768px) {
+    padding: 32px 24px;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iconContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+}
+
+.successCircle {
+  stroke: #7a8450;
+  stroke-width: 2;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+@keyframes stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.successCheck {
+  stroke: #7a8450;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+.title {
+  font-family: var(--font-primary);
+  font-size: 28px;
+  font-weight: 500;
+  color: #2d2d2d;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.01em;
+}
+
+.message {
+  margin-bottom: 32px;
+  text-align: left;
+
+  p {
+    color: #666;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 0 16px 0;
+  }
+}
+
+.infoBox {
+  background: #f5f5f0;
+  border-left: 4px solid #7a8450;
+  padding: 16px;
+  border-radius: 4px;
+  margin: 20px 0;
+
+  strong {
+    display: block;
+    color: #2d2d2d;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+  }
+}
+
+.note {
+  text-align: center;
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+.closeButton {
+  width: 100%;
+  padding: 14px 32px;
+  background-color: #7a8450;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-primary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #6a7440;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(122, 132, 80, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(122, 132, 80, 0.2);
+  }
+}
+
+/**
+ * USAGE IN EDIT PROFILE PAGE:
+ * 
+ * import { useState } from "react";
+ * import VerificationModal from "@/app/components/VerificationModal";
+ * 
+ * export default function EditProfilePage() {
+ *   const [showModal, setShowModal] = useState(false);
+ *   const [changes, setChanges] = useState({});
+ * 
+ *   const handleSubmit = async (e) => {
+ *     e.preventDefault();
+ *     
+ *     const response = await fetch("/api/profile/update", {
+ *       method: "PUT",
+ *       body: JSON.stringify(formData)
+ *     });
+ *     
+ *     const result = await response.json();
+ *     
+ *     if (result.success && result.needsVerification) {
+ *       setChanges(result.changes);
+ *       setShowModal(true);
+ *     }
+ *   };
+ * 
+ *   return (
+ *     <>
+ *       <form onSubmit={handleSubmit}>
+ *         // ... form fields
+ *       </form>
+ *       
+ *       <VerificationModal 
+ *         isOpen={showModal}
+ *         onClose={() => setShowModal(false)}
+ *         changes={changes}
+ *       />
+ *     </>
+ *   );
+ * }
+ */

@@ -1,0 +1,35 @@
+<?php
+/*
+Plugin Name: User Exporter
+Description: Temporary user export tool
+*/
+
+if (!defined('ABSPATH')) {
+    require_once('../../../wp-load.php');
+}
+
+if (!current_user_can('administrator')) {
+    die('Unauthorized');
+}
+
+header('Content-Type: text/csv; charset=utf-8');
+header('Content-Disposition: attachment; filename="wordpress-users-' . date('Y-m-d') . '.csv"');
+
+$output = fopen('php://output', 'w');
+fputcsv($output, ['ID', 'Email', 'Display Name', 'Password Hash', 'Registered Date']);
+
+$users = get_users(['number' => -1]);
+
+foreach ($users as $user) {
+    fputcsv($output, [
+        $user->ID,
+        $user->user_email,
+        $user->display_name,
+        $user->user_pass,
+        $user->user_registered
+    ]);
+}
+
+fclose($output);
+exit;
+?>

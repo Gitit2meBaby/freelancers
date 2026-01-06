@@ -1,112 +1,138 @@
+// app/forgot-password/page.js
 "use client";
-import React, { useState } from "react";
 
+import { useState } from "react";
+import Link from "next/link";
 import styles from "../styles/memberLogin.module.scss";
 
-const Page = () => {
-  const [formData, setFormData] = useState({
-    username: "",
-  });
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle"); // idle, loading, success, error
+  const [message, setMessage] = useState("");
 
-  const [error, setError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const validateForm = () => {
-    if (!formData.username.trim()) {
-      setError(true);
-      return false;
-    } else {
-      setError(false);
-      return true;
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    setError(false);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setStatus("loading");
+    setMessage("");
 
-    if (!validateForm()) {
-      return; // Exit if validation fails
+    // Basic validation
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setStatus("error");
+      setMessage("Please enter a valid email address");
+      return;
     }
 
-    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+      });
 
-    // Here you'll add your API call to send reset link
-    // For now, just simulating with alert
-    alert(`A Password reset Link has been sent to ${formData.username}`);
+      const data = await response.json();
 
-    setIsSubmitting(false);
+      if (response.ok) {
+        setStatus("success");
+        setMessage(
+          "If an account exists with that email, you will receive password reset instructions."
+        );
+        setEmail(""); // Clear the form
+      } else {
+        setStatus("error");
+        setMessage(data.error || "An error occurred. Please try again.");
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      setStatus("error");
+      setMessage("An unexpected error occurred. Please try again later.");
+    }
   };
 
   return (
     <section
-      className={styles.memberLogin}
-      data-page="plain"
+      className={styles.loginPage}
       data-footer="noBorder"
-      data-image="password"
+      data-page="plain"
     >
-      <div className={styles.imageContainer}></div>
+      <div className={styles.loginContainer}>
+        <div className={styles.loginCard}>
+          <h1 className={styles.loginTitle}>Reset Your Password</h1>
 
-      <div className={styles.formContainer}>
-        <div className={styles.content}>
-          <h1>Forgot Password</h1>
-          <p>
-            Please enter your email address, we will send you confirmation link.
+          <p className={styles.loginSubtitle}>
+            Enter your email address and we'll send you instructions to reset
+            your password.
           </p>
+
+          {status === "success" ? (
+            <div className={styles.successMessage}>
+              <div className={styles.successIcon}>✓</div>
+              <h2>Check Your Email</h2>
+              <p>{message}</p>
+              <p className={styles.helperText}>
+                If you don't see the email, check your spam folder.
+              </p>
+              <div className={styles.buttonGroup}>
+                <Link href="/member-login" className={styles.primaryButton}>
+                  Back to Sign In
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className={styles.loginForm}>
+              <div className={styles.formGroup}>
+                <label htmlFor="email" className={styles.label}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={styles.input}
+                  placeholder="your@email.com"
+                  required
+                  disabled={status === "loading"}
+                  autoComplete="email"
+                  autoFocus
+                />
+              </div>
+
+              {status === "error" && (
+                <div className={styles.errorMessage}>{message}</div>
+              )}
+
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                disabled={status === "loading"}
+              >
+                {status === "loading" ? "Sending..." : "Send Reset Link"}
+              </button>
+
+              <div className={styles.formDivider}>
+                <span>OR</span>
+              </div>
+
+              <div className={styles.linkGroup}>
+                <Link href="/member-login" className={styles.secondaryLink}>
+                  ← Back to Sign In
+                </Link>
+              </div>
+            </form>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label htmlFor="username" className={styles.label}>
-              Username/Email
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              className={`${styles.input} ${error ? styles.inputError : ""}`}
-              placeholder="info@freelancers.com.au"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              aria-required="true"
-              aria-invalid={error ? "true" : "false"}
-              aria-describedby={error ? "username-error" : undefined}
-            />
-            {error && (
-              <p
-                id="username-error"
-                className={styles.errorMessage}
-                role="alert"
-              >
-                Please enter a valid username or email address
-              </p>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <div className={styles.formActions}>
-            <button
-              type="submit"
-              className={styles.submitButton}
-              aria-label="Submit lost password form"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </button>
-          </div>
-        </form>
+        <div className={styles.helpSection}>
+          <h3>Need Help?</h3>
+          <p>
+            If you're having trouble resetting your password, contact us at{" "}
+            <a href="mailto:info@freelancers.com.au">info@freelancers.com.au</a>
+          </p>
+        </div>
       </div>
     </section>
   );
-};
-
-export default Page;
+}

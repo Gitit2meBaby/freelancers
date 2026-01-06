@@ -5,6 +5,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
+import VerificationModal from "../components/VerificationModal";
+
 import styles from "../styles/editProfile.module.scss";
 
 function EditProfileForm() {
@@ -20,7 +22,6 @@ function EditProfileForm() {
     name: "",
     role: "",
     website: "",
-    equipmentList: null,
     instagram: "",
     imdb: "",
     linkedin: "",
@@ -30,6 +31,10 @@ function EditProfileForm() {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Verification modal state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationChanges, setVerificationChanges] = useState({});
 
   // Redirect if not logged in
   useEffect(() => {
@@ -45,22 +50,98 @@ function EditProfileForm() {
     }
   }, [isLoggedIn, session]);
 
-  /**
-   * Upload a file to Azure Blob Storage via API
-   * @param {File} file - The file to upload
-   * @param {string} blobId - The blob identifier
-   * @param {string} type - File type ('image', 'cv', 'equipment')
-   * @returns {Promise<string>} The blob ID from Azure
-   */
+  const loadUserProfile = async (slug) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/freelancer/${slug}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load profile");
+      }
+
+      const result = await response.json();
+      const data = result.data;
+
+      setFormData({
+        photo: null,
+        photoPreview: data.photoUrl || null,
+        name: data.name || "",
+        role: data.skills?.[0]?.skillName || "Unassigned Skill",
+        website: data.links?.website || "",
+        instagram: data.links?.instagram || "",
+        imdb: data.links?.imdb || "",
+        linkedin: data.links?.linkedin || "",
+        description: data.bio || "",
+        cv: null,
+      });
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      setErrors({ load: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setErrors({ ...errors, photo: "Please select an image file" });
+      return;
+    }
+
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors({ ...errors, photo: "Image must be less than 2MB" });
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      photo: file,
+      photoPreview: URL.createObjectURL(file),
+    });
+    setErrors({ ...errors, photo: "" });
+  };
+
+  const handleCVChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      setErrors({ ...errors, cv: "CV must be a PDF file" });
+      return;
+    }
+
+    // Validate file size (2.5MB)
+    if (file.size > 2.5 * 1024 * 1024) {
+      setErrors({ ...errors, cv: "CV must be less than 2.5MB" });
+      return;
+    }
+
+    setFormData({ ...formData, cv: file });
+    setErrors({ ...errors, cv: "" });
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const uploadToAzureBlob = async (file, blobId, type) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("blobId", blobId);
-    formData.append("type", type);
+    const formDataToUpload = new FormData();
+    formDataToUpload.append("file", file);
+    formDataToUpload.append("blobId", blobId);
+    formDataToUpload.append("type", type);
 
     const response = await fetch("/api/upload-blob", {
       method: "POST",
-      body: formData,
+      body: formDataToUpload,
     });
 
     if (!response.ok) {
@@ -72,136 +153,15 @@ function EditProfileForm() {
     return result.blobId;
   };
 
-  const loadUserProfile = async (slug) => {
-    setLoading(true);
-    try {
-      // Fetch user data from the freelancer API
-      const response = await fetch(`/api/freelancer/${slug}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load profile");
-      }
-
-      const result = await response.json();
-      const data = result.data;
-
-      // Populate form with existing data
-      setFormData({
-        photo: null,
-        photoPreview: data.photoUrl || null,
-        name: data.name || "",
-        role: data.skills?.[0]?.skillName || "", // First skill as primary role
-        website: data.links?.website || "",
-        equipmentList: null,
-        instagram: data.links?.instagram || "",
-        imdb: data.links?.imdb || "",
-        linkedin: data.links?.linkedin || "",
-        description: data.bio || "",
-        cv: null,
-      });
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      setErrors((prev) => ({
-        ...prev,
-        load: "Failed to load profile data",
-      }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type and size
-      if (!file.type.match(/image\/(png|jpg|jpeg|gif|webp)/)) {
-        setErrors((prev) => ({
-          ...prev,
-          photo: "Please upload PNG, JPG, GIF, or WebP only",
-        }));
-        return;
-      }
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors((prev) => ({
-          ...prev,
-          photo: "File size must be less than 2MB",
-        }));
-        return;
-      }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({
-          ...prev,
-          photo: file,
-          photoPreview: reader.result,
-        }));
-      };
-      reader.readAsDataURL(file);
-      setErrors((prev) => ({ ...prev, photo: null }));
-    }
-  };
-
-  const handleEquipmentUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.type !== "application/pdf") {
-        setErrors((prev) => ({ ...prev, equipment: "Please upload PDF only" }));
-        return;
-      }
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors((prev) => ({
-          ...prev,
-          equipment: "File size must be less than 2MB",
-        }));
-        return;
-      }
-
-      setFormData((prev) => ({ ...prev, equipmentList: file }));
-      setErrors((prev) => ({ ...prev, equipment: null }));
-    }
-  };
-
-  const handleCVUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.type !== "application/pdf") {
-        setErrors((prev) => ({ ...prev, cv: "Please upload PDF only" }));
-        return;
-      }
-      if (file.size > 2.5 * 1024 * 1024) {
-        setErrors((prev) => ({
-          ...prev,
-          cv: "File size must be less than 2.5MB",
-        }));
-        return;
-      }
-
-      setFormData((prev) => ({ ...prev, cv: file }));
-      setErrors((prev) => ({ ...prev, cv: null }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
 
     try {
-      const freelancerId = session?.user?.id;
-      if (!freelancerId) {
-        throw new Error("User ID not found");
-      }
+      const freelancerId = session.user.freelancerId;
 
-      // Upload files to Azure Blob Storage if new files were selected
+      // Upload files to Azure Blob if provided
       let photoBlobId = null;
       let cvBlobId = null;
 
@@ -225,6 +185,8 @@ function EditProfileForm() {
         bio: formData.description,
         photoBlobId,
         cvBlobId,
+        photoFileName: formData.photo?.name,
+        cvFileName: formData.cv?.name,
         links: {
           website: formData.website,
           instagram: formData.instagram,
@@ -233,7 +195,7 @@ function EditProfileForm() {
         },
       };
 
-      // Save data to database via API
+      // Save to database
       const response = await fetch("/api/profile/update", {
         method: "PUT",
         headers: {
@@ -247,18 +209,32 @@ function EditProfileForm() {
         throw new Error(errorData.error || "Failed to save profile");
       }
 
-      // Redirect back to profile on success
-      router.push(`/my-account/${session.user.slug}`);
-      router.refresh();
+      const result = await response.json();
+
+      // Show verification modal if changes need verification
+      if (result.needsVerification) {
+        setVerificationChanges(result.changes);
+        setShowVerificationModal(true);
+      } else {
+        // No verification needed, just redirect
+        router.push(`/my-account/${session.user.slug}`);
+        router.refresh();
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
-      setErrors((prev) => ({
-        ...prev,
+      setErrors({
         submit: error.message || "Failed to save profile. Please try again.",
-      }));
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleModalClose = () => {
+    setShowVerificationModal(false);
+    // Redirect to profile after closing modal
+    router.push(`/my-account/${session.user.slug}`);
+    router.refresh();
   };
 
   if (isLoading || !isLoggedIn) {
@@ -266,221 +242,180 @@ function EditProfileForm() {
   }
 
   return (
-    <div
-      className={styles.editProfilePage}
-      data-footer="noBorder"
-      data-page="plain"
-    >
-      <h1 className={styles.pageTitle}>Crew Information</h1>
+    <>
+      <div
+        className={styles.editProfilePage}
+        data-footer="noBorder"
+        data-page="plain"
+      >
+        <h1 className={styles.pageTitle}>Edit Your Profile</h1>
 
-      {errors.load && <div className={styles.errorBanner}>{errors.load}</div>}
+        {errors.load && <div className={styles.errorBanner}>{errors.load}</div>}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.formCard}>
-          {/* Photo Upload */}
-          <div className={styles.formGroup}>
-            <label htmlFor="photo" className={styles.label}>
-              Photo
-            </label>
-            <div className={styles.uploadArea}>
-              {formData.photoPreview ? (
-                <div className={styles.photoPreview}>
-                  <img src={formData.photoPreview} alt="Preview" />
-                </div>
-              ) : (
-                <div className={styles.uploadPlaceholder}>
-                  <p>No photo uploaded</p>
-                </div>
-              )}
-              <div className={styles.flexBox}>
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formCard}>
+            {/* Photo Upload */}
+            <div className={styles.formGroup}>
+              <label htmlFor="photo" className={styles.label}>
+                Photo
+              </label>
+              <div className={styles.uploadArea}>
+                {formData.photoPreview ? (
+                  <div className={styles.photoPreview}>
+                    <img src={formData.photoPreview} alt="Profile preview" />
+                  </div>
+                ) : (
+                  <div className={styles.uploadPlaceholder}>
+                    <p>No photo uploaded</p>
+                  </div>
+                )}
                 <label htmlFor="photo" className={styles.uploadButton}>
-                  Upload Photo
+                  {formData.photoPreview ? "Change Photo" : "Upload Photo"}
                 </label>
                 <input
                   type="file"
                   id="photo"
-                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
-                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  onChange={handlePhotoChange}
                   className={styles.fileInput}
                 />
-                <p className={styles.helpText}>
-                  PNG, WebP or JPG, Maximum File size is 2MB
-                </p>
+                <p className={styles.helpText}>JPG, PNG or GIF. Max 2MB</p>
                 {errors.photo && <p className={styles.error}>{errors.photo}</p>}
               </div>
             </div>
-          </div>
 
-          {/* Name - Auto Populated */}
-          <div className={styles.formGroup}>
-            <label htmlFor="name" className={styles.label}>
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className={styles.input}
-              placeholder="Your full name"
-              required
-            />
-          </div>
+            {/* Name */}
+            <div className={styles.formGroup}>
+              <label htmlFor="name" className={styles.label}>
+                Display Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={styles.input}
+                required
+              />
+            </div>
 
-          {/* Role - Auto Populated from primary skill */}
-          <div className={styles.formGroup}>
-            <label htmlFor="role" className={styles.label}>
-              Primary Role
-            </label>
-            <input
-              type="text"
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className={styles.input}
-              placeholder="e.g., Stills Photographer"
-            />
-            <p className={styles.helpText}>Your main role or specialty</p>
-          </div>
+            {/* Bio */}
+            <div className={styles.formGroup}>
+              <label htmlFor="description" className={styles.label}>
+                Bio
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className={styles.textarea}
+                rows="6"
+                placeholder="Tell us about your experience..."
+              />
+            </div>
 
-          {/* Website */}
-          <div className={styles.formGroup}>
-            <label htmlFor="website" className={styles.label}>
-              Website
-            </label>
-            <input
-              type="url"
-              id="website"
-              name="website"
-              value={formData.website}
-              onChange={handleInputChange}
-              className={styles.input}
-              placeholder="https://yourwebsite.com"
-            />
-          </div>
+            {/* Links */}
+            <div className={styles.formGroup}>
+              <label htmlFor="website" className={styles.label}>
+                Website
+              </label>
+              <input
+                type="url"
+                id="website"
+                name="website"
+                value={formData.website}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="https://yourwebsite.com"
+              />
+            </div>
 
-          {/* Equipment List */}
-          <div className={styles.formGroup}>
-            <label htmlFor="equipment" className={styles.label}>
-              Equipment List
-            </label>
-            <label htmlFor="equipment" className={styles.uploadButton}>
-              {formData.equipmentList
-                ? formData.equipmentList.name
-                : "Add File"}
-            </label>
-            <input
-              type="file"
-              id="equipment"
-              accept="application/pdf"
-              onChange={handleEquipmentUpload}
-              className={styles.fileInput}
-            />
-            <p style={{ marginTop: ".5rem" }} className={styles.helpText}>
-              PDF, Maximum File size is 2MB
-            </p>
-            {errors.equipment && (
-              <p className={styles.error}>{errors.equipment}</p>
-            )}
-          </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="instagram" className={styles.label}>
+                Instagram
+              </label>
+              <input
+                type="url"
+                id="instagram"
+                name="instagram"
+                value={formData.instagram}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="https://instagram.com/yourusername"
+              />
+            </div>
 
-          {/* Instagram */}
-          <div className={styles.formGroup}>
-            <label htmlFor="instagram" className={styles.label}>
-              Instagram
-            </label>
-            <input
-              type="text"
-              id="instagram"
-              name="instagram"
-              value={formData.instagram}
-              onChange={handleInputChange}
-              className={styles.input}
-              placeholder="@username or URL"
-            />
-          </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="imdb" className={styles.label}>
+                IMDB
+              </label>
+              <input
+                type="url"
+                id="imdb"
+                name="imdb"
+                value={formData.imdb}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="https://imdb.com/name/..."
+              />
+            </div>
 
-          {/* IMDb */}
-          <div className={styles.formGroup}>
-            <label htmlFor="imdb" className={styles.label}>
-              IMDb
-            </label>
-            <input
-              type="url"
-              id="imdb"
-              name="imdb"
-              value={formData.imdb}
-              onChange={handleInputChange}
-              className={styles.input}
-              placeholder="https://imdb.com/yourprofile"
-            />
-          </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="linkedin" className={styles.label}>
+                LinkedIn
+              </label>
+              <input
+                type="url"
+                id="linkedin"
+                name="linkedin"
+                value={formData.linkedin}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="https://linkedin.com/in/..."
+              />
+            </div>
 
-          {/* LinkedIn */}
-          <div className={styles.formGroup}>
-            <label htmlFor="linkedin" className={styles.label}>
-              LinkedIn
-            </label>
-            <input
-              type="url"
-              id="linkedin"
-              name="linkedin"
-              value={formData.linkedin}
-              onChange={handleInputChange}
-              className={styles.input}
-              placeholder="https://linkedin.com/in/yourprofile"
-            />
-          </div>
+            {/* CV Upload */}
+            <div className={styles.formGroup}>
+              <label htmlFor="cv" className={styles.label}>
+                CV / Resume
+              </label>
+              <label htmlFor="cv" className={styles.uploadButton}>
+                {formData.cv ? formData.cv.name : "Upload CV"}
+              </label>
+              <input
+                type="file"
+                id="cv"
+                accept="application/pdf"
+                onChange={handleCVChange}
+                className={styles.fileInput}
+              />
+              <p className={styles.helpText}>PDF, Maximum 2.5MB</p>
+              {errors.cv && <p className={styles.error}>{errors.cv}</p>}
+            </div>
 
-          {/* Description */}
-          <div className={styles.formGroup}>
-            <label htmlFor="description" className={styles.label}>
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className={styles.textarea}
-              rows="6"
-              placeholder="Tell us about yourself..."
-            />
+            {/* Submit */}
+            {errors.submit && <p className={styles.error}>{errors.submit}</p>}
+            <button
+              type="submit"
+              className={styles.saveButton}
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Save Changes"}
+            </button>
           </div>
+        </form>
+      </div>
 
-          {/* CV Upload */}
-          <div className={styles.formGroup}>
-            <label htmlFor="cv" className={styles.label}>
-              CV
-            </label>
-            <label htmlFor="cv" className={styles.uploadButton}>
-              {formData.cv ? formData.cv.name : "Upload CV"}
-            </label>
-            <input
-              type="file"
-              id="cv"
-              accept="application/pdf"
-              onChange={handleCVUpload}
-              className={styles.fileInput}
-            />
-            <p className={styles.helpText}>PDF, Maximum File size is 2.5MB</p>
-            {errors.cv && <p className={styles.error}>{errors.cv}</p>}
-          </div>
-
-          {/* Submit Button */}
-          {errors.submit && <p className={styles.error}>{errors.submit}</p>}
-          <button
-            type="submit"
-            className={styles.saveButton}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </form>
-    </div>
+      {/* Verification Modal */}
+      <VerificationModal
+        isOpen={showVerificationModal}
+        onClose={handleModalClose}
+        changes={verificationChanges}
+      />
+    </>
   );
 }
 
