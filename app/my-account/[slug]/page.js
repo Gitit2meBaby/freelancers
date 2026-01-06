@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
+
+import News from "../../components/News";
 
 import styles from "../../styles/profile.module.scss";
 
@@ -17,26 +20,19 @@ export default function UserProfilePage() {
 
   const isLoggedIn = status === "authenticated";
   const isLoadingAuth = status === "loading";
+  const isOwnProfile = isLoggedIn && session?.user?.slug === params.slug;
 
   useEffect(() => {
-    // Redirect if user tries to access someone else's profile
-    if (isLoggedIn && session?.user?.slug !== params.slug) {
-      router.push(`/my-account/${session.user.slug}`);
-      return;
-    }
-
-    // Fetch profile data once authenticated
     if (!isLoadingAuth) {
       fetchProfileData(params.slug);
     }
-  }, [isLoggedIn, session, params.slug, router, isLoadingAuth]);
+  }, [params.slug, isLoadingAuth]);
 
   const fetchProfileData = async (slug) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch from the freelancer API endpoint
       const response = await fetch(`/api/freelancer/${slug}`);
 
       if (!response.ok) {
@@ -46,207 +42,112 @@ export default function UserProfilePage() {
       const result = await response.json();
       const data = result.data;
 
-      // Transform API data to match profile display format
       const profileData = {
         id: data.id,
         name: data.name,
         slug: data.slug,
         bio: data.bio,
         role: data.skills?.[0]?.skillName || "Film Crew Member",
-        department: data.skills?.[0]?.departmentName || null,
-        image_url: data.photoUrl,
-        cv_url: data.cvUrl,
-        skills: data.skills || [],
+        department: data.skills?.[0]?.departmentName || "",
+        photoUrl: data.photoUrl,
+        cvUrl: data.cvUrl,
         links: data.links || {},
+        skills: data.skills || [],
       };
 
       setProfileData(profileData);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error loading profile:", error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditProfile = () => {
-    router.push(`/edit-profile`);
-  };
-
-  const handleDownloadCV = () => {
-    if (profileData?.cv_url) {
-      window.open(profileData.cv_url, "_blank");
-    }
-  };
-
-  // Loading state
-  if (isLoadingAuth || loading) {
+  if (loading || isLoadingAuth) {
     return (
-      <section
-        className={styles.profilePage}
-        data-footer="noBorder"
-        data-page="plain"
-      >
-        <div className={styles.loading}>Loading profile...</div>
-      </section>
+      <div className={styles.profilePage}>
+        <p>Loading profile...</p>
+      </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <section
-        className={styles.profilePage}
-        data-footer="noBorder"
-        data-page="plain"
-      >
-        <div className={styles.error}>
-          <h2>Profile Not Found</h2>
-          <p>{error}</p>
-          <button
-            onClick={() => router.push("/crew-directory")}
-            className={styles.editButton}
-          >
-            Back to Directory
-          </button>
-        </div>
-      </section>
+      <div className={styles.profilePage}>
+        <h1 className={styles.pageTitle}>Crew Profile</h1>
+        <p className={styles.error}>Profile not found</p>
+      </div>
     );
   }
 
-  // No profile data
   if (!profileData) {
-    return (
-      <section
-        className={styles.profilePage}
-        data-footer="noBorder"
-        data-page="plain"
-      >
-        <div className={styles.loading}>No profile data available</div>
-      </section>
-    );
+    return null;
   }
 
   return (
     <section
       className={styles.profilePage}
-      data-footer="noBorder"
       data-page="plain"
+      data-footer="noBorder"
     >
       <h1 className={styles.pageTitle}>Crew Profile</h1>
 
       <div className={styles.profileContainer}>
-        <div className={styles.profileImageSection}>
-          {profileData.image_url ? (
+        {/* Left: Photo */}
+        <div className={styles.photoSection}>
+          {profileData.photoUrl ? (
             <Image
-              src={profileData.image_url}
+              src={profileData.photoUrl}
               alt={profileData.name}
               width={430}
               height={680}
-              className={styles.profileImage}
-              priority
+              className={styles.profilePhoto}
             />
           ) : (
-            <div className={styles.placeholderImage}>
-              <svg width="200" height="200" viewBox="0 0 200 200">
-                <circle cx="100" cy="70" r="40" fill="#d1d5db" />
-                <ellipse cx="100" cy="160" rx="60" ry="50" fill="#d1d5db" />
+            <div className={styles.placeholderPhoto}>
+              <svg
+                width="200"
+                height="200"
+                viewBox="0 0 200 200"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="100" cy="70" r="35" fill="#ccc" />
+                <ellipse cx="100" cy="160" rx="60" ry="50" fill="#ccc" />
               </svg>
-              <p>No photo available</p>
             </div>
           )}
 
-          <button onClick={handleEditProfile} className={styles.editButton}>
-            Edit Profile
-          </button>
-
-          {profileData.cv_url && (
-            <button
-              onClick={handleDownloadCV}
-              className={styles.downloadButton}
+          {/* Edit Profile Button (only show on desktop) */}
+          {isOwnProfile && (
+            <Link
+              href="/edit-profile"
+              className={`${styles.editButton} ${styles.desk}`}
             >
-              Download CV
-            </button>
+              Edit Profile
+            </Link>
           )}
         </div>
 
-        <div className={styles.profileInfo}>
+        {/* Right: Info */}
+        <div className={styles.infoSection}>
           <h2 className={styles.name}>{profileData.name}</h2>
           <p className={styles.role}>{profileData.role}</p>
-          {profileData.department && (
-            <p className={styles.department}>{profileData.department}</p>
-          )}
-
-          {profileData.bio && (
-            <div className={styles.bioSection}>
-              <h3>About</h3>
-              <p className={styles.bio}>{profileData.bio}</p>
-            </div>
-          )}
-
-          {profileData.skills && profileData.skills.length > 0 && (
-            <div className={styles.skillsSection}>
-              <h3>Skills</h3>
-              <div className={styles.skillsList}>
-                {profileData.skills.map((skill, index) => (
-                  <span key={index} className={styles.skillTag}>
-                    {skill.skillName}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Social Links */}
-          {Object.values(profileData.links).some((link) => link) && (
-            <div className={styles.linksSection}>
-              <h3>Connect</h3>
-              <div className={styles.linksList}>
-                {profileData.links.website && (
-                  <a
-                    href={profileData.links.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.link}
-                  >
-                    Website
-                  </a>
-                )}
-                {profileData.links.instagram && (
-                  <a
-                    href={profileData.links.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.link}
-                  >
-                    Instagram
-                  </a>
-                )}
-                {profileData.links.imdb && (
-                  <a
-                    href={profileData.links.imdb}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.link}
-                  >
-                    IMDb
-                  </a>
-                )}
-                {profileData.links.linkedin && (
-                  <a
-                    href={profileData.links.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.link}
-                  >
-                    LinkedIn
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Edit Profile Button (only show on mobile) */}
+      {isOwnProfile && (
+        <Link
+          href="/edit-profile"
+          className={`${styles.editButton} ${styles.mob}`}
+        >
+          Edit Profile
+        </Link>
+      )}
+
+      <News />
     </section>
   );
 }

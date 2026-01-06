@@ -9,9 +9,8 @@
     font-weight: var(--font-weight-medium);
     margin-bottom: 0.5rem;
   }
-  @media screen and (max-width: 730px) {
-    max-width: 95%;
-    margin: 0 auto;
+  @media screen and (max-width: 968px) {
+    margin: 4rem auto;
   }
 }
 
@@ -24,7 +23,7 @@
   p {
     color: var(--color-text-dark);
     font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-bold);
   }
 
   a {
@@ -34,13 +33,21 @@
     width: fit-content;
     border: none;
     border-radius: 8px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: background-color 0.3s ease;
 
     &:hover {
       background-color: var(--color-brand-third);
     }
+
+    @media (max-width: 450px) {
+      padding: var(--spacing-10);
+    }
+  }
+
+  @media (max-width: 450px) {
+    padding: var(--spacing-10);
   }
 }

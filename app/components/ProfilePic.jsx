@@ -78,6 +78,7 @@ const ProfilePic = () => {
             width={56}
             height={56}
             className={styles.profilePic}
+            priority
           />
         ) : (
           <Image
@@ -86,6 +87,7 @@ const ProfilePic = () => {
             width={56}
             height={56}
             className={styles.profilePic}
+            priority
           />
         )}
       </button>

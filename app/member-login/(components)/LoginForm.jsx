@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+import React, { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ import styles from "../../styles/memberLogin.module.scss";
 const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/my-account";
+  const { data: session, status } = useSession();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -24,6 +24,25 @@ const LoginForm = () => {
     general: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check for error in URL on mount
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      setErrors((prev) => ({
+        ...prev,
+        general: decodeURIComponent(errorParam),
+      }));
+    }
+  }, [searchParams]);
+
+  // Redirect when session becomes available
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.slug) {
+      console.log(`✅ Redirecting to /my-account/${session.user.slug}`);
+      router.push(`/my-account/${session.user.slug}`);
+    }
+  }, [status, session, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,10 +99,11 @@ const LoginForm = () => {
           password: "",
           general: result.error,
         });
+        setIsSubmitting(false);
       } else if (result?.ok) {
-        // Success - redirect to dashboard
-        router.push(callbackUrl);
-        router.refresh();
+        // Success! useEffect will handle redirect when session updates
+        console.log("✅ Login successful, waiting for session...");
+        // Keep isSubmitting true until redirect happens
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -92,7 +112,6 @@ const LoginForm = () => {
         password: "",
         general: "An unexpected error occurred. Please try again.",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -100,7 +119,7 @@ const LoginForm = () => {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", {
-        callbackUrl,
+        callbackUrl: "/",
       });
     } catch (error) {
       console.error("Google sign in error:", error);
@@ -145,11 +164,6 @@ const LoginForm = () => {
             <span>{errors.general}</span>
           </div>
         )}
-
-        {/* Divider */}
-        {/* <div className={styles.divider}>
-          <span>or</span>
-        </div> */}
 
         {/* Email Field */}
         <div className={styles.formGroup}>

@@ -4,7 +4,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import News from "../components/News";
 
 export default function AccountLayout({ children }) {
   const { data: session, status } = useSession();
@@ -27,10 +26,5 @@ export default function AccountLayout({ children }) {
     return null;
   }
 
-  return (
-    <>
-      {children}
-      <News />
-    </>
-  );
+  return <>{children}</>;
 }

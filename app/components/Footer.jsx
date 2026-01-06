@@ -44,7 +44,7 @@ const Footer = () => {
           </li>
         </ul>
       </div>
-      <div className={styles.footerSection}>
+      <div className={`${styles.footerSection} ${styles.contact}`}>
         <h3>Contact us at</h3>
         <ul>
           <li>
