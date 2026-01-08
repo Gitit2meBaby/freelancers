@@ -1,7 +1,11 @@
 "use client";
 import React, { useEffect } from "react";
-import styles from "../../../../styles/freelancerModal.module.scss";
 import Link from "next/link";
+import Image from "next/image";
+
+import styles from "../../../../styles/freelancerModal.module.scss";
+
+import defaultAvatar from "../../../../../public/member/default-avatar.jpg";
 
 export default function FreelancerModal({ freelancer, onClose }) {
   // Close modal on Escape key
@@ -64,30 +68,22 @@ export default function FreelancerModal({ freelancer, onClose }) {
           {/* Left Column - Photo */}
           <div className={styles.photoColumn}>
             {freelancer.photoUrl ? (
+              // External photo from Azure Blob - use regular img tag
               <img
                 src={freelancer.photoUrl}
                 alt={freelancer.name}
                 className={styles.photo}
               />
             ) : (
-              <div className={styles.photoPlaceholder}>
-                <span>{freelancer.name.charAt(0)}</span>
-              </div>
+              // Local default avatar - use Next.js Image component
+              <Image
+                src={defaultAvatar}
+                alt="Default Avatar"
+                className={styles.photo}
+                priority
+              />
             )}
           </div>
-
-          {/* No Photo Alternative */}
-          {/* <div className={styles.photoColumn}>
-            {freelancer.photoUrl ? (
-              <img
-                src={freelancer.photoUrl}
-                alt={freelancer.name}
-                className={styles.photo}
-              />
-            ) : (
-              <div></div>
-            )}
-          </div> */}
 
           {/* Right Column - Details */}
           <div className={styles.detailsColumn}>
@@ -105,6 +101,20 @@ export default function FreelancerModal({ freelancer, onClose }) {
               </div>
             )}
 
+            {/* Skills */}
+            {freelancer.skills && freelancer.skills.length > 0 && (
+              <div className={styles.skills}>
+                <h3>Skills</h3>
+                <div className={styles.skillsList}>
+                  {freelancer.skills.map((skill) => (
+                    <span key={skill.skillId} className={styles.skillTag}>
+                      {skill.skillName}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Links */}
             {(freelancer.links.website ||
               freelancer.links.instagram ||
@@ -112,7 +122,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
               freelancer.links.linkedin) && (
               <div className={styles.links}>
                 {freelancer.links.website && (
-                  <a
+                  <Link
                     href={freelancer.links.website}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -139,11 +149,11 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       />
                     </svg>
                     Website
-                  </a>
+                  </Link>
                 )}
 
                 {freelancer.links.instagram && (
-                  <a
+                  <Link
                     href={freelancer.links.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -175,11 +185,11 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       <circle cx="18" cy="6" r="1" fill="currentColor" />
                     </svg>
                     Instagram
-                  </a>
+                  </Link>
                 )}
 
                 {freelancer.links.imdb && (
-                  <a
+                  <Link
                     href={freelancer.links.imdb}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -208,11 +218,11 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       />
                     </svg>
                     IMDb
-                  </a>
+                  </Link>
                 )}
 
                 {freelancer.links.linkedin && (
-                  <a
+                  <Link
                     href={freelancer.links.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -241,7 +251,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       <circle cx="4" cy="4" r="2" fill="currentColor" />
                     </svg>
                     LinkedIn
-                  </a>
+                  </Link>
                 )}
               </div>
             )}

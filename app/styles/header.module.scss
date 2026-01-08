@@ -15,11 +15,13 @@
 }
 
 .header {
+  position: relative;
   background-color: transparent;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-20) 10vw var(--spacing-40) 14vw;
+  z-index: 5;
 
   @media screen and (max-width: 770px) {
     padding: var(--spacing-30) var(--spacing-20);

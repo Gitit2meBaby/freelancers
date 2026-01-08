@@ -36,6 +36,15 @@ function EditProfileForm() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationChanges, setVerificationChanges] = useState({});
 
+  // ********* temporarily
+  useEffect(() => {
+    if (session) {
+      console.log("Session data:", session);
+      console.log("FreelancerId:", session.user?.freelancerId);
+      console.log("Slug:", session.user?.slug);
+    }
+  }, [session]);
+
   // Redirect if not logged in
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {

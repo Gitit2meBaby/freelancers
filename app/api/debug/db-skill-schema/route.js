@@ -1,6 +1,6 @@
 // app/api/db-skill-schema/route.js
 import { NextResponse } from "next/server";
-import { executeQuery, VIEWS } from "../../lib/db";
+import { executeQuery, VIEWS } from "../../../lib/db";
 
 export async function GET(request) {
   try {

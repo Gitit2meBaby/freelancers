@@ -5,56 +5,41 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import {
   executeQuery,
   executeUpdate,
-  executeInsert,
   executeDelete,
   VIEWS,
   TABLES,
+  LINK_TYPES,
   STATUS_CODES,
-  DOCUMENT_TYPES,
-  SYSTEM_USER_ID,
 } from "@/app/lib/db";
-import { deleteBlob } from "../../../lib/azureBlob";
+import { deleteBlob } from "@/app/lib/azureBlob";
 
 /**
  * PUT /api/profile/update
- *
- * Allows authenticated users to update:
- * - DisplayName
- * - FreelancerBio
- * - PhotoBlobID (via file upload)
- * - CVBlobID (via file upload)
- * - Links (website, instagram, imdb, linkedin)
- *
- * Sets verification status back to "To Be Verified" (1) after changes
+ * Simple profile updates - bio, photo, and 4 links
+ * Only UPDATE operations, no INSERTs needed
  */
 export async function PUT(request) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.freelancerId) {
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const freelancerId = parseInt(session.user.freelancerId);
+    const freelancerId = parseInt(session.user.id);
     const data = await request.json();
 
-    console.log(`📝 Profile update for FreelancerID: ${freelancerId}`);
+    console.log(`📝 Updating profile for freelancer ID: ${freelancerId}`);
 
-    // ================================================
-    // STEP 1: Get current data
-    // ================================================
+    // ==================================================
+    // STEP 1: Get current photo and CV blob IDs for cleanup
+    // ==================================================
     const currentDataQuery = `
-      SELECT 
-        PhotoBlobID,
-        PhotoStatusID,
-        CVBlobID,
-        CVStatusID,
-        DisplayName,
-        FreelancerBio
+      SELECT PhotoBlobID, CVBlobID
       FROM ${VIEWS.FREELANCERS}
       WHERE FreelancerID = @freelancerId
     `;
@@ -69,144 +54,201 @@ export async function PUT(request) {
     }
 
     const current = currentData[0];
+    let hasChanges = false; // Track if any changes were made
+    let textUpdates = {}; // Track text field updates
 
-    // ================================================
-    // STEP 2: Handle Photo Upload (if new photo provided)
-    // ================================================
-    let newPhotoBlobID = null;
-    let photoChanged = false;
-
+    // ==================================================
+    // STEP 2: Handle Photo Update
+    // ==================================================
     if (data.photoBlobId) {
-      console.log(`📸 New photo uploaded: ${data.photoBlobId}`);
-      photoChanged = true;
+      console.log(`📸 Updating photo...`);
 
-      // Delete old photo if exists
-      if (current.PhotoBlobID) {
+      // Delete old photo from Azure Blob if it exists and is different
+      if (current.PhotoBlobID && current.PhotoBlobID !== data.photoBlobId) {
         console.log(`🗑️ Deleting old photo: ${current.PhotoBlobID}`);
-        await deleteBlob(current.PhotoBlobID);
-        await executeDelete(TABLES.STORED_DOCUMENTS, {
-          BlobID: current.PhotoBlobID,
-        });
+        try {
+          await deleteBlob(current.PhotoBlobID);
+        } catch (error) {
+          console.warn(`⚠️ Failed to delete old photo blob: ${error.message}`);
+        }
       }
 
-      newPhotoBlobID = data.photoBlobId;
+      // Update freelancer with new photo blob ID
+      await executeUpdate(
+        TABLES.FREELANCER_WEBSITE_DATA,
+        {
+          PhotoBlobID: data.photoBlobId,
+          PhotoStatusID: STATUS_CODES.TO_BE_VERIFIED,
+        },
+        { FreelancerID: freelancerId }
+      );
 
-      // Add new photo to stored documents
-      await executeInsert(TABLES.STORED_DOCUMENTS, {
-        StoredDocumentTypeID: DOCUMENT_TYPES.PHOTO,
-        BlobID: newPhotoBlobID,
-        DocumentTitle: data.displayName || current.DisplayName,
-        DateUploaded: new Date(),
-        UploadedByID: SYSTEM_USER_ID,
-        OriginalFileName: data.photoFileName || "profile-photo.jpg",
-      });
-
-      console.log(`✅ New photo added to documents`);
+      hasChanges = true;
+      console.log(`✅ Photo updated successfully`);
     }
 
-    // ================================================
-    // STEP 3: Handle CV Upload (if new CV provided)
-    // ================================================
-    let newCVBlobID = null;
-    let cvChanged = false;
-
+    // ==================================================
+    // STEP 3: Handle CV Update
+    // ==================================================
     if (data.cvBlobId) {
-      console.log(`📄 New CV uploaded: ${data.cvBlobId}`);
-      cvChanged = true;
+      console.log(`📄 Updating CV...`);
 
-      // Delete old CV if exists
-      if (current.CVBlobID) {
+      // Delete old CV from Azure Blob if it exists and is different
+      if (current.CVBlobID && current.CVBlobID !== data.cvBlobId) {
         console.log(`🗑️ Deleting old CV: ${current.CVBlobID}`);
-        await deleteBlob(current.CVBlobID);
-        await executeDelete(TABLES.STORED_DOCUMENTS, {
-          BlobID: current.CVBlobID,
-        });
+        try {
+          await deleteBlob(current.CVBlobID);
+        } catch (error) {
+          console.warn(`⚠️ Failed to delete old CV blob: ${error.message}`);
+        }
       }
 
-      newCVBlobID = data.cvBlobId;
+      // Update freelancer with new CV blob ID
+      await executeUpdate(
+        TABLES.FREELANCER_WEBSITE_DATA,
+        {
+          CVBlobID: data.cvBlobId,
+          CVStatusID: STATUS_CODES.TO_BE_VERIFIED,
+        },
+        { FreelancerID: freelancerId }
+      );
 
-      // Add new CV to stored documents
-      await executeInsert(TABLES.STORED_DOCUMENTS, {
-        StoredDocumentTypeID: DOCUMENT_TYPES.CV,
-        BlobID: newCVBlobID,
-        DocumentTitle: data.displayName || current.DisplayName,
-        DateUploaded: new Date(),
-        UploadedByID: SYSTEM_USER_ID,
-        OriginalFileName: data.cvFileName || "resume.pdf",
-      });
-
-      console.log(`✅ New CV added to documents`);
+      hasChanges = true;
+      console.log(`✅ CV updated successfully`);
     }
 
-    // ================================================
-    // STEP 4: Check if bio or name changed
-    // ================================================
-    const bioChanged = data.bio && data.bio !== current.FreelancerBio;
-    const nameChanged =
-      data.displayName && data.displayName !== current.DisplayName;
+    // ==================================================
+    // STEP 4: Update Bio and Name (with change detection)
+    // ==================================================
+    // First, get current values to check if they actually changed
+    const currentTextQuery = `
+      SELECT DisplayName, FreelancerBio
+      FROM ${VIEWS.FREELANCERS}
+      WHERE FreelancerID = @freelancerId
+    `;
 
-    // ================================================
-    // STEP 5: Update main freelancer data
-    // ================================================
-    const updateData = {};
-    let needsVerification = false;
+    const currentText = await executeQuery(currentTextQuery, { freelancerId });
+    const currentValues = currentText[0] || {};
 
-    if (nameChanged) {
-      updateData.DisplayName = data.displayName;
-      needsVerification = true;
-      console.log(`✏️ Display name changed`);
+    if (
+      data.displayName !== undefined &&
+      data.displayName !== currentValues.DisplayName
+    ) {
+      textUpdates.DisplayName = data.displayName;
+      console.log(`📝 Updating display name`);
     }
 
-    if (bioChanged) {
-      updateData.FreelancerBio = data.bio;
-      needsVerification = true;
-      console.log(`✏️ Bio changed`);
+    if (data.bio !== undefined && data.bio !== currentValues.FreelancerBio) {
+      textUpdates.FreelancerBio = data.bio;
+      console.log(`📝 Updating bio`);
     }
 
-    if (photoChanged) {
-      updateData.PhotoBlobID = newPhotoBlobID;
-      updateData.PhotoStatusID = STATUS_CODES.TO_BE_VERIFIED; // Set to "To Be Verified"
-      needsVerification = true;
-      console.log(`✏️ Photo changed - status set to "To Be Verified"`);
-    }
-
-    if (cvChanged) {
-      updateData.CVBlobID = newCVBlobID;
-      updateData.CVStatusID = STATUS_CODES.TO_BE_VERIFIED; // Set to "To Be Verified"
-      needsVerification = true;
-      console.log(`✏️ CV changed - status set to "To Be Verified"`);
-    }
-
-    // Only update if there are changes
-    if (Object.keys(updateData).length > 0) {
-      await executeUpdate(TABLES.FREELANCER_WEBSITE_DATA, updateData, {
+    if (Object.keys(textUpdates).length > 0) {
+      await executeUpdate(TABLES.FREELANCER_WEBSITE_DATA, textUpdates, {
         FreelancerID: freelancerId,
       });
-      console.log(`✅ Main data updated`);
+      hasChanges = true;
+      console.log(`✅ Text fields updated successfully`);
     }
 
-    // ================================================
-    // STEP 6: Update Links
-    // ================================================
-    const linksChanged = await updateLinks(freelancerId, data.links);
+    // ==================================================
+    // STEP 5: Update Links (4 existing links only, with change detection)
+    // ==================================================
+    let linksChanged = false;
 
-    if (linksChanged) {
-      needsVerification = true;
-      console.log(`✏️ Links changed`);
+    if (data.links) {
+      console.log(`🔗 Updating links...`);
+
+      // Get current links from VIEW (includes FreelancerWebsiteDataLinkID)
+      const currentLinksQuery = `
+        SELECT FreelancerWebsiteDataLinkID, LinkName, LinkURL
+        FROM ${VIEWS.FREELANCER_LINKS}
+        WHERE FreelancerID = @freelancerId
+      `;
+
+      const currentLinks = await executeQuery(currentLinksQuery, {
+        freelancerId,
+      });
+
+      // Update each of the 4 link types
+      const linkTypes = [
+        { key: "website", name: LINK_TYPES.WEBSITE },
+        { key: "instagram", name: LINK_TYPES.INSTAGRAM },
+        { key: "imdb", name: LINK_TYPES.IMDB },
+        { key: "linkedin", name: LINK_TYPES.LINKEDIN },
+      ];
+
+      for (const linkType of linkTypes) {
+        const newUrl = data.links[linkType.key] || "";
+
+        // Find the existing link record
+        const existingLink = currentLinks.find(
+          (l) => l.LinkName.toLowerCase() === linkType.name.toLowerCase()
+        );
+
+        if (existingLink) {
+          // Only update if URL changed
+          const currentUrl = existingLink.LinkURL || "";
+          if (newUrl !== currentUrl) {
+            await executeUpdate(
+              TABLES.FREELANCER_WEBSITE_DATA_LINKS,
+              { LinkURL: newUrl },
+              {
+                FreelancerWebsiteDataLinkID:
+                  existingLink.FreelancerWebsiteDataLinkID,
+              }
+            );
+            linksChanged = true;
+            hasChanges = true;
+            console.log(
+              `🔗 Updated ${linkType.name}: ${newUrl || "(cleared)"}`
+            );
+          }
+        } else {
+          // Link record doesn't exist - this shouldn't happen if DB is set up correctly
+          console.warn(
+            `⚠️ Link record for '${linkType.name}' not found for freelancer ${freelancerId}`
+          );
+        }
+      }
+
+      if (linksChanged) {
+        console.log(`✅ Links updated successfully`);
+      } else {
+        console.log(`ℹ️ No link changes detected`);
+      }
     }
 
-    // ================================================
-    // STEP 7: Return success response
-    // ================================================
+    // ==================================================
+    // STEP 6: Return success response
+    // ==================================================
+
+    // If no changes were made, return early
+    if (!hasChanges) {
+      console.log(`ℹ️ No changes detected - nothing to update`);
+      return NextResponse.json({
+        success: true,
+        message: "No changes detected",
+        needsVerification: false,
+        changes: {
+          photo: false,
+          cv: false,
+          name: false,
+          bio: false,
+          links: false,
+        },
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "Profile updated successfully",
-      needsVerification, // Flag to show verification modal
+      needsVerification: true, // Always show modal when changes are made
       changes: {
-        name: nameChanged,
-        bio: bioChanged,
-        photo: photoChanged,
-        cv: cvChanged,
+        photo: !!data.photoBlobId,
+        cv: !!data.cvBlobId,
+        name: textUpdates.DisplayName !== undefined,
+        bio: textUpdates.FreelancerBio !== undefined,
         links: linksChanged,
       },
     });
@@ -221,84 +263,3 @@ export async function PUT(request) {
     );
   }
 }
-
-/**
- * Update freelancer links
- * @param {number} freelancerId - Freelancer ID
- * @param {Object} links - Links object with website, instagram, imdb, linkedin
- * @returns {Promise<boolean>} True if any links were changed
- */
-async function updateLinks(freelancerId, links) {
-  if (!links) return false;
-
-  let anyChanged = false;
-
-  // Link types that Paul specified: "website", "instagram", "imdb", "linked in"
-  const linkTypes = {
-    website: "website",
-    instagram: "instagram",
-    imdb: "imdb",
-    linkedin: "linked in", // Note: Paul specified "linked in" with space
-  };
-
-  for (const [key, linkName] of Object.entries(linkTypes)) {
-    const newUrl = links[key] || "";
-
-    // Get current link
-    const currentQuery = `
-      SELECT LinkURL, FreelancerLinkID
-      FROM ${VIEWS.FREELANCER_LINKS}
-      WHERE FreelancerID = @freelancerId
-        AND LinkName = @linkName
-    `;
-
-    const currentLink = await executeQuery(currentQuery, {
-      freelancerId,
-      linkName,
-    });
-
-    if (currentLink.length > 0) {
-      // Link exists - update if different
-      const currentUrl = currentLink[0].LinkURL || "";
-
-      if (newUrl !== currentUrl) {
-        await executeUpdate(
-          TABLES.FREELANCER_WEBSITE_DATA_LINKS,
-          { LinkURL: newUrl },
-          { FreelancerLinkID: currentLink[0].FreelancerLinkID }
-        );
-        anyChanged = true;
-        console.log(`🔗 Updated ${linkName}: ${newUrl || "(removed)"}`);
-      }
-    } else if (newUrl) {
-      // Link doesn't exist but user provided one - create it
-      await executeInsert(TABLES.FREELANCER_WEBSITE_DATA_LINKS, {
-        FreelancerID: freelancerId,
-        LinkName: linkName,
-        LinkURL: newUrl,
-      });
-      anyChanged = true;
-      console.log(`🔗 Created ${linkName}: ${newUrl}`);
-    }
-  }
-
-  return anyChanged;
-}
-
-/**
- * VERIFICATION WORKFLOW:
- *
- * When a user updates their profile:
- * 1. Changes are saved immediately
- * 2. If photo/CV changed → StatusID set to 1 (To Be Verified)
- * 3. User sees modal: "Changes submitted for verification"
- * 4. Admin reviews in Access database
- * 5. Admin sets StatusID to 2 (Verified) or 3 (Rejected)
- * 6. Only verified content shows on public profile
- *
- * STATUS CODES:
- * 0 = None
- * 1 = To Be Verified (set automatically after user update)
- * 2 = Verified (set by admin)
- * 3 = Rejected (set by admin)
- */

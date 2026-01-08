@@ -6,23 +6,11 @@ import { executeQuery, VIEWS, STATUS_CODES, LINK_TYPES } from "../../../lib/db";
 import { getBlobUrl } from "../../../lib/azureBlob";
 
 /**
- * Generates a URL-friendly slug from a name
- */
-function generateSlug(name) {
-  if (!name) return "";
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/**
  * Cached function to get all freelancer data
  */
 const getAllFreelancerData = unstable_cache(
   async () => {
     // Query to get all freelancers (view already filters by ShowOnWebsite = True)
-    // Paul has now added FreelancerBio to this view
     const freelancersQuery = `
       SELECT 
         FreelancerID,
@@ -52,7 +40,7 @@ const getAllFreelancerData = unstable_cache(
         AND fs.SkillSlug = ds.SkillSlug
     `;
 
-    // Query to get all freelancer links - Paul has fixed this view
+    // Query to get all freelancer links
     const linksQuery = `
       SELECT 
         FreelancerID,

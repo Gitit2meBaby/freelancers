@@ -1,6 +1,6 @@
 // app/api/test-connection/route.js
 import { NextResponse } from "next/server";
-import { testConnection, executeQuery, VIEWS } from "../../lib/db";
+import { testConnection, executeQuery, VIEWS } from "../../../lib/db";
 
 export async function GET(request) {
   try {

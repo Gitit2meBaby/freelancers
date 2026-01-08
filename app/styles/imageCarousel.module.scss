@@ -25,11 +25,11 @@
   will-change: transform;
 
   &[data-direction="left"] {
-    animation: scrollLeft 7s linear infinite;
+    animation: scrollLeft 30s linear infinite;
   }
 
   &[data-direction="right"] {
-    animation: scrollRight 7s linear infinite;
+    animation: scrollRight 30s linear infinite;
   }
 
   @media screen and (max-width: 770px) {
@@ -37,18 +37,23 @@
   }
 }
 
+// The key is to calculate the exact distance of one complete set
+// With 5 images at 388px each + 4 gaps of 15px = 1940px + 60px = 2000px per set
+// Since we have 3 copies (15 images total), we need to move exactly 2000px (one set)
 @keyframes scrollLeft {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-33.333%); // Move by 1/3 since we have 3 copies
+    // Move by exactly the width of one set: (5 * 388px) + (4 * 15px) = 2000px
+    transform: translateX(calc(-1 * ((388px * 5) + (15px * 4))));
   }
 }
 
 @keyframes scrollRight {
   from {
-    transform: translateX(-33.333%);
+    // Start at -1 set width so it appears to scroll right
+    transform: translateX(calc(-1 * ((388px * 5) + (15px * 4))));
   }
   to {
     transform: translateX(0);
