@@ -1,7 +1,7 @@
 // app/api/my-pending-status/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "../auth/[...nextauth]/route";
 import { executeQuery, VIEWS, TABLES } from "@/app/lib/db";
 
 /**

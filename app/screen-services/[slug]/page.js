@@ -1,8 +1,9 @@
 // app/screen-services/[slug]/page.js
 import Link from "next/link";
 import Image from "next/image";
-import styles from "../../styles/screenService.module.scss";
 import { notFound } from "next/navigation";
+
+import styles from "../../styles/screenService.module.scss";
 
 // Enable static generation with revalidation
 export const revalidate = 3600; // Revalidate every hour
@@ -63,16 +64,17 @@ export default async function CategoryPage({ params }) {
 
   return (
     <section
-      className={styles.categoryPage}
+      className={styles.screenPageGridWrapper}
       data-page="plain"
       data-footer="noBorder"
+      data-circles="true"
     >
       {/* Clickable header to return to main screen services page */}
-      <Link href="/screen-services" className={styles.backLink}>
-        <h1 className={styles.categoryHeader}>
-          ← Screen Services: {category.name}
-        </h1>
-      </Link>
+      <div className={`${styles.screenHead}`}>
+        <Link href="/screen-services">
+          <h1>‹ Screen Services: {category.name}</h1>
+        </Link>
+      </div>
 
       {services.length === 0 ? (
         <div className={styles.noServices}>
@@ -80,6 +82,7 @@ export default async function CategoryPage({ params }) {
         </div>
       ) : (
         <div className={styles.servicesGrid}>
+          {/* Service cards */}
           {services.map((service) => (
             <div key={service.id} className={styles.serviceCard}>
               {/* Service Logo */}
@@ -111,7 +114,7 @@ export default async function CategoryPage({ params }) {
                     rel="noopener noreferrer"
                     className={styles.websiteLink}
                   >
-                    Visit Website →
+                    {service.websiteUrl}
                   </a>
                 )}
               </div>

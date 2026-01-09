@@ -36,7 +36,10 @@ export default async function ScreenServicesPage() {
       data-footer="noBorder"
       data-spacing="large"
     >
-      <div className={styles.crewHead}>
+      <div
+        className={`${styles.crewHead} ${styles.departmentHead}`}
+        style={{ paddingTop: "0" }}
+      >
         <h1>Screen Services</h1>
       </div>
 
