@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import styles from "../../styles/crewDirectory.module.scss";
 
 export default function DownloadSelect({
@@ -10,10 +10,14 @@ export default function DownloadSelect({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const selectRef = useRef(null);
 
   const handleDownload = async (e) => {
     const format = e.target.value;
     if (!format) return;
+
+    // Immediately reset select to show default option
+    e.target.value = "";
 
     setIsLoading(true);
     setError(null);
@@ -27,7 +31,7 @@ export default function DownloadSelect({
       } else if (downloadType === "department" && departmentSlug) {
         apiUrl += `department/${departmentSlug}?format=${format}`;
       } else if (downloadType === "skill" && departmentSlug && skillSlug) {
-        apiUrl += `skill/${departmentSlug}/${skillSlug}?format=${format}`;
+        apiUrl += `department/${departmentSlug}/${skillSlug}?format=${format}`;
       } else {
         throw new Error("Invalid download configuration");
       }
@@ -47,19 +51,22 @@ export default function DownloadSelect({
       const link = document.createElement("a");
       link.href = url;
 
-      // Set filename based on type and format
-      const timestamp = new Date().toISOString().split("T")[0];
-      let filename = "crew-list";
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = `download.${format}`;
 
-      if (downloadType === "skill" && skillSlug) {
-        filename = `${skillSlug}-${timestamp}`;
-      } else if (downloadType === "department" && departmentSlug) {
-        filename = `${departmentSlug}-${timestamp}`;
-      } else {
-        filename = `all-crew-${timestamp}`;
+      if (contentDisposition) {
+        // ✅ FIXED: Use non-greedy match and properly handle quotes
+        // Matches: filename="Art Department.pdf" OR filename=Art%20Department.pdf
+        const filenameMatch = contentDisposition.match(
+          /filename=["']?([^"';]+)["']?/i
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].trim();
+        }
       }
 
-      link.download = `${filename}.${format}`;
+      link.download = filename;
 
       // Trigger download
       document.body.appendChild(link);
@@ -73,20 +80,20 @@ export default function DownloadSelect({
       setError("Failed to download file. Please try again.");
     } finally {
       setIsLoading(false);
-      e.target.value = ""; // Reset the select
     }
   };
 
   return (
     <div className={styles.downloadSection}>
       <select
+        ref={selectRef}
         className={styles.downloadSelect}
         onChange={handleDownload}
-        defaultValue=""
+        value="" // ✅ Always controlled to empty string
         disabled={isLoading}
       >
         <option value="" disabled hidden>
-          {isLoading ? "Generating..." : `${title} ▼`}
+          {isLoading ? "Downloading..." : `${title} ▼`}
         </option>
         <option value="pdf">Download PDF</option>
         <option value="xlsx">Download Excel</option>

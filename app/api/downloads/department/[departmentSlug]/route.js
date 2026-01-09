@@ -1,9 +1,9 @@
 // app/api/downloads/department/[departmentSlug]/route.js
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { executeQuery, VIEWS } from "../../../../../lib/db";
-import { generateCrewPDFNode } from "../../../../../lib/pdfGeneratorNode";
-import { generateCrewExcelNode } from "../../../../../lib/excelGeneratorNode";
+import { executeQuery, VIEWS } from "../../../../lib/db";
+import { generateCrewPDFNode } from "../../../../lib/pdfGeneratorNode";
+import { generateCrewExcelNode } from "../../../../lib/excelGeneratorNode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,9 +30,10 @@ const getDepartmentCrewData = unstable_cache(
       return null;
     }
 
+    const departmentName = rows[0].Department;
+
     // Organize data: { "Skill Name": [crew] }
     const crewData = {};
-    let departmentName = rows[0].Department;
 
     rows.forEach((row) => {
       const skillName = row.Skill;
@@ -49,7 +50,7 @@ const getDepartmentCrewData = unstable_cache(
 
     return { departmentName, crewData };
   },
-  ["crew-download-dept"],
+  ["crew-download-department"],
   {
     revalidate: 3600,
     tags: ["crew-directory"],
@@ -87,18 +88,19 @@ export async function GET(request, { params }) {
     if (format === "pdf") {
       buffer = await generateCrewPDFNode(departmentName, crewData);
       contentType = "application/pdf";
-      filename = `${departmentSlug}-crew-list.pdf`;
+      filename = `${departmentName}.pdf`; // ✅ Uses department name
     } else {
       buffer = await generateCrewExcelNode(departmentName, crewData);
       contentType =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      filename = `${departmentSlug}-crew-list.xlsx`;
+      filename = `${departmentName}.xlsx`; // ✅ Uses department name
     }
 
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": buffer.length.toString(),
       },
     });
   } catch (error) {

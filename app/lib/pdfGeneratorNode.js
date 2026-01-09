@@ -11,7 +11,37 @@ import fs from "fs";
 export async function generateCrewPDFNode(title, crewData) {
   return new Promise((resolve, reject) => {
     try {
-      // 🚨 IMPORTANT: disable autoFirstPage
+      /**
+       * ------------------------------------------------------
+       * FONT PATHS - VERIFY BEFORE DOCUMENT CREATION
+       * ------------------------------------------------------
+       */
+      const fontsDir = path.join(process.cwd(), "app", "fonts");
+      const FONT_FALLBACK = path.join(fontsDir, "ClashGrotesk-Medium.ttf");
+
+      if (!fs.existsSync(FONT_FALLBACK)) {
+        throw new Error(`Required font missing: ${FONT_FALLBACK}`);
+      }
+
+      const regularFont = path.join(fontsDir, "ClashGrotesk-Regular.ttf");
+      const boldFont = path.join(fontsDir, "ClashGrotesk-Semibold.ttf");
+
+      const hasMedium = fs.existsSync(regularFont);
+      const hasBold = fs.existsSync(boldFont);
+
+      /**
+       * ------------------------------------------------------
+       * LOAD LOGO IMAGE
+       * ------------------------------------------------------
+       */
+      const logoPath = path.join(process.cwd(), "app", "logo.png");
+      const hasLogo = fs.existsSync(logoPath);
+
+      /**
+       * ------------------------------------------------------
+       * CREATE PDF DOCUMENT WITH CUSTOM FONT
+       * ------------------------------------------------------
+       */
       const doc = new PDFDocument({
         size: "letter",
         margins: {
@@ -21,6 +51,7 @@ export async function generateCrewPDFNode(title, crewData) {
           right: 54,
         },
         autoFirstPage: false,
+        font: FONT_FALLBACK,
       });
 
       const chunks = [];
@@ -30,45 +61,29 @@ export async function generateCrewPDFNode(title, crewData) {
 
       /**
        * ------------------------------------------------------
-       * FONT REGISTRATION (BEFORE ANY PAGE EXISTS)
+       * FONT REGISTRATION
        * ------------------------------------------------------
        */
-
-      const fontsDir = path.join(process.cwd(), "app", "fonts");
-
-      const FONT_FALLBACK = path.join(fontsDir, "ClashGrotesk-Medium.ttf");
-      if (!fs.existsSync(FONT_FALLBACK)) {
-        throw new Error("Required font missing: ClashGrotesk-Medium.ttf");
-      }
-
       doc.registerFont("Body", FONT_FALLBACK);
 
-      let hasMedium = false;
-      let hasBold = false;
-
-      const regularFont = path.join(fontsDir, "ClashGrotesk-Regular.ttf");
-      const boldFont = path.join(fontsDir, "ClashGrotesk-Semibold.ttf");
-
-      if (fs.existsSync(regularFont)) {
+      if (hasMedium) {
         doc.registerFont("Body-Medium", regularFont);
-        hasMedium = true;
       }
 
-      if (fs.existsSync(boldFont)) {
+      if (hasBold) {
         doc.registerFont("Body-Bold", boldFont);
-        hasBold = true;
       }
 
+      // Set default font for all new pages
       doc.on("pageAdded", () => {
         doc.font("Body");
       });
 
       /**
        * ------------------------------------------------------
-       * CREATE FIRST PAGE (SAFE)
+       * CREATE FIRST PAGE
        * ------------------------------------------------------
        */
-
       doc.addPage();
       doc.font("Body");
 
@@ -77,50 +92,96 @@ export async function generateCrewPDFNode(title, crewData) {
        * COLORS
        * ------------------------------------------------------
        */
-
       const oliveGreen = "#676900";
       const sageGreen = "#c5c69f";
+      const backgroundColor = "#c5c69f"; // For header background
 
       /**
        * ------------------------------------------------------
-       * HEADER
+       * HEADER WITH LOGO
        * ------------------------------------------------------
        */
+      const pageWidth =
+        doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const headerHeight = 150; // ✅ INCREASED padding bottom
 
+      // Draw header background rectangle
+      doc
+        .rect(
+          doc.page.margins.left,
+          doc.page.margins.top,
+          pageWidth,
+          headerHeight
+        )
+        .fillColor(backgroundColor)
+        .fill();
+
+      // Add logo if available (centered, near top of header)
+      if (hasLogo) {
+        const logoWidth = 200; // Adjust based on logo proportions
+        const logoHeight = 44; // Maintain aspect ratio (300x66 original)
+        const logoX = (doc.page.width - logoWidth) / 2;
+        const logoY = doc.page.margins.top + 20;
+
+        doc.image(logoPath, logoX, logoY, {
+          width: logoWidth,
+          height: logoHeight,
+        });
+      }
+
+      // Title "Crew List" - centered below logo
+      const titleY = doc.page.margins.top + (hasLogo ? 80 : 30);
       doc.fontSize(24).fillColor(oliveGreen);
       doc.font(hasBold ? "Body-Bold" : "Body");
-      doc.text("Freelancers Promotions", { align: "center" });
-      doc.moveDown(0.3);
+      doc.text("Crew List", doc.page.margins.left, titleY, {
+        width: pageWidth,
+        align: "center",
+      });
 
-      doc.fontSize(18);
-      doc.text("Crew List", { align: "center" });
-      doc.moveDown(0.5);
-
+      // Date - centered below title
       const currentDate = new Date().toLocaleDateString("en-AU", {
         day: "numeric",
         month: "long",
         year: "numeric",
       });
 
-      doc.fontSize(11).fillColor("#000000");
+      const dateY = titleY + 40;
+      doc.fontSize(11).fillColor(oliveGreen);
       doc.font("Body");
-      doc.text(currentDate, { align: "center" });
-      doc.moveDown(1);
+      doc.text(currentDate, doc.page.margins.left, dateY, {
+        width: pageWidth,
+        align: "center",
+      });
+
+      // Set Y position after header with more spacing
+      doc.y = doc.page.margins.top + headerHeight + 40;
 
       /**
        * ------------------------------------------------------
        * CONTENT
        * ------------------------------------------------------
        */
-
       const isNested = Object.values(crewData).some(
         (value) => typeof value === "object" && !Array.isArray(value)
       );
 
       if (isNested) {
-        renderMultipleDepartments(doc, crewData, sageGreen);
+        renderMultipleDepartments(
+          doc,
+          crewData,
+          sageGreen,
+          oliveGreen,
+          hasBold
+        );
       } else {
-        renderSingleDepartment(doc, title, crewData, sageGreen);
+        renderSingleDepartment(
+          doc,
+          title,
+          crewData,
+          sageGreen,
+          oliveGreen,
+          hasBold
+        );
       }
 
       doc.end();
@@ -136,7 +197,13 @@ export async function generateCrewPDFNode(title, crewData) {
  * ------------------------------------------------------
  */
 
-function renderMultipleDepartments(doc, crewData, sageGreen) {
+function renderMultipleDepartments(
+  doc,
+  crewData,
+  sageGreen,
+  oliveGreen,
+  hasBold
+) {
   const pageWidth =
     doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
@@ -146,44 +213,59 @@ function renderMultipleDepartments(doc, crewData, sageGreen) {
     }
 
     const headerY = doc.y;
+
+    // Department header background
     doc
-      .rect(doc.page.margins.left, headerY, pageWidth, 25)
+      .rect(doc.page.margins.left, headerY, pageWidth, 30)
       .fillColor(sageGreen)
       .fill();
 
-    doc.fontSize(14).fillColor("#FFFFFF");
+    // Department name - CENTERED in dark olive green like "Crew List"
+    doc.fontSize(16).fillColor(oliveGreen); // ✅ DARK OLIVE GREEN
     doc.font(hasBold ? "Body-Bold" : "Body");
-    doc.text(departmentName, doc.page.margins.left + 6, headerY + 6, {
-      width: pageWidth - 12,
+    doc.text(departmentName, doc.page.margins.left + 10, headerY + 8, {
+      width: pageWidth - 20,
+      align: "center", // ✅ CENTERED like "Crew List"
     });
 
-    doc.moveDown(1.5);
-    renderSkills(doc, skills, pageWidth);
+    doc.y = headerY + 35; // Move down after header
+    renderSkills(doc, skills, pageWidth, hasBold);
     doc.moveDown(1);
   }
 }
 
-function renderSingleDepartment(doc, departmentName, crewData, sageGreen) {
+function renderSingleDepartment(
+  doc,
+  departmentName,
+  crewData,
+  sageGreen,
+  oliveGreen,
+  hasBold
+) {
   const pageWidth =
     doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
   const headerY = doc.y;
+
+  // Department header background
   doc
-    .rect(doc.page.margins.left, headerY, pageWidth, 25)
+    .rect(doc.page.margins.left, headerY, pageWidth, 30)
     .fillColor(sageGreen)
     .fill();
 
-  doc.fontSize(14).fillColor("#FFFFFF");
+  // Department name - CENTERED in dark olive green like "Crew List"
+  doc.fontSize(16).fillColor(oliveGreen); // ✅ DARK OLIVE GREEN
   doc.font(hasBold ? "Body-Bold" : "Body");
-  doc.text(departmentName, doc.page.margins.left + 6, headerY + 6, {
-    width: pageWidth - 12,
+  doc.text(departmentName, doc.page.margins.left + 10, headerY + 8, {
+    width: pageWidth - 20,
+    align: "center", // ✅ CENTERED like "Crew List"
   });
 
-  doc.moveDown(1.5);
-  renderSkills(doc, crewData, pageWidth);
+  doc.y = headerY + 35; // Move down after header
+  renderSkills(doc, crewData, pageWidth, hasBold);
 }
 
-function renderSkills(doc, skills, pageWidth) {
+function renderSkills(doc, skills, pageWidth, hasBold) {
   for (const [skillName, crewMembers] of Object.entries(skills)) {
     if (!crewMembers?.length) continue;
 
@@ -191,16 +273,17 @@ function renderSkills(doc, skills, pageWidth) {
       doc.addPage();
     }
 
-    doc.fontSize(12).fillColor("#000000");
+    // Skill name - bold, left-aligned
+    doc.fontSize(13).fillColor("#000000");
     doc.font(hasBold ? "Body-Bold" : "Body");
-    doc.text(skillName);
-    doc.moveDown(0.3);
+    doc.text(skillName, doc.page.margins.left, doc.y);
+    doc.moveDown(0.5);
 
     const columnWidth = pageWidth / 3;
     const startX = doc.page.margins.left;
     let currentY = doc.y;
 
-    doc.fontSize(10);
+    doc.fontSize(11);
     doc.font("Body");
 
     crewMembers.forEach((member, index) => {
@@ -209,7 +292,7 @@ function renderSkills(doc, skills, pageWidth) {
       const x = startX + column * columnWidth;
 
       if (column === 0 && index > 0) {
-        currentY += 15;
+        currentY += 18; // Row spacing
       }
 
       if (currentY > doc.page.height - 100) {
@@ -219,11 +302,12 @@ function renderSkills(doc, skills, pageWidth) {
 
       doc.text(name, x, currentY, {
         width: columnWidth - 10,
+        align: "left",
       });
     });
 
     const rows = Math.ceil(crewMembers.length / 3);
-    doc.y = currentY + rows * 15 + 10;
+    doc.y = currentY + rows * 18 + 15;
     doc.moveDown(0.5);
   }
 }

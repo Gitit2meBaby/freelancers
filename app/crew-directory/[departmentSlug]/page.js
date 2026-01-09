@@ -43,7 +43,9 @@ export default async function DepartmentPage({ params }) {
       data-footer="noBorder"
     >
       <div className={`${styles.crewHead} ${styles.departmentHead}`}>
-        <h1>{department.name}</h1>
+        <Link href="/crew-directory">
+          <h1>‹ Crew Directory: {" " + department.name}</h1>
+        </Link>
       </div>
 
       {/* Display skills as buttons */}

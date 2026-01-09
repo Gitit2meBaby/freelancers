@@ -4,7 +4,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 4rem;
+  padding: 6rem 4rem 4rem 4rem;
   background-color: var(--color-background-pale-blue);
   h1 {
     font-size: clamp(1.75rem, 1vw + 1rem, 3rem);
@@ -31,6 +31,9 @@
 .departmentHead {
   display: flex !important;
   h1 {
+    margin: 0 auto;
+  }
+  a {
     margin: 0 auto;
   }
 }
@@ -67,10 +70,15 @@
   }
 }
 
+// Add this to your crewDirectory.module.scss file
+
 .downloadSection {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   margin: 1rem auto 3rem auto;
+  padding: 2rem 0;
 }
 
 .downloadSelect {
@@ -84,7 +92,12 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   appearance: none;
-  z-index: 3;
+
+  // ✅ Style when disabled (loading state)
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 
   option {
     background-color: white;
@@ -92,7 +105,31 @@
     padding: 1rem;
     line-height: 1.5;
     cursor: pointer;
+
+    // ✅ Hide disabled options in dropdown
+    &:disabled {
+      display: none;
+    }
+
+    // ✅ Style hover state for options
+    &:hover {
+      background-color: var(--color-brand-primary);
+    }
+
+    // ✅ Style checked/selected state
+    &:checked,
+    &:focus {
+      background-color: var(--color-brand-third);
+      color: var(--color-text-primary);
+    }
   }
+}
+
+.error {
+  color: var(--color-error, #f44336);
+  font-size: var(--font-size-sm);
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
 // ========================================

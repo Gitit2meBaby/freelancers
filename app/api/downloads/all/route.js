@@ -11,7 +11,6 @@ export const dynamic = "force-dynamic";
 const getAllCrewData = unstable_cache(
   async () => {
     // Query using ONLY views - no direct table access
-    // Join vwDepartmentsAndSkillsListWEB2 -> vwFreelancerSkillsListWEB2 -> vwFreelancersListWEB2
     const query = `
       SELECT 
         ds.Department,
@@ -71,27 +70,33 @@ export async function GET(request) {
 
     const crewData = await getAllCrewData();
 
+    if (!crewData || Object.keys(crewData).length === 0) {
+      return NextResponse.json(
+        { error: "No crew data found" },
+        { status: 404 }
+      );
+    }
+
     let buffer;
     let contentType;
     let filename;
 
     if (format === "pdf") {
-      // Generate PDF with all departments
-      buffer = await generateCrewPDFNode("All Departments", crewData);
+      buffer = await generateCrewPDFNode("All Crew", crewData);
       contentType = "application/pdf";
-      filename = "full-crew-directory.pdf";
+      filename = "Crew List.pdf"; // ✅ Simple filename
     } else {
-      // Generate Excel with all departments
-      buffer = await generateCrewExcelNode("All Departments", crewData);
+      buffer = await generateCrewExcelNode("All Crew", crewData);
       contentType =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      filename = "full-crew-directory.xlsx";
+      filename = "Crew List.xlsx"; // ✅ Simple filename
     }
 
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": buffer.length.toString(),
       },
     });
   } catch (error) {

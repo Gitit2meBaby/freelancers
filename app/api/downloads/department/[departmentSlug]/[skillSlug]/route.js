@@ -1,9 +1,9 @@
 // app/api/downloads/skill/[departmentSlug]/[skillSlug]/route.js
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { executeQuery, VIEWS } from "../../../../../../lib/db";
-import { generateCrewPDFNode } from "../../../../../../lib/pdfGeneratorNode";
-import { generateCrewExcelNode } from "../../../../../../lib/excelGeneratorNode";
+import { executeQuery, VIEWS } from "../../../../../lib/db";
+import { generateCrewPDFNode } from "../../../../../lib/pdfGeneratorNode";
+import { generateCrewExcelNode } from "../../../../../lib/excelGeneratorNode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,26 +78,21 @@ export async function GET(request, { params }) {
     let filename;
 
     if (format === "pdf") {
-      buffer = await generateCrewPDFNode(
-        `${departmentName} - ${skillName}`,
-        crewData
-      );
+      buffer = await generateCrewPDFNode(skillName, crewData);
       contentType = "application/pdf";
-      filename = `${skillSlug}-crew-list.pdf`;
+      filename = `${skillName}.pdf`; // ✅ Uses skill name
     } else {
-      buffer = await generateCrewExcelNode(
-        `${departmentName} - ${skillName}`,
-        crewData
-      );
+      buffer = await generateCrewExcelNode(skillName, crewData);
       contentType =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      filename = `${skillSlug}-crew-list.xlsx`;
+      filename = `${skillName}.xlsx`; // ✅ Uses skill name
     }
 
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": buffer.length.toString(),
       },
     });
   } catch (error) {
