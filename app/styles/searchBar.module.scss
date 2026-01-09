@@ -1,0 +1,275 @@
+// app/styles/searchBar.module.scss
+
+.searchContainer {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  //   margin: 0 auto 2rem;
+}
+
+.searchBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #33333356;
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: rgba(122, 132, 80, 0.1);
+    box-shadow: 0 0 0 3px rgba(122, 132, 80, 0.1);
+  }
+}
+
+.searchIcon {
+  color: var(--color-brand-primary);
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: var(--font-size-sm);
+  color: #333;
+  background: transparent;
+
+  &::placeholder {
+    color: #999;
+  }
+}
+
+.loadingSpinner {
+  margin: 0 0.5rem auto 0;
+  display: flex;
+  align-items: center;
+  color: var(--color-brand-primary);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.clearButton {
+  margin-left: 0.5rem;
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #f5f5f5;
+    color: #666;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.dropdown {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #7a8450;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownHeader {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f9f9f9;
+}
+
+.resultsCount {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.resultsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resultItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover,
+  &.selected {
+    background: #f9f9f9;
+  }
+
+  &:active {
+    background: #f0f0f0;
+  }
+}
+
+.resultContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.resultName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.resultSkill {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.resultArrow {
+  color: #999;
+  flex-shrink: 0;
+  margin-left: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.resultItem:hover .resultArrow,
+.resultItem.selected .resultArrow {
+  transform: translateX(4px);
+  color: #7a8450;
+}
+
+.noResults {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.noResultsIcon {
+  color: #ccc;
+  margin-bottom: 1rem;
+}
+
+.noResults p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.noResultsHint {
+  font-size: 0.875rem;
+  color: #999;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .searchContainer {
+    max-width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .searchBar {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .searchInput {
+    font-size: 0.938rem;
+  }
+
+  .dropdown {
+    max-height: 300px;
+  }
+
+  .resultItem {
+    padding: 0.875rem;
+  }
+
+  .resultName {
+    font-size: 0.938rem;
+  }
+
+  .resultSkill {
+    font-size: 0.813rem;
+  }
+}
+
+/* Accessibility */
+.searchInput:focus {
+  outline: none;
+}
+
+.resultItem:focus {
+  outline: 2px solid #7a8450;
+  outline-offset: -2px;
+}
+
+/* Smooth scrolling in dropdown */
+.dropdown {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for dropdown */
+.dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0 8px 8px 0;
+}
+
+.dropdown::-webkit-scrollbar-thumb {
+  background: #7a8450;
+  border-radius: 4px;
+}
+
+.dropdown::-webkit-scrollbar-thumb:hover {
+  background: #5d6539;
+}

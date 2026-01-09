@@ -1,7 +1,7 @@
 // app/crew-directory/[departmentSlug]/[skillSlug]/page.js
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import SearchBar from "../../../components/SearchBar";
+
 import DownloadSelect from "../../(components)/DownloadSelect";
 import FreelancerButtons from "./(components)/FreelancerButtons";
 
