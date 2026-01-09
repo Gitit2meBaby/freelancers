@@ -25,11 +25,11 @@
   will-change: transform;
 
   &[data-direction="left"] {
-    animation: scrollLeft 30s linear infinite;
+    animation: scrollLeft 40s linear infinite;
   }
 
   &[data-direction="right"] {
-    animation: scrollRight 30s linear infinite;
+    animation: scrollRight 40s linear infinite;
   }
 
   @media screen and (max-width: 770px) {

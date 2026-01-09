@@ -1,12 +1,10 @@
-// app/edit-profile/page.jsx
+// app/edit-profile/page.jsx - ENHANCED WITH PENDING STATUS
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
 import VerificationModal from "../components/VerificationModal";
-
 import styles from "../styles/editProfile.module.scss";
 
 function EditProfileForm() {
@@ -32,18 +30,16 @@ function EditProfileForm() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // NEW: Pending verification status
+  const [pendingStatus, setPendingStatus] = useState({
+    photo: false,
+    cv: false,
+    bio: false,
+  });
+
   // Verification modal state
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationChanges, setVerificationChanges] = useState({});
-
-  // ********* temporarily
-  useEffect(() => {
-    if (session) {
-      console.log("Session data:", session);
-      console.log("FreelancerId:", session.user?.freelancerId);
-      console.log("Slug:", session.user?.slug);
-    }
-  }, [session]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -62,27 +58,44 @@ function EditProfileForm() {
   const loadUserProfile = async (slug) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/freelancer/${slug}`);
-
-      if (!response.ok) {
+      // Load public profile data (only verified)
+      const publicResponse = await fetch(`/api/freelancer/${slug}`);
+      if (!publicResponse.ok) {
         throw new Error("Failed to load profile");
       }
+      const publicResult = await publicResponse.json();
+      const publicData = publicResult.data;
 
-      const result = await response.json();
-      const data = result.data;
+      // Load pending verification status
+      const pendingResponse = await fetch(`/api/my-pending-status`);
+      let pendingData = null;
+      if (pendingResponse.ok) {
+        const pendingResult = await pendingResponse.json();
+        pendingData = pendingResult;
+      }
 
+      // Set form data with public values
       setFormData({
         photo: null,
-        photoPreview: data.photoUrl || null,
-        name: data.name || "",
-        role: data.skills?.[0]?.skillName || "Unassigned Skill",
-        website: data.links?.website || "",
-        instagram: data.links?.instagram || "",
-        imdb: data.links?.imdb || "",
-        linkedin: data.links?.linkedin || "",
-        description: data.bio || "",
+        photoPreview: publicData.photoUrl || null,
+        name: publicData.name || "",
+        role: publicData.skills?.[0]?.skillName || "Film Crew Member",
+        website: publicData.links?.website || "",
+        instagram: publicData.links?.instagram || "",
+        imdb: publicData.links?.imdb || "",
+        linkedin: publicData.links?.linkedin || "",
+        description: publicData.bio || "",
         cv: null,
       });
+
+      // Set pending status
+      if (pendingData?.success) {
+        setPendingStatus({
+          photo: pendingData.pending.photo,
+          cv: pendingData.pending.cv,
+          bio: pendingData.pending.bio,
+        });
+      }
     } catch (error) {
       console.error("Error loading profile:", error);
       setErrors({ load: error.message });
@@ -95,13 +108,11 @@ function EditProfileForm() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       setErrors({ ...errors, photo: "Please select an image file" });
       return;
     }
 
-    // Validate file size (2MB)
     if (file.size > 2 * 1024 * 1024) {
       setErrors({ ...errors, photo: "Image must be less than 2MB" });
       return;
@@ -119,13 +130,11 @@ function EditProfileForm() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (file.type !== "application/pdf") {
       setErrors({ ...errors, cv: "CV must be a PDF file" });
       return;
     }
 
-    // Validate file size (2.5MB)
     if (file.size > 2.5 * 1024 * 1024) {
       setErrors({ ...errors, cv: "CV must be less than 2.5MB" });
       return;
@@ -241,9 +250,8 @@ function EditProfileForm() {
 
   const handleModalClose = () => {
     setShowVerificationModal(false);
-    // Redirect to profile after closing modal
-    router.push(`/my-account/${session.user.slug}`);
-    router.refresh();
+    // Reload to show pending status
+    loadUserProfile(session.user.slug);
   };
 
   if (isLoading || !isLoggedIn) {
@@ -272,6 +280,18 @@ function EditProfileForm() {
                 {formData.photoPreview ? (
                   <div className={styles.photoPreview}>
                     <img src={formData.photoPreview} alt="Profile preview" />
+                    {pendingStatus.photo && (
+                      <div className={styles.pendingBadge}>
+                        ⏳ Update pending verification
+                      </div>
+                    )}
+                  </div>
+                ) : pendingStatus.photo ? (
+                  <div className={styles.uploadPlaceholder}>
+                    <div className={styles.pendingIndicator}>
+                      <span className={styles.pendingIcon}>⏳</span>
+                      <p>Photo update waiting for verification</p>
+                    </div>
                   </div>
                 ) : (
                   <div className={styles.uploadPlaceholder}>
@@ -279,7 +299,9 @@ function EditProfileForm() {
                   </div>
                 )}
                 <label htmlFor="photo" className={styles.uploadButton}>
-                  {formData.photoPreview ? "Change Photo" : "Upload Photo"}
+                  {formData.photoPreview || pendingStatus.photo
+                    ? "Change Photo"
+                    : "Upload Photo"}
                 </label>
                 <input
                   type="file"
@@ -313,6 +335,11 @@ function EditProfileForm() {
             <div className={styles.formGroup}>
               <label htmlFor="description" className={styles.label}>
                 Bio
+                {pendingStatus.bio && (
+                  <span className={styles.pendingLabel}>
+                    ⏳ Update pending...
+                  </span>
+                )}
               </label>
               <textarea
                 id="description"
@@ -321,8 +348,17 @@ function EditProfileForm() {
                 onChange={handleChange}
                 className={styles.textarea}
                 rows="6"
-                placeholder="Tell us about your experience..."
+                placeholder={
+                  pendingStatus.bio
+                    ? "Your bio update is waiting for verification..."
+                    : "No bio provided..."
+                }
               />
+              {pendingStatus.bio && (
+                <p className={styles.pendingNote}>
+                  Your bio changes are awaiting admin verification
+                </p>
+              )}
             </div>
 
             {/* Links */}
@@ -390,9 +426,16 @@ function EditProfileForm() {
             <div className={styles.formGroup}>
               <label htmlFor="cv" className={styles.label}>
                 CV / Resume
+                {pendingStatus.cv && (
+                  <span className={styles.pendingLabel}>⏳ Update pending</span>
+                )}
               </label>
               <label htmlFor="cv" className={styles.uploadButton}>
-                {formData.cv ? formData.cv.name : "Upload CV"}
+                {formData.cv
+                  ? formData.cv.name
+                  : pendingStatus.cv
+                  ? "CV update pending verification"
+                  : "Upload CV"}
               </label>
               <input
                 type="file"

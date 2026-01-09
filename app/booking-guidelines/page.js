@@ -1,6 +1,3 @@
-// Find link to first button********************
-
-"use server";
 import React from "react";
 import Link from "next/link";
 
@@ -18,7 +15,12 @@ const page = () => {
           please call Freelancers Promotions on<br></br> +613 9682 2722.
         </p>
         <div className={styles.btns}>
-          <Link href={""} className={styles.linkButton}>
+          <Link
+            href="../public/pdf/Motion-Picture-Production-Certified-Agreement-Full-Summary-July-1-2024"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.linkButton}
+          >
             Longform Guidelines
           </Link>
           <Link

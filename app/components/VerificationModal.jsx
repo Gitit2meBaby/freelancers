@@ -36,9 +36,6 @@ export default function VerificationModal({ isOpen, onClose, changes }) {
   if (changes?.cv) changedItems.push("CV");
   if (changes?.links) changedItems.push("links");
 
-  const changesText =
-    changedItems.length > 0 ? changedItems.join(", ") : "profile";
-
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -69,10 +66,7 @@ export default function VerificationModal({ isOpen, onClose, changes }) {
 
         {/* Message */}
         <div className={styles.message}>
-          <p>
-            Your {changesText} {changedItems.length === 1 ? "has" : "have"} been
-            saved and submitted for verification.
-          </p>
+          <p>Your changes have been saved.</p>
 
           <div className={styles.infoBox}>
             <strong>What happens next?</strong>
@@ -83,7 +77,7 @@ export default function VerificationModal({ isOpen, onClose, changes }) {
             </p>
           </div>
 
-          <p className={styles.note}>This usually takes 1-2 business days.</p>
+          <p className={styles.note}>*This usually takes 1-2 business days.</p>
         </div>
 
         {/* Close Button */}
