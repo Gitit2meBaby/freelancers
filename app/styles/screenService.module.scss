@@ -1,3 +1,275 @@
+// // screenService.module.scss
+
+// .serviceCard {
+//   display: flex;
+//   flex-direction: column;
+//   align-items: center;
+//   text-align: center;
+//   padding: var(--spacing-30);
+
+//   h2 {
+//     font-size: var(--font-size-2xl);
+//     color: var(--color-text-secondary);
+//     font-weight: var(--font-weight-medium);
+//     margin-bottom: 1rem;
+//   }
+// }
+
+// .logoContainer {
+//   width: 100%;
+//   height: 150px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   margin-bottom: var(--spacing-20);
+//   background-color: #f5f5e6;
+//   border-radius: 4px;
+//   padding: var(--spacing-15);
+// }
+
+// .logo {
+//   max-width: 100%;
+//   height: auto;
+// }
+
+// .logoPlaceholder {
+//   width: 100%;
+//   height: 100%;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   background-color: var(--color-background-pale-blue);
+//   border-radius: 4px;
+
+//   span {
+//     font-size: var(--font-size-lg);
+//     font-weight: var(--font-weight-medium);
+//     color: var(--color-text-secondary);
+//   }
+// }
+
+// .serviceName {
+//   font-size: var(--font-size-xl);
+//   font-weight: var(--font-weight-medium);
+//   color: var(--color-text-primary);
+//   margin-bottom: var(--spacing-10);
+// }
+
+// .serviceInfo {
+//   a {
+//     font-size: var(--font-size-lg);
+//   }
+// }
+
+// .websiteLink {
+//   font-size: var(--font-size-base);
+//   color: var(--color-text-secondary);
+//   text-decoration: underline;
+//   margin-bottom: var(--spacing-15);
+//   transition: color 0.3s ease;
+
+//   &:hover {
+//     color: var(--color-brand-secondary);
+//   }
+// }
+
+// .description {
+//   font-size: var(--font-size-sm);
+//   color: var(--color-text-primary);
+//   line-height: 1.6;
+//   margin-bottom: var(--spacing-15);
+// }
+
+// .contactInfo {
+//   display: flex;
+//   flex-direction: column;
+//   gap: var(--spacing-10);
+//   margin-top: auto;
+// }
+
+// .contactLink {
+//   font-size: var(--font-size-sm);
+//   color: var(--color-text-secondary);
+//   text-decoration: none;
+//   transition: color 0.3s ease;
+
+//   &:hover {
+//     color: var(--color-brand-secondary);
+//     text-decoration: underline;
+//   }
+// }
+
+// // Category page styles
+// .categoryPage {
+//   display: flex;
+//   flex-direction: column;
+//   padding: 4rem;
+//   background-color: var(--color-background-pale-blue);
+
+//   @media screen and (max-width: 1024px) {
+//     padding: 3rem 2rem;
+//   }
+
+//   @media screen and (max-width: 768px) {
+//     padding: 2rem 1rem;
+//   }
+// }
+
+// .screenPageGridWrapper {
+//   position: relative;
+//   padding: 3rem 4rem 4rem;
+//   background-color: #f5f5e6;
+//   min-height: 100vh;
+
+//   @media (max-width: 768px) {
+//     padding: 2rem 1.5rem;
+//   }
+
+//   @media (max-width: 768px) {
+//     padding: 0 0.5rem;
+//   }
+// }
+
+// // Apply circles only when data-circles="true"
+// :has([data-circles="true"]) .screenPageGridWrapper {
+//   // Top-left outer circle
+//   &::before {
+//     content: "";
+//     position: absolute;
+//     bottom: -15rem;
+//     left: -10vw;
+//     width: 590px;
+//     height: 590px;
+//     border-radius: 50%;
+//     border: 1.51px solid #a4a566;
+//     transform: translate(-50%, -50%);
+//     pointer-events: none;
+//     z-index: 0;
+//     @media screen and (max-width: 960px) {
+//       display: none;
+//     }
+//   }
+
+//   // Bottom-right outer circle
+//   &::after {
+//     content: "";
+//     position: absolute;
+//     bottom: 10%;
+//     right: -7vw;
+//     width: 590px;
+//     height: 590px;
+//     border-radius: 50%;
+//     border: 1.51px solid #a4a566;
+//     transform: translate(50%, 50%);
+//     pointer-events: none;
+//     z-index: 0;
+//     @media screen and (max-width: 960px) {
+//       display: none;
+//     }
+//   }
+// }
+
+// // Use :has() selector to style the grid when circles are present
+// :has([data-circles="true"]) .servicesGrid {
+//   position: relative;
+//   z-index: 1;
+
+//   // Add inner circles using pseudo-elements on the grid itself
+//   &::before {
+//     content: "";
+//     position: absolute;
+//     bottom: -198%;
+//     left: -22vw;
+//     width: 601px;
+//     height: 601px;
+//     border-radius: 50%;
+//     border: 1.51px solid #a4a566;
+//     transform: translate(-50%, -50%);
+//     pointer-events: none;
+//     z-index: -1;
+//     @media screen and (max-width: 960px) {
+//       display: none;
+//     }
+//   }
+
+//   &::after {
+//     content: "";
+//     position: absolute;
+//     bottom: -75%;
+//     right: -20vw;
+//     width: 601px;
+//     height: 601px;
+//     border-radius: 50%;
+//     border: 1.51px solid #a4a566;
+//     transform: translate(50%, 50%);
+//     pointer-events: none;
+//     z-index: -1;
+//     @media screen and (max-width: 960px) {
+//       display: none;
+//     }
+//   }
+// }
+
+// .screenHead {
+//   display: flex;
+//   align-items: center;
+//   gap: var(--spacing-15);
+//   margin-bottom: var(--spacing-40);
+
+//   a,
+//   h1 {
+//     font-size: clamp(1.75rem, 1vw + 0.5rem, 2.5rem);
+//     font-weight: var(--font-weight-medium);
+//     color: var(--color-text-dark);
+//     text-align: center;
+//     margin: 2rem auto 0 auto;
+//     cursor: pointer;
+//     transition: color 0.3s ease;
+//   }
+// }
+
+// .servicesGrid {
+//   display: grid;
+//   grid-template-columns: repeat(auto-fill, minmax(260px, 290px));
+//   gap: var(--spacing-30);
+//   max-width: 1100px;
+//   margin: 0 auto;
+//   width: 100%;
+
+//   @media screen and (max-width: 768px) {
+//     grid-template-columns: 1fr;
+//   }
+// }
+
+// .loading {
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   min-height: 50vh;
+//   font-size: var(--font-size-xl);
+//   color: var(--color-text-secondary);
+// }
+
+// .error {
+//   display: flex;
+//   flex-direction: column;
+//   align-items: center;
+//   justify-content: center;
+//   min-height: 50vh;
+//   padding: var(--spacing-40);
+
+//   h2 {
+//     font-size: var(--font-size-2xl);
+//     color: var(--color-error);
+//     margin-bottom: var(--spacing-20);
+//   }
+
+//   p {
+//     font-size: var(--font-size-base);
+//     color: var(--color-text-secondary);
+//   }
+// }
+
 // screenService.module.scss
 
 .serviceCard {
@@ -115,8 +387,15 @@
   }
 }
 
+// ========================================
+// SCREEN SERVICES PAGE WITH CIRCLES
+// ========================================
+
 .screenPageGridWrapper {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 3rem 4rem 4rem;
   background-color: #f5f5e6;
   min-height: 100vh;
@@ -124,22 +403,50 @@
   @media (max-width: 768px) {
     padding: 2rem 1.5rem;
   }
+}
+
+.screenHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-15);
+  margin-bottom: var(--spacing-40);
+  width: 100%;
+
+  a,
+  h1 {
+    font-size: clamp(1.75rem, 1vw + 0.5rem, 2.5rem);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-dark);
+    text-align: center;
+    margin: 2rem auto 0 auto;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+}
+
+// CRITICAL FIX: Wrapper for the services grid (matches FreelancerGridWrapper pattern)
+.servicesGridWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto 3rem auto;
+  padding: 0 1rem;
 
   @media (max-width: 768px) {
     padding: 0 0.5rem;
   }
 }
 
-// Apply circles only when data-circles="true"
-:has([data-circles="true"]) .screenPageGridWrapper {
+// Apply circles only when data-circles="true" on the WRAPPER
+.servicesGridWrapper[data-circles="true"] {
   // Top-left outer circle
   &::before {
     content: "";
     position: absolute;
-    bottom: -18vh;
-    left: -10vw;
-    width: 590px;
-    height: 590px;
+    bottom: -25vh;
+    left: -20vw;
+    width: 511px;
+    height: 511px;
     border-radius: 50%;
     border: 1.51px solid #a4a566;
     transform: translate(-50%, -50%);
@@ -154,10 +461,10 @@
   &::after {
     content: "";
     position: absolute;
-    bottom: 29vh;
-    right: -9vw;
-    width: 590px;
-    height: 590px;
+    bottom: -25vh;
+    right: -20vw;
+    width: 511px;
+    height: 511px;
     border-radius: 50%;
     border: 1.51px solid #a4a566;
     transform: translate(50%, 50%);
@@ -178,10 +485,10 @@
   &::before {
     content: "";
     position: absolute;
-    bottom: -60vh;
+    bottom: -25vh;
     left: -22vw;
-    width: 601px;
-    height: 601px;
+    width: 501px;
+    height: 501px;
     border-radius: 50%;
     border: 1.51px solid #a4a566;
     transform: translate(-50%, -50%);
@@ -195,10 +502,10 @@
   &::after {
     content: "";
     position: absolute;
-    bottom: -10vh;
+    bottom: -26vh;
     right: -22vw;
-    width: 601px;
-    height: 601px;
+    width: 501px;
+    height: 501px;
     border-radius: 50%;
     border: 1.51px solid #a4a566;
     transform: translate(50%, 50%);
@@ -210,34 +517,25 @@
   }
 }
 
-.screenHead {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-15);
-  margin-bottom: var(--spacing-40);
-
-  a,
-  h1 {
-    font-size: clamp(1.75rem, 1vw + 0.5rem, 2.5rem);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-dark);
-    text-align: center;
-    margin: 2rem auto 0 auto;
-    cursor: pointer;
-    transition: color 0.3s ease;
-  }
-}
-
 .servicesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 290px));
   gap: var(--spacing-30);
-  max-width: 1100px;
-  margin: 0 auto;
   width: 100%;
 
   @media screen and (max-width: 768px) {
     grid-template-columns: 1fr;
+  }
+}
+
+.noServices {
+  text-align: center;
+  padding: 4rem 2rem;
+  width: 100%;
+
+  p {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-primary);
   }
 }
 
