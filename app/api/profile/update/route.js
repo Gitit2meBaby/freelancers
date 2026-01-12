@@ -172,10 +172,10 @@ export async function PUT(request) {
 
       // Update each of the 4 link types
       const linkTypes = [
-        { key: "website", name: LINK_TYPES.WEBSITE },
-        { key: "instagram", name: LINK_TYPES.INSTAGRAM },
-        { key: "imdb", name: LINK_TYPES.IMDB },
-        { key: "linkedin", name: LINK_TYPES.LINKEDIN },
+        { key: "Website", name: LINK_TYPES.WEBSITE },
+        { key: "Instagram", name: LINK_TYPES.INSTAGRAM },
+        { key: "Imdb", name: LINK_TYPES.IMDB },
+        { key: "LinkedIn", name: LINK_TYPES.LINKEDIN },
       ];
 
       for (const linkType of linkTypes) {

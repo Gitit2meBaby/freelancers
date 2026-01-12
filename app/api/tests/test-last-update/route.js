@@ -11,7 +11,7 @@ import { executeQuery, VIEWS, TABLES } from "@/app/lib/db";
 export async function GET() {
   // Helper function to identify missing links
   function getMissingLinks(existingLinks) {
-    const required = ["website", "instagram", "imdb", "linked in"];
+    const required = ["Website", "Instagram", "Imdb", "LinkedIn"];
     const existing = existingLinks.map((l) => l.LinkName.toLowerCase());
     const missing = required.filter((r) => !existing.includes(r));
     return missing.join(", ");

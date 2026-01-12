@@ -80,10 +80,10 @@ export const DOCUMENT_TYPES = {
  * Link types available for freelancers
  */
 export const LINK_TYPES = {
-  WEBSITE: process.env.LINK_TYPE_WEBSITE || "website",
-  INSTAGRAM: process.env.LINK_TYPE_INSTAGRAM || "instagram",
-  IMDB: process.env.LINK_TYPE_IMDB || "imdb",
-  LINKEDIN: process.env.LINK_TYPE_LINKEDIN || "linked in", // Note: lowercase 'in' as per database
+  WEBSITE: process.env.LINK_TYPE_WEBSITE || "Website",
+  INSTAGRAM: process.env.LINK_TYPE_INSTAGRAM || "Instagram",
+  IMDB: process.env.LINK_TYPE_IMDB || "Imdb",
+  LINKEDIN: process.env.LINK_TYPE_LINKEDIN || "LinkedIn",
 };
 
 /**
@@ -229,6 +229,8 @@ export async function executeUpdate(table, updates, where) {
 
     const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
     const result = await request.query(query);
+
+    console.log("whereClause:", whereClause);
 
     return result.rowsAffected[0];
   } catch (error) {

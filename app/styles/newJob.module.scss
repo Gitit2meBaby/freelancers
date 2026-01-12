@@ -1,0 +1,255 @@
+// newJob.module.scss
+.newJob {
+  display: grid;
+  grid-template-columns: 1fr 50%;
+  min-height: 100vh;
+
+  @media screen and (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.imageContainer {
+  background-image: url("../../public/newJob/graffiti.webp");
+  background-size: cover;
+  background-position: center;
+
+  @media screen and (max-width: 1024px) {
+    display: none;
+  }
+}
+
+.formContainer {
+  padding: 4rem;
+  background-color: var(--background-color, #ffffff);
+
+  h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: 2rem;
+    color: var(--color-text-dark);
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+.content {
+  p {
+    line-height: 1.6;
+  }
+}
+
+// Form styles
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+
+  label {
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.required {
+  color: #d32f2f;
+  font-weight: var(--font-weight-medium);
+}
+
+.input,
+.textarea {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  }
+
+  &::placeholder {
+    color: #999;
+    font-style: italic;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.radioGroupLabel {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.radioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 400;
+
+  input[type="radio"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-brand-secondary);
+
+    &:hover {
+      transform: scale(1.1);
+      accent-color: var(--color-brand-primary);
+    }
+
+    &:focus {
+      transform: scale(1.1);
+      accent-color: var(--color-brand-primary);
+      outline: none;
+    }
+    &:focus-visible {
+      outline: 2px solid var(--color-brand-secondary);
+      outline-offset: 2px;
+    }
+  }
+
+  input[type="radio"]:checked + span {
+    color: var(--color-brand-secondary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  span {
+    white-space: nowrap;
+  }
+}
+
+.helpText {
+  font-size: var(--font-size-sm);
+  color: #666;
+  font-style: italic;
+}
+
+.tooltipButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-brand-primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: bold;
+  transition: background 0.2s;
+  margin-left: 0.25rem;
+
+  &:hover {
+    background: var(--color-brand-secondary);
+  }
+
+  &:focus {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+.tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  padding: 0.75rem;
+  background: #333;
+  color: #fff;
+  border-radius: 4px;
+  font-family: var(--font-primary);
+  font-size: var(--font-size-sm);
+  letter-spacing: 1px;
+  line-height: 1.4;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 1rem;
+    border: 6px solid transparent;
+    border-bottom-color: #333;
+  }
+}
+
+.submitButton {
+  padding: 1rem 2rem;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: #fff;
+  background: var(--color-brand-secondary);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.5s, transform 0.1s;
+  margin-top: 1rem;
+
+  &:hover {
+    scale: 1.1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    scale: 1.1;
+  }
+
+  &:focus {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .formContainer {
+    padding: 1rem;
+
+    h1 {
+      font-size: 2rem;
+    }
+  }
+
+  .radioGroup {
+    flex-direction: column;
+  }
+
+  .radioLabel {
+    width: 100%;
+  }
+
+  .tooltip {
+    font-size: 0.8rem;
+  }
+}
