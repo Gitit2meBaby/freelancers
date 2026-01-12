@@ -116,14 +116,14 @@ export default function FreelancerModal({ freelancer, onClose }) {
             )}
 
             {/* Links */}
-            {(freelancer.links.website ||
-              freelancer.links.instagram ||
-              freelancer.links.imdb ||
-              freelancer.links.linkedin) && (
+            {(freelancer.links.Website ||
+              freelancer.links.Instagram ||
+              freelancer.links.Imdb ||
+              freelancer.links.LinkedIn) && (
               <div className={styles.links}>
-                {freelancer.links.website && (
+                {freelancer.links.Website && (
                   <Link
-                    href={freelancer.links.website}
+                    href={freelancer.links.Website}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.link}
@@ -152,9 +152,9 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   </Link>
                 )}
 
-                {freelancer.links.instagram && (
+                {freelancer.links.Instagram && (
                   <Link
-                    href={freelancer.links.instagram}
+                    href={freelancer.links.Instagram}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.link}
@@ -188,9 +188,9 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   </Link>
                 )}
 
-                {freelancer.links.imdb && (
+                {freelancer.links.Imdb && (
                   <Link
-                    href={freelancer.links.imdb}
+                    href={freelancer.links.Imdb}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.link}
@@ -221,9 +221,9 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   </Link>
                 )}
 
-                {freelancer.links.linkedin && (
+                {freelancer.links.LinkedIn && (
                   <Link
-                    href={freelancer.links.linkedin}
+                    href={freelancer.links.LinkedIn}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.link}

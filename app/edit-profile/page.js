@@ -1,10 +1,8 @@
-// app/edit-profile/page.jsx - FIXED TO LOAD ALL LINKS FROM TABLE
+// app/edit-profile/page.jsx - CLEANED VERSION
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
-import VerificationModal from "../components/VerificationModal";
 
 import styles from "../styles/editProfile.module.scss";
 
@@ -31,17 +29,6 @@ function EditProfileForm() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // NEW: Pending verification status
-  const [pendingStatus, setPendingStatus] = useState({
-    photo: false,
-    cv: false,
-    bio: false,
-  });
-
-  // Verification modal state
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationChanges, setVerificationChanges] = useState({});
-
   // Redirect if not logged in
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
@@ -59,8 +46,6 @@ function EditProfileForm() {
   const loadUserProfile = async (slug) => {
     setLoading(true);
     try {
-      // CRITICAL FIX: Load from the new endpoint that gets ALL links from TABLE
-      // This ensures we don't lose existing link values when updating
       const editDataResponse = await fetch(`/api/profile/load-for-edit`);
 
       if (!editDataResponse.ok) {
@@ -70,45 +55,18 @@ function EditProfileForm() {
       const editResult = await editDataResponse.json();
       const editData = editResult.data;
 
-      console.log("📝 Loaded profile for editing:", editData);
-      console.log("🔗 Links from TABLE:", editData.links);
-
-      // Load pending verification status
-      const pendingResponse = await fetch(`/api/my-pending-status`);
-      let pendingData = null;
-      if (pendingResponse.ok) {
-        const pendingResult = await pendingResponse.json();
-        pendingData = pendingResult;
-      }
-
-      // Set form data with ALL current values (including empty links)
       setFormData({
         photo: null,
         photoPreview: editData.photoUrl || null,
         name: editData.name || "",
-        role: "Film Crew Member", // This can be removed if not needed
-        Website: editData.links.Website || "", // ✅ Will have current value
-        Instagram: editData.links.Instagram || "", // ✅ Will have current value
-        Imdb: editData.links.Imdb || "", // ✅ Will have current value
-        LinkedIn: editData.links.LinkedIn || "", // ✅ Will have current value
+        role: "Film Crew Member",
+        Website: editData.links.Website || "",
+        Instagram: editData.links.Instagram || "",
+        Imdb: editData.links.Imdb || "",
+        LinkedIn: editData.links.LinkedIn || "",
         description: editData.bio || "",
         cv: null,
       });
-
-      console.log("✅ Form initialized with current link values:");
-      console.log("   Website:", editData.links.Website || "(empty)");
-      console.log("   Instagram:", editData.links.Instagram || "(empty)");
-      console.log("   Imdb:", editData.links.Imdb || "(empty)");
-      console.log("   LinkedIn:", editData.links.LinkedIn || "(empty)");
-
-      // Set pending status
-      if (pendingData?.success) {
-        setPendingStatus({
-          photo: pendingData.pending.photo,
-          cv: pendingData.pending.cv,
-          bio: pendingData.pending.bio,
-        });
-      }
     } catch (error) {
       console.error("Error loading profile:", error);
       setErrors({ load: error.message });
@@ -159,9 +117,6 @@ function EditProfileForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    console.log(`📝 Field changed: ${name} = "${value}"`);
-
     setFormData({
       ...formData,
       [name]: value,
@@ -214,7 +169,7 @@ function EditProfileForm() {
         cvBlobId = await uploadToAzureBlob(formData.cv, cvFileName, "cv");
       }
 
-      // Prepare update data - ALL current form values
+      // Prepare update data
       const updateData = {
         displayName: formData.name,
         bio: formData.description,
@@ -223,14 +178,12 @@ function EditProfileForm() {
         photoFileName: formData.photo?.name,
         cvFileName: formData.cv?.name,
         links: {
-          Website: formData.Website, // ✅ Current value (unchanged or changed)
-          Instagram: formData.Instagram, // ✅ Current value (unchanged or changed)
-          Imdb: formData.Imdb, // ✅ Current value (unchanged or changed)
-          LinkedIn: formData.LinkedIn, // ✅ Current value (unchanged or changed)
+          Website: formData.Website,
+          Instagram: formData.Instagram,
+          Imdb: formData.Imdb,
+          LinkedIn: formData.LinkedIn,
         },
       };
-
-      console.log("📤 Submitting update with links:", updateData.links);
 
       // Save to database
       const response = await fetch("/api/profile/update", {
@@ -246,19 +199,9 @@ function EditProfileForm() {
         throw new Error(errorData.error || "Failed to save profile");
       }
 
-      const result = await response.json();
-
-      console.log("✅ Update response:", result);
-
-      // Show verification modal if changes need verification
-      if (result.needsVerification) {
-        setVerificationChanges(result.changes);
-        setShowVerificationModal(true);
-      } else {
-        // No verification needed, just redirect
-        router.push(`/my-account/${session.user.slug}`);
-        router.refresh();
-      }
+      // Redirect to profile page
+      router.push(`/my-account/${session.user.slug}`);
+      router.refresh();
     } catch (error) {
       console.error("Error saving profile:", error);
       setErrors({
@@ -267,12 +210,6 @@ function EditProfileForm() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleModalClose = () => {
-    setShowVerificationModal(false);
-    // Reload to show pending status
-    loadUserProfile(session.user.slug);
   };
 
   if (isLoading || !isLoggedIn) {
@@ -312,215 +249,171 @@ function EditProfileForm() {
   }
 
   return (
-    <>
-      <div
-        className={styles.editProfilePage}
-        data-footer="noBorder"
-        data-page="plain"
-      >
-        <h1 className={styles.pageTitle}>Edit Your Profile</h1>
+    <div
+      className={styles.editProfilePage}
+      data-footer="noBorder"
+      data-page="plain"
+    >
+      <h1 className={styles.pageTitle}>Edit Your Profile</h1>
 
-        {errors.load && <div className={styles.errorBanner}>{errors.load}</div>}
+      {errors.load && <div className={styles.errorBanner}>{errors.load}</div>}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formCard}>
-            {/* Photo Upload */}
-            <div className={styles.formGroup}>
-              <label htmlFor="photo" className={styles.label}>
-                Photo
-              </label>
-              <div className={styles.uploadArea}>
-                {formData.photoPreview ? (
-                  <div className={styles.photoPreview}>
-                    <img src={formData.photoPreview} alt="Profile preview" />
-                    {pendingStatus.photo && (
-                      <div className={styles.pendingBadge}>
-                        ⏳ Update pending verification
-                      </div>
-                    )}
-                  </div>
-                ) : pendingStatus.photo ? (
-                  <div className={styles.uploadPlaceholder}>
-                    <div className={styles.pendingIndicator}>
-                      <span className={styles.pendingIcon}>⏳</span>
-                      <p>Photo update waiting for verification</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.uploadPlaceholder}>
-                    <p>No photo uploaded</p>
-                  </div>
-                )}
-                <label htmlFor="photo" className={styles.uploadButton}>
-                  {formData.photoPreview || pendingStatus.photo
-                    ? "Change Photo"
-                    : "Upload Photo"}
-                </label>
-                <input
-                  type="file"
-                  id="photo"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className={styles.fileInput}
-                />
-                <p className={styles.helpText}>JPG, PNG or GIF. Max 2MB</p>
-                {errors.photo && <p className={styles.error}>{errors.photo}</p>}
-              </div>
-            </div>
-
-            {/* Name */}
-            <div className={styles.formGroup}>
-              <label htmlFor="name" className={styles.label}>
-                Display Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={styles.input}
-                required
-              />
-            </div>
-
-            {/* Bio */}
-            <div className={styles.formGroup}>
-              <label htmlFor="description" className={styles.label}>
-                Bio
-                {pendingStatus.bio && (
-                  <span className={styles.pendingLabel}>
-                    ⏳ Update pending...
-                  </span>
-                )}
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className={styles.textarea}
-                rows="6"
-                placeholder={
-                  pendingStatus.bio
-                    ? "Your bio update is waiting for verification..."
-                    : "Tell us about yourself..."
-                }
-              />
-              {pendingStatus.bio && (
-                <p className={styles.pendingNote}>
-                  Your bio changes are awaiting admin verification
-                </p>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formCard}>
+          {/* Photo Upload */}
+          <div className={styles.formGroup}>
+            <label htmlFor="photo" className={styles.label}>
+              Photo
+            </label>
+            <div className={styles.uploadArea}>
+              {formData.photoPreview ? (
+                <div className={styles.photoPreview}>
+                  <img src={formData.photoPreview} alt="Profile preview" />
+                </div>
+              ) : (
+                <div className={styles.uploadPlaceholder}>
+                  <p>No photo uploaded</p>
+                </div>
               )}
-            </div>
-
-            {/* Links */}
-            <div className={styles.formGroup}>
-              <label htmlFor="Website" className={styles.label}>
-                Website
-              </label>
-              <input
-                type="url"
-                id="Website"
-                name="Website"
-                value={formData.Website}
-                onChange={handleChange}
-                className={styles.input}
-                placeholder="https://yourwebsite.com"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="Instagram" className={styles.label}>
-                Instagram
-              </label>
-              <input
-                type="url"
-                id="Instagram"
-                name="Instagram"
-                value={formData.Instagram}
-                onChange={handleChange}
-                className={styles.input}
-                placeholder="https://instagram.com/yourusername"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="Imdb" className={styles.label}>
-                IMDB
-              </label>
-              <input
-                type="url"
-                id="Imdb"
-                name="Imdb"
-                value={formData.Imdb}
-                onChange={handleChange}
-                className={styles.input}
-                placeholder="https://imdb.com/name/..."
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="LinkedIn" className={styles.label}>
-                LinkedIn
-              </label>
-              <input
-                type="url"
-                id="LinkedIn"
-                name="LinkedIn"
-                value={formData.LinkedIn}
-                onChange={handleChange}
-                className={styles.input}
-                placeholder="https://linkedin.com/in/..."
-              />
-            </div>
-
-            {/* CV Upload */}
-            <div className={styles.formGroup}>
-              <label htmlFor="cv" className={styles.label}>
-                CV / Resume
-                {pendingStatus.cv && (
-                  <span className={styles.pendingLabel}>⏳ Update pending</span>
-                )}
-              </label>
-              <label htmlFor="cv" className={styles.uploadButton}>
-                {formData.cv
-                  ? formData.cv.name
-                  : pendingStatus.cv
-                  ? "CV update pending verification"
-                  : "Upload CV"}
+              <label htmlFor="photo" className={styles.uploadButton}>
+                {formData.photoPreview ? "Change Photo" : "Upload Photo"}
               </label>
               <input
                 type="file"
-                id="cv"
-                accept="application/pdf"
-                onChange={handleCVChange}
+                id="photo"
+                accept="image/*"
+                onChange={handlePhotoChange}
                 className={styles.fileInput}
               />
-              <p className={styles.helpText}>PDF, Maximum 2.5MB</p>
-              {errors.cv && <p className={styles.error}>{errors.cv}</p>}
+              <p className={styles.helpText}>JPG, PNG or GIF. Max 2MB</p>
+              {errors.photo && <p className={styles.error}>{errors.photo}</p>}
             </div>
-
-            {/* Submit */}
-            {errors.submit && <p className={styles.error}>{errors.submit}</p>}
-            <button
-              type="submit"
-              className={styles.saveButton}
-              disabled={loading}
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
           </div>
-        </form>
-      </div>
 
-      {/* Verification Modal */}
-      <VerificationModal
-        isOpen={showVerificationModal}
-        onClose={handleModalClose}
-        changes={verificationChanges}
-      />
-    </>
+          {/* Name */}
+          <div className={styles.formGroup}>
+            <label htmlFor="name" className={styles.label}>
+              Display Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className={styles.input}
+              required
+            />
+          </div>
+
+          {/* Bio */}
+          <div className={styles.formGroup}>
+            <label htmlFor="description" className={styles.label}>
+              Bio
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className={styles.textarea}
+              rows="6"
+              placeholder="Tell us about yourself..."
+            />
+          </div>
+
+          {/* Links */}
+          <div className={styles.formGroup}>
+            <label htmlFor="Website" className={styles.label}>
+              Website
+            </label>
+            <input
+              type="url"
+              id="Website"
+              name="Website"
+              value={formData.Website}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="https://yourwebsite.com"
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="Instagram" className={styles.label}>
+              Instagram
+            </label>
+            <input
+              type="url"
+              id="Instagram"
+              name="Instagram"
+              value={formData.Instagram}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="https://instagram.com/yourusername"
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="Imdb" className={styles.label}>
+              IMDB
+            </label>
+            <input
+              type="url"
+              id="Imdb"
+              name="Imdb"
+              value={formData.Imdb}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="https://imdb.com/name/..."
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="LinkedIn" className={styles.label}>
+              LinkedIn
+            </label>
+            <input
+              type="url"
+              id="LinkedIn"
+              name="LinkedIn"
+              value={formData.LinkedIn}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="https://linkedin.com/in/..."
+            />
+          </div>
+
+          {/* CV Upload */}
+          <div className={styles.formGroup}>
+            <label htmlFor="cv" className={styles.label}>
+              CV / Resume
+            </label>
+            <label htmlFor="cv" className={styles.uploadButton}>
+              {formData.cv ? formData.cv.name : "Upload CV"}
+            </label>
+            <input
+              type="file"
+              id="cv"
+              accept="application/pdf"
+              onChange={handleCVChange}
+              className={styles.fileInput}
+            />
+            <p className={styles.helpText}>PDF, Maximum 2.5MB</p>
+            {errors.cv && <p className={styles.error}>{errors.cv}</p>}
+          </div>
+
+          {/* Submit */}
+          {errors.submit && <p className={styles.error}>{errors.submit}</p>}
+          <button
+            type="submit"
+            className={styles.saveButton}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

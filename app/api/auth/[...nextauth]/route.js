@@ -1,13 +1,9 @@
-// app/api/auth/[...nextauth]/route.js
+// app/api/auth/[...nextauth]/route.js - UPDATED WITH PROFILE IMAGE
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { executeQuery, VIEWS } from "../../../../app/lib/db";
-import {
-  hasPassword,
-  verifyPassword,
-  setInitialPassword,
-} from "../../../../app/lib/passwordUtils";
+import { executeQuery, VIEWS, STATUS_CODES } from "../../../../app/lib/db";
+import { getBlobUrl } from "../../../../app/lib/azureBlob";
 
 export const authOptions = {
   providers: [
@@ -45,21 +41,15 @@ export const authOptions = {
             throw new Error("Email and password are required");
           }
 
-          console.log(`🔐 Login attempt for: ${credentials.email}`);
-
-          // ================================================
-          // CORRECTED QUERY - based on Paul's email
-          // vwFreelancersListWEB2 contains:
-          // - FreelancerID, DisplayName, Email, Slug, BlobIDs, Statuses
-          // - NO IsActive column (filtered by "Show On Website = True" in view)
-          // - NO PasswordHash column (needs to be added to tblFreelancerWebsiteData)
-          // ================================================
+          // Query including PhotoBlobID and PhotoStatusID
           const query = `
             SELECT 
               FreelancerID,
               DisplayName,
               Email,
-              Slug
+              Slug,
+              PhotoBlobID,
+              PhotoStatusID
             FROM ${VIEWS.FREELANCERS}
             WHERE Email = @email
           `;
@@ -68,41 +58,26 @@ export const authOptions = {
             email: credentials.email.toLowerCase().trim(),
           });
 
-          // ================================================
           // Email not found
-          // ================================================
           if (!users || users.length === 0) {
-            console.log(`❌ Email not found: ${credentials.email}`);
             throw new Error("Email address not found in our database");
           }
 
           const user = users[0];
-          console.log(
-            `✅ Email found: ${user.DisplayName} (ID: ${user.FreelancerID})`
-          );
 
-          // ================================================
-          // ⚠️ TEMPORARY WORKAROUND ⚠️
-          // Until PasswordHash column is added, we'll just log them in
-          // This allows you to test the rest of the flow
-          // ================================================
-          console.log("⚠️ WARNING: PasswordHash column not yet added");
-          console.log("⚠️ Allowing login without password verification");
-          console.log("⚠️ This is TEMPORARY - add PasswordHash column ASAP!");
-
+          // TEMPORARY: Allow login without password verification
           return {
             id: user.FreelancerID.toString(),
             name: user.DisplayName,
             email: user.Email,
             slug: user.Slug,
-            isFirstLogin: true, // Treat everyone as first-time until PasswordHash is added
+            photoBlobId: user.PhotoBlobID,
+            photoStatusId: user.PhotoStatusID,
+            isFirstLogin: true,
           };
 
-          // ================================================
-          // TODO: Once PasswordHash column is added, uncomment this code:
-          // ================================================
+          // TODO: Uncomment when PasswordHash is added
           /*
-          // Get password from tblFreelancerWebsiteData
           const passwordQuery = `
             SELECT PasswordHash
             FROM tblFreelancerWebsiteData
@@ -117,9 +92,6 @@ export const authOptions = {
           const userHasPassword = hasPassword(passwordHash);
 
           if (!userHasPassword) {
-            // First-time login - set password
-            console.log(`🆕 First-time login - setting password`);
-
             const result = await setInitialPassword(
               user.FreelancerID,
               credentials.password
@@ -129,19 +101,16 @@ export const authOptions = {
               throw new Error("Failed to set password. Please try again.");
             }
 
-            console.log(`✅ Password set - login successful`);
-
             return {
               id: user.FreelancerID.toString(),
               name: user.DisplayName,
               email: user.Email,
               slug: user.Slug,
+              photoBlobId: user.PhotoBlobID,
+              photoStatusId: user.PhotoStatusID,
               isFirstLogin: true,
             };
           }
-
-          // Verify existing password
-          console.log(`🔑 Verifying password`);
 
           const isValidPassword = await verifyPassword(
             credentials.password,
@@ -149,22 +118,21 @@ export const authOptions = {
           );
 
           if (!isValidPassword) {
-            console.log(`❌ Invalid password`);
             throw new Error("Invalid password");
           }
-
-          console.log(`✅ Login successful`);
 
           return {
             id: user.FreelancerID.toString(),
             name: user.DisplayName,
             email: user.Email,
             slug: user.Slug,
+            photoBlobId: user.PhotoBlobID,
+            photoStatusId: user.PhotoStatusID,
             isFirstLogin: false,
           };
           */
         } catch (error) {
-          console.error("❌ Authorization error:", error.message);
+          console.error("Authorization error:", error.message);
           throw error;
         }
       },
@@ -183,11 +151,20 @@ export const authOptions = {
         token.slug = user.slug;
         token.freelancerId = parseInt(user.id);
         token.isFirstLogin = user.isFirstLogin || false;
+        token.photoBlobId = user.photoBlobId;
+        token.photoStatusId = user.photoStatusId;
       }
 
       if (trigger === "update" && user) {
         token.name = user.name;
         token.slug = user.slug;
+        // Allow updating photo info on session update
+        if (user.photoBlobId !== undefined) {
+          token.photoBlobId = user.photoBlobId;
+        }
+        if (user.photoStatusId !== undefined) {
+          token.photoStatusId = user.photoStatusId;
+        }
       }
 
       return token;
@@ -199,6 +176,16 @@ export const authOptions = {
         session.user.slug = token.slug;
         session.user.freelancerId = token.freelancerId;
         session.user.isFirstLogin = token.isFirstLogin;
+
+        // CRITICAL: Add profile image URL to session
+        if (
+          token.photoBlobId &&
+          token.photoStatusId === STATUS_CODES.VERIFIED
+        ) {
+          session.user.image = getBlobUrl(token.photoBlobId);
+        } else {
+          session.user.image = null;
+        }
       }
 
       return session;
@@ -207,11 +194,14 @@ export const authOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          console.log(`🔐 Google sign-in for: ${user.email}`);
-
-          // Correct query without IsActive column
+          // Query including PhotoBlobID and PhotoStatusID for Google sign-in too
           const query = `
-            SELECT FreelancerID, Slug, DisplayName
+            SELECT 
+              FreelancerID, 
+              Slug, 
+              DisplayName,
+              PhotoBlobID,
+              PhotoStatusID
             FROM ${VIEWS.FREELANCERS}
             WHERE Email = @email
           `;
@@ -219,18 +209,18 @@ export const authOptions = {
           const users = await executeQuery(query, { email: user.email });
 
           if (!users || users.length === 0) {
-            console.log(`❌ Google sign-in denied`);
             return false;
           }
 
           user.id = users[0].FreelancerID.toString();
           user.slug = users[0].Slug;
           user.name = users[0].DisplayName;
+          user.photoBlobId = users[0].PhotoBlobID;
+          user.photoStatusId = users[0].PhotoStatusID;
 
-          console.log(`✅ Google sign-in successful`);
           return true;
         } catch (error) {
-          console.error("❌ Google sign-in error:", error);
+          console.error("Google sign-in error:", error);
           return false;
         }
       }
@@ -267,48 +257,3 @@ export const authOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
-
-/**
- * ================================================
- * NEXT STEPS TO COMPLETE AUTHENTICATION:
- * ================================================
- *
- * 1. Run the migration script to add PasswordHash column:
- *    node scripts/add-password-field-confirmed.js
- *
- * 2. Once PasswordHash is added, uncomment the password verification code above
- *
- * 3. Test the full flow:
- *    - First login: sets password
- *    - Second login: verifies password
- *
- * ================================================
- * CURRENT STATE (TEMPORARY):
- * ================================================
- *
- * - ❌ No password verification (PasswordHash column doesn't exist yet)
- * - ✅ Email verification works
- * - ✅ User can log in if email exists
- * - ⚠️ SECURITY WARNING: Anyone with a valid email can log in!
- *
- * This is TEMPORARY until you add the PasswordHash column.
- *
- * ================================================
- * WHAT PAUL'S VIEW ACTUALLY CONTAINS:
- * ================================================
- *
- * vwFreelancersListWEB2:
- * - FreelancerID ✅
- * - DisplayName ✅
- * - Email ✅
- * - Slug ✅
- * - PhotoBlobID
- * - CVBlobID
- * - PhotoStatusID
- * - CVStatusID
- * - (Filtered by: Show On Website = True)
- *
- * NOT in view:
- * - IsActive ❌ (this was wrong)
- * - PasswordHash ❌ (needs to be added to tblFreelancerWebsiteData)
- */

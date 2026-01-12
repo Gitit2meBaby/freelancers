@@ -1,3 +1,4 @@
+// app/my-account/[slug]/page.js
 "use client";
 
 import { useEffect, useState } from "react";
@@ -22,22 +23,11 @@ export default function UserProfilePage() {
   const isLoadingAuth = status === "loading";
   const isOwnProfile = isLoggedIn && session?.user?.slug === params.slug;
 
-  const [pendingStatus, setPendingStatus] = useState({
-    photo: false,
-    cv: false,
-    bio: false,
-  });
-
   useEffect(() => {
     if (!isLoadingAuth) {
       fetchProfileData(params.slug);
-
-      // If viewing own profile, also fetch pending status
-      if (isOwnProfile) {
-        fetchPendingStatus();
-      }
     }
-  }, [params.slug, isLoadingAuth, isOwnProfile]);
+  }, [params.slug, isLoadingAuth]);
 
   const fetchProfileData = async (slug) => {
     setLoading(true);
@@ -75,21 +65,6 @@ export default function UserProfilePage() {
     }
   };
 
-  // NEW: Fetch pending verification status
-  const fetchPendingStatus = async () => {
-    try {
-      const response = await fetch(`/api/my-pending-status`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setPendingStatus(result.pending);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading pending status:", error);
-    }
-  };
-
   if (loading || isLoadingAuth) {
     return (
       <div
@@ -122,7 +97,6 @@ export default function UserProfilePage() {
             />
           </svg>
         </div>
-        ;
       </div>
     );
   }

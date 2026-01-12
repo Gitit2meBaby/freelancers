@@ -1,4 +1,4 @@
-// app/components/ProfilePic.jsx
+// app/components/ProfilePic.jsx - UPDATED
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ const ProfilePic = () => {
   const { data: session, status } = useSession();
   const [profileImageUrl, setProfileImageUrl] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isFetchingImage, setIsFetchingImage] = useState(false);
   const dropdownRef = useRef(null);
 
   const isLoggedIn = status === "authenticated";
@@ -24,10 +25,37 @@ const ProfilePic = () => {
   const shouldRender = pathname !== "/" && isLoggedIn;
 
   useEffect(() => {
-    if (isLoggedIn && session?.user?.image) {
-      setProfileImageUrl(session.user.image);
+    if (isLoggedIn && session?.user) {
+      // If session has image, use it
+      if (session.user.image) {
+        setProfileImageUrl(session.user.image);
+      }
+      // If no image in session but user is logged in, try to fetch it
+      else if (!isFetchingImage) {
+        fetchProfileImage();
+      }
     }
-  }, [isLoggedIn, session]);
+  }, [isLoggedIn, session, isFetchingImage]);
+
+  const fetchProfileImage = async () => {
+    setIsFetchingImage(true);
+    try {
+      const response = await fetch("/api/auth/refresh-profile-image", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          setProfileImageUrl(data.imageUrl);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile image:", error);
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
 
   useEffect(() => {
     // Close dropdown when clicking outside

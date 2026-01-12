@@ -1,4 +1,4 @@
-// app/api/crew-directory/[departmentSlug]/[skillSlug]/route.js
+// app/api/crew-directory/[departmentSlug]/[skillSlug]/route.js - CLEANED VERSION
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
@@ -11,23 +11,11 @@ import {
 import { getBlobUrl } from "../../../../lib/azureBlob";
 
 /**
- * Generates a URL-friendly slug from a name
- */
-function generateSlug(name) {
-  if (!name) return "";
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/**
  * Cached function to get all freelancers with their skills
  */
 const getAllFreelancersWithSkills = unstable_cache(
   async () => {
     // Query to get all freelancers (view already filters by ShowOnWebsite = True)
-    // Paul has now added FreelancerBio to this view
     const freelancersQuery = `
       SELECT 
         FreelancerID,
@@ -52,7 +40,7 @@ const getAllFreelancersWithSkills = unstable_cache(
       FROM ${VIEWS.FREELANCER_SKILLS}
     `;
 
-    // Query to get all freelancer links - Paul has fixed this view
+    // Query to get all freelancer links
     const linksQuery = `
       SELECT 
         FreelancerID,
@@ -72,7 +60,7 @@ const getAllFreelancersWithSkills = unstable_cache(
   },
   ["crew-directory-freelancers-raw"],
   {
-    revalidate: 3600, // Cache for 1 hour
+    revalidate: 3600,
     tags: ["crew-directory", "freelancers"],
   }
 );
@@ -86,16 +74,8 @@ export async function GET(request, { params }) {
     const decodedDeptSlug = decodeURIComponent(departmentSlug);
     const decodedSkillSlug = decodeURIComponent(skillSlug);
 
-    console.log(
-      `📊 Fetching freelancers for ${decodedDeptSlug}/${decodedSkillSlug}`
-    );
-
     // Get cached data
     const { freelancers, skills, links } = await getAllFreelancersWithSkills();
-
-    console.log(`📊 Total freelancers: ${freelancers.length}`);
-    console.log(`📊 Total skill assignments: ${skills.length}`);
-    console.log(`📊 Total links: ${links.length}`);
 
     // Find the skill that matches the slug
     const matchingSkills = skills.filter((skill) => {
@@ -106,17 +86,13 @@ export async function GET(request, { params }) {
     });
 
     if (matchingSkills.length === 0) {
-      console.log(
-        `❌ No skill found with slugs: ${decodedDeptSlug}/${decodedSkillSlug}`
-      );
       return NextResponse.json(
         { success: false, error: "Skill not found" },
         { status: 404 }
       );
     }
 
-    // We need to get the skill name and department name from the departments view
-    // since the skills view only has IDs and slugs
+    // Get skill info from departments view
     const deptSkillsQuery = `
       SELECT Department, Skill, DepartmentID, SkillID
       FROM ${VIEWS.DEPARTMENTS_SKILLS}
@@ -158,7 +134,7 @@ export async function GET(request, { params }) {
       if (!linksMap.has(link.FreelancerID)) {
         linksMap.set(link.FreelancerID, {});
       }
-      const linkType = link.LinkName.toLowerCase();
+      const linkType = link.LinkName;
       linksMap.get(link.FreelancerID)[linkType] = link.LinkURL;
     });
 
@@ -184,19 +160,15 @@ export async function GET(request, { params }) {
               ? getBlobUrl(freelancer.CVBlobID)
               : null,
           links: {
-            website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
-            instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
-            imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
-            linkedin: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
+            Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
+            Instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
+            Imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
+            LinkedIn: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
           },
         };
       })
       // Sort by name
       .sort((a, b) => a.name.localeCompare(b.name));
-
-    console.log(
-      `✅ Found ${freelancersWithSkill.length} freelancers for ${skillInfo.name}`
-    );
 
     return NextResponse.json({
       success: true,
@@ -209,7 +181,7 @@ export async function GET(request, { params }) {
       },
     });
   } catch (error) {
-    console.error("❌ Error fetching skill freelancers:", error);
+    console.error("Error fetching skill freelancers:", error);
     return NextResponse.json(
       {
         success: false,

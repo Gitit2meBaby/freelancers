@@ -60,7 +60,7 @@ const getAllFreelancerData = unstable_cache(
   },
   ["freelancer-data-raw"],
   {
-    revalidate: 3600, // Cache for 1 hour
+    revalidate: 3600,
     tags: ["freelancers"],
   }
 );
@@ -69,8 +69,6 @@ export async function GET(request, { params }) {
   try {
     // IMPORTANT: In Next.js 15+, params is a Promise
     const { slug } = await params;
-
-    console.log(`📊 Fetching freelancer with slug: ${slug}`);
 
     // Get cached data
     const { freelancers, skills, links } = await getAllFreelancerData();
@@ -81,7 +79,6 @@ export async function GET(request, { params }) {
     );
 
     if (!freelancer) {
-      console.log(`❌ No freelancer found with slug: ${slug}`);
       return NextResponse.json(
         { success: false, error: "Freelancer not found" },
         { status: 404 }
@@ -104,7 +101,7 @@ export async function GET(request, { params }) {
     const freelancerLinks = links
       .filter((l) => l.FreelancerID === freelancer.FreelancerID)
       .reduce((acc, link) => {
-        const linkType = link.LinkName.toLowerCase();
+        const linkType = link.LinkName;
         acc[linkType] = link.LinkURL;
         return acc;
       }, {});
@@ -130,10 +127,10 @@ export async function GET(request, { params }) {
       cvStatus: freelancer.CVStatusID,
       skills: freelancerSkills,
       links: {
-        website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
-        instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
-        imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
-        linkedin: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
+        Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
+        Instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
+        Imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
+        LinkedIn: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
       },
     };
 
@@ -144,7 +141,7 @@ export async function GET(request, { params }) {
       data: freelancerData,
     });
   } catch (error) {
-    console.error("❌ Error fetching freelancer:", error);
+    console.error("Error fetching freelancer:", error);
     return NextResponse.json(
       {
         success: false,

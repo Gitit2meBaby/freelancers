@@ -189,25 +189,6 @@ export async function POST(request) {
       userEmailPreview.html.substring(0, 200) + "..."
     );
 
-    // ==================================================
-    // OPTIONAL: Save to database for backup
-    // ==================================================
-    // Uncomment when Paul creates a contact form submissions table:
-
-    /*
-    const { executeInsert, TABLES } = await import("@/app/lib/db");
-    
-    await executeInsert("tblContactFormSubmissions", {
-      Name: sanitizedData.name,
-      Email: sanitizedData.email,
-      Phone: sanitizedData.phone,
-      Subject: sanitizedData.subject,
-      Message: sanitizedData.message,
-      SubmittedAt: new Date(),
-      IPAddress: request.headers.get("x-forwarded-for") || "unknown"
-    });
-    */
-
     // Return success response
     return NextResponse.json({
       success: true,

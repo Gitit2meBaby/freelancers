@@ -1,3 +1,4 @@
+// app/lib/db.js - CLEANED VERSION
 import sql from "mssql";
 
 /**
@@ -108,11 +109,9 @@ export async function getDbConnection() {
 
     // Create new pool if none exists or disconnected
     pool = await sql.connect(dbConfig);
-
-    console.log("✅ Database connection established");
     return pool;
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    console.error("Database connection failed:", error);
     throw error;
   }
 }
@@ -144,7 +143,7 @@ export async function executeQuery(query, params = {}) {
     const result = await request.query(query);
     return result.recordset;
   } catch (error) {
-    console.error("❌ Query execution failed:", error);
+    console.error("Query execution failed:", error);
     console.error("Query:", query);
     console.error("Params:", params);
     throw error;
@@ -176,28 +175,21 @@ export async function executeProcedure(procedureName, params = {}) {
     const result = await request.execute(procedureName);
     return result.recordset;
   } catch (error) {
-    console.error("❌ Procedure execution failed:", error);
+    console.error("Procedure execution failed:", error);
     console.error("Procedure:", procedureName);
     console.error("Params:", params);
     throw error;
   }
 }
 
-// Enhanced executeUpdate function for db.js
-// Replace the existing executeUpdate function with this version
-
 /**
- * Executes an UPDATE query with detailed debugging
+ * Executes an UPDATE query
  * @param {string} table - Table name
  * @param {Object} updates - Fields to update (key-value pairs)
  * @param {Object} where - WHERE clause conditions (key-value pairs)
  * @returns {Promise<number>} Number of rows affected
  */
 export async function executeUpdate(table, updates, where) {
-  console.log("\n" + "─".repeat(70));
-  console.log("🔧 executeUpdate() called");
-  console.log("─".repeat(70));
-
   try {
     const connection = await getDbConnection();
     const request = connection.request();
@@ -212,172 +204,126 @@ export async function executeUpdate(table, updates, where) {
       .map((key, index) => `${key} = @where${index}`)
       .join(" AND ");
 
-    console.log(`📊 UPDATE Details:`);
-    console.log(`   Table: ${table}`);
-    console.log(`   SET clause: ${setClause}`);
-    console.log(`   WHERE clause: ${whereClause}`);
-
     // Add update parameters
-    console.log(`\n🔢 SET Parameters:`);
     Object.entries(updates).forEach(([key, value], index) => {
       const paramName = `update${index}`;
-      let sqlType;
 
       if (typeof value === "number") {
         request.input(paramName, sql.Int, value);
-        sqlType = "Int";
       } else if (typeof value === "boolean") {
         request.input(paramName, sql.Bit, value);
-        sqlType = "Bit";
       } else if (value === null) {
         request.input(paramName, sql.NVarChar, null);
-        sqlType = "NVarChar(NULL)";
       } else {
         request.input(paramName, sql.NVarChar, value);
-        sqlType = "NVarChar";
       }
-
-      console.log(
-        `   @${paramName} (${sqlType}) = ${
-          value === null ? "NULL" : `"${value}"`
-        } → ${key}`
-      );
     });
 
     // Add where parameters
-    console.log(`\n🔍 WHERE Parameters:`);
     Object.entries(where).forEach(([key, value], index) => {
       const paramName = `where${index}`;
-      let sqlType;
 
       if (typeof value === "number") {
         request.input(paramName, sql.Int, value);
-        sqlType = "Int";
       } else {
         request.input(paramName, sql.NVarChar, value);
-        sqlType = "NVarChar";
       }
-
-      console.log(`   @${paramName} (${sqlType}) = "${value}" → ${key}`);
     });
 
     const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
-
-    console.log(`\n📝 Final SQL Query:`);
-    console.log(`   ${query}`);
-
-    console.log(`\n🚀 Executing query...`);
     const result = await request.query(query);
-
-    console.log(`✅ Query executed successfully`);
-    console.log(`   Rows affected: ${result.rowsAffected[0]}`);
 
     if (result.rowsAffected[0] === 0) {
-      console.warn(`⚠️ WARNING: No rows were updated!`);
-      console.warn(`   This could mean:`);
-      console.warn(`   1. The WHERE clause didn't match any records`);
-      console.warn(`   2. The table doesn't exist`);
-      console.warn(`   3. The column names are incorrect`);
-      console.warn(`   4. There's a permissions issue`);
+      console.warn(`No rows were updated in ${table}`);
+      console.warn("WHERE conditions:", where);
     }
 
-    console.log("─".repeat(70));
     return result.rowsAffected[0];
   } catch (error) {
-    console.error("\n❌ executeUpdate() ERROR");
-    console.error("─".repeat(70));
+    console.error("Update failed:", error);
     console.error("Table:", table);
-    console.error("Updates:", JSON.stringify(updates, null, 2));
-    console.error("Where:", JSON.stringify(where, null, 2));
-    console.error("Error message:", error.message);
-    console.error("Error code:", error.code);
-    console.error("Error number:", error.number);
-    console.error("Error state:", error.state);
-    console.error("Error class:", error.class);
-    console.error("Error lineNumber:", error.lineNumber);
-    console.error("Error serverName:", error.serverName);
-    console.error("Error procName:", error.procName);
-    console.error("Full error:", error);
-    console.error("─".repeat(70));
-    throw error;
-  }
-}
-/**
- * Executes an INSERT query
- * @param {string} table - Table name
- * @param {Object} data - Data to insert (key-value pairs)
- * @returns {Promise<number>} Number of rows affected
- */
-export async function executeInsert(table, data) {
-  try {
-    const connection = await getDbConnection();
-    const request = connection.request();
-
-    const columns = Object.keys(data).join(", ");
-    const values = Object.keys(data)
-      .map((_, index) => `@param${index}`)
-      .join(", ");
-
-    // Add parameters
-    Object.entries(data).forEach(([key, value], index) => {
-      if (typeof value === "number") {
-        request.input(`param${index}`, sql.Int, value);
-      } else if (typeof value === "boolean") {
-        request.input(`param${index}`, sql.Bit, value);
-      } else if (value === null) {
-        request.input(`param${index}`, sql.NVarChar, null);
-      } else {
-        request.input(`param${index}`, sql.NVarChar, value);
-      }
-    });
-
-    const query = `INSERT INTO ${table} (${columns}) VALUES (${values})`;
-    const result = await request.query(query);
-
-    return result.rowsAffected[0];
-  } catch (error) {
-    console.error("❌ Insert failed:", error);
-    console.error("Table:", table);
-    console.error("Data:", data);
-    throw error;
-  }
-}
-
-/**
- * Executes a DELETE query
- * @param {string} table - Table name
- * @param {Object} where - WHERE clause conditions (key-value pairs)
- * @returns {Promise<number>} Number of rows affected
- */
-export async function executeDelete(table, where) {
-  try {
-    const connection = await getDbConnection();
-    const request = connection.request();
-
-    const whereClause = Object.keys(where)
-      .map((key, index) => `${key} = @param${index}`)
-      .join(" AND ");
-
-    // Add parameters
-    Object.entries(where).forEach(([key, value], index) => {
-      if (typeof value === "number") {
-        request.input(`param${index}`, sql.Int, value);
-      } else {
-        request.input(`param${index}`, sql.NVarChar, value);
-      }
-    });
-
-    const query = `DELETE FROM ${table} WHERE ${whereClause}`;
-    const result = await request.query(query);
-
-    return result.rowsAffected[0];
-  } catch (error) {
-    console.error("❌ Delete failed:", error);
-    console.error("Table:", table);
+    console.error("Updates:", updates);
     console.error("Where:", where);
     throw error;
   }
 }
+
+// /**
+//  * Executes an INSERT query
+//  * @param {string} table - Table name
+//  * @param {Object} data - Data to insert (key-value pairs)
+//  * @returns {Promise<number>} Number of rows affected
+//  */
+// export async function executeInsert(table, data) {
+//   try {
+//     const connection = await getDbConnection();
+//     const request = connection.request();
+
+//     const columns = Object.keys(data).join(", ");
+//     const values = Object.keys(data)
+//       .map((_, index) => `@param${index}`)
+//       .join(", ");
+
+//     // Add parameters
+//     Object.entries(data).forEach(([key, value], index) => {
+//       if (typeof value === "number") {
+//         request.input(`param${index}`, sql.Int, value);
+//       } else if (typeof value === "boolean") {
+//         request.input(`param${index}`, sql.Bit, value);
+//       } else if (value === null) {
+//         request.input(`param${index}`, sql.NVarChar, null);
+//       } else {
+//         request.input(`param${index}`, sql.NVarChar, value);
+//       }
+//     });
+
+//     const query = `INSERT INTO ${table} (${columns}) VALUES (${values})`;
+//     const result = await request.query(query);
+
+//     return result.rowsAffected[0];
+//   } catch (error) {
+//     console.error("Insert failed:", error);
+//     console.error("Table:", table);
+//     console.error("Data:", data);
+//     throw error;
+//   }
+// }
+
+// /**
+//  * Executes a DELETE query
+//  * @param {string} table - Table name
+//  * @param {Object} where - WHERE clause conditions (key-value pairs)
+//  * @returns {Promise<number>} Number of rows affected
+//  */
+// export async function executeDelete(table, where) {
+//   try {
+//     const connection = await getDbConnection();
+//     const request = connection.request();
+
+//     const whereClause = Object.keys(where)
+//       .map((key, index) => `${key} = @param${index}`)
+//       .join(" AND ");
+
+//     // Add parameters
+//     Object.entries(where).forEach(([key, value], index) => {
+//       if (typeof value === "number") {
+//         request.input(`param${index}`, sql.Int, value);
+//       } else {
+//         request.input(`param${index}`, sql.NVarChar, value);
+//       }
+//     });
+
+//     const query = `DELETE FROM ${table} WHERE ${whereClause}`;
+//     const result = await request.query(query);
+
+//     return result.rowsAffected[0];
+//   } catch (error) {
+//     console.error("Delete failed:", error);
+//     console.error("Table:", table);
+//     console.error("Where:", where);
+//     throw error;
+//   }
+// }
 
 /**
  * Safely closes the database connection pool
@@ -389,9 +335,8 @@ export async function closeConnection() {
     try {
       await pool.close();
       pool = null;
-      console.log("✅ Database connection closed");
     } catch (error) {
-      console.error("❌ Error closing connection:", error);
+      console.error("Error closing connection:", error);
     }
   }
 }
@@ -406,7 +351,7 @@ export async function testConnection() {
     const result = await connection.request().query("SELECT 1 as test");
     return result.recordset[0].test === 1;
   } catch (error) {
-    console.error("❌ Connection test failed:", error);
+    console.error("Connection test failed:", error);
     return false;
   }
 }

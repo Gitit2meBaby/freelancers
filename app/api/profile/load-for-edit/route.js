@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { executeQuery, VIEWS, TABLES } from "@/app/lib/db";
+import { getBlobUrl } from "@/app/lib/azureBlob";
 
 /**
  * GET /api/profile/load-for-edit
@@ -22,11 +23,7 @@ export async function GET() {
 
     const freelancerId = parseInt(session.user.id);
 
-    console.log(
-      `📝 Loading profile for editing - FreelancerID: ${freelancerId}`
-    );
-
-    // Get main profile data (use VIEW for verified/displayed data)
+    // Get main profile data
     const profileQuery = `
       SELECT 
         FreelancerID,
@@ -50,7 +47,7 @@ export async function GET() {
 
     const profile = profileData[0];
 
-    // CRITICAL: Get links from TABLE (not VIEW) to include empty links
+    // Get links from TABLE (not VIEW) to include empty links
     const linksQuery = `
       SELECT 
         FreelancerWebsiteDataLinkID,
@@ -60,11 +57,7 @@ export async function GET() {
       WHERE FreelancerID = @freelancerId
     `;
 
-    console.log(
-      `📊 Fetching links from TABLE: ${TABLES.FREELANCER_WEBSITE_DATA_LINKS}`
-    );
     const linksData = await executeQuery(linksQuery, { freelancerId });
-    console.log(`✅ Found ${linksData.length} link(s)`);
 
     // Convert links array to object with proper capitalization
     const links = {
@@ -75,11 +68,8 @@ export async function GET() {
     };
 
     linksData.forEach((link) => {
-      // Use the LinkName from database as the key (it's already properly capitalized)
       links[link.LinkName] = link.LinkURL || "";
     });
-
-    console.log(`📋 Links loaded:`, links);
 
     return NextResponse.json({
       success: true,
@@ -88,15 +78,13 @@ export async function GET() {
         slug: profile.Slug,
         name: profile.DisplayName,
         bio: profile.FreelancerBio,
-        photoUrl: profile.PhotoBlobID
-          ? `/api/blob/${profile.PhotoBlobID}`
-          : null,
-        cvUrl: profile.CVBlobID ? `/api/blob/${profile.CVBlobID}` : null,
-        links: links, // All 4 links with their current values (empty or not)
+        photoUrl: profile.PhotoBlobID ? getBlobUrl(profile.PhotoBlobID) : null,
+        cvUrl: profile.CVBlobID ? getBlobUrl(profile.CVBlobID) : null,
+        links: links,
       },
     });
   } catch (error) {
-    console.error("❌ Load profile for edit error:", error);
+    console.error("Load profile for edit error:", error);
     return NextResponse.json(
       {
         success: false,
