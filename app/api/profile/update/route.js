@@ -1,4 +1,4 @@
-// app/api/profile/update/route.js
+// app/api/profile/update/route.js - FIXED VERSION
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
@@ -17,6 +17,9 @@ import { deleteBlob } from "@/app/lib/azureBlob";
  * PUT /api/profile/update
  * Simple profile updates - bio, photo, and 4 links
  * Only UPDATE operations, no INSERTs needed
+ *
+ * FIXED: Now queries TABLE directly for links instead of VIEW
+ * (VIEW filters out empty links, but we need to update them)
  */
 export async function PUT(request) {
   try {
@@ -33,7 +36,7 @@ export async function PUT(request) {
     const freelancerId = parseInt(session.user.id);
     const data = await request.json();
 
-    console.log(`📝 Updating profile for freelancer ID: ${freelancerId}`);
+    console.log(`🔄 Updating profile for freelancer ID: ${freelancerId}`);
 
     // ==================================================
     // STEP 1: Get current photo and CV blob IDs for cleanup
@@ -54,8 +57,8 @@ export async function PUT(request) {
     }
 
     const current = currentData[0];
-    let hasChanges = false; // Track if any changes were made
-    let textUpdates = {}; // Track text field updates
+    let hasChanges = false;
+    let textUpdates = {};
 
     // ==================================================
     // STEP 2: Handle Photo Update
@@ -159,16 +162,22 @@ export async function PUT(request) {
     if (data.links) {
       console.log(`🔗 Updating links...`);
 
-      // Get current links from VIEW (includes FreelancerWebsiteDataLinkID)
+      // CRITICAL FIX: Query TABLE directly instead of VIEW
+      // The VIEW filters out empty/null links, but we need to update them!
       const currentLinksQuery = `
         SELECT FreelancerWebsiteDataLinkID, LinkName, LinkURL
-        FROM ${VIEWS.FREELANCER_LINKS}
+        FROM ${TABLES.FREELANCER_WEBSITE_DATA_LINKS}
         WHERE FreelancerID = @freelancerId
       `;
 
+      console.log(
+        `📊 Querying TABLE directly: ${TABLES.FREELANCER_WEBSITE_DATA_LINKS}`
+      );
       const currentLinks = await executeQuery(currentLinksQuery, {
         freelancerId,
       });
+
+      console.log(`✅ Found ${currentLinks.length} link record(s) in TABLE`);
 
       // Update each of the 4 link types
       const linkTypes = [
@@ -187,9 +196,15 @@ export async function PUT(request) {
         );
 
         if (existingLink) {
-          // Only update if URL changed
+          // Handle null values in database (treat as empty string)
           const currentUrl = existingLink.LinkURL || "";
+
+          // Only update if URL changed
           if (newUrl !== currentUrl) {
+            console.log(
+              `🔗 Updating ${linkType.name}: "${currentUrl}" → "${newUrl}"`
+            );
+
             await executeUpdate(
               TABLES.FREELANCER_WEBSITE_DATA_LINKS,
               { LinkURL: newUrl },
@@ -200,9 +215,9 @@ export async function PUT(request) {
             );
             linksChanged = true;
             hasChanges = true;
-            console.log(
-              `🔗 Updated ${linkType.name}: ${newUrl || "(cleared)"}`
-            );
+            console.log(`✅ Updated ${linkType.name}`);
+          } else {
+            console.log(`ℹ️ ${linkType.name} unchanged`);
           }
         } else {
           // Link record doesn't exist - this shouldn't happen if DB is set up correctly

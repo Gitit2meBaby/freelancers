@@ -1,30 +1,26 @@
+import styles from "../styles/navigation.module.scss";
 
-import styles from '../styles/navigation.module.scss'
-
-import ActiveNavLink from './ActiveNavLink'
+import ActiveNavLink from "./ActiveNavLink";
 
 const Navigation = () => {
   const navLinks = [
-    { href: '/crew-directory', label: 'CREW DIRECTORY' },
-    { href: '/screen-services', label: 'SCREEN SERVICES' },
-    { href: '/booking-guidelines', label: 'BOOKING GUIDELINES' },
-    { href: '/about-us', label: 'ABOUT US' },
-    { href: '/contact-us', label: 'CONTACT US' },
-    { href: '/member-login', label: 'MEMBER LOGIN' },
-  ]
+    { href: "/crew-directory", label: "CREW DIRECTORY" },
+    { href: "/screen-services", label: "SCREEN SERVICES" },
+    { href: "/booking-guidelines", label: "BOOKING GUIDELINES" },
+    { href: "/about-us", label: "ABOUT US" },
+    { href: "/contact-us", label: "CONTACT US" },
+    { href: "/member-login", label: "MEMBER LOGIN" },
+    { href: "/new-job", label: "NEW JOB" },
+  ];
 
   return (
     <>
       {/* Hidden checkbox that controls the nav state */}
-      <input 
-        type="checkbox" 
-        id="nav-toggle" 
-        className={styles.navToggle}
-      />
-      
+      <input type="checkbox" id="nav-toggle" className={styles.navToggle} />
+
       {/* Overlay - clicking it closes the menu */}
-      <label 
-        htmlFor="nav-toggle" 
+      <label
+        htmlFor="nav-toggle"
         className={styles.overlay}
         aria-label="Close navigation"
       />
@@ -36,8 +32,8 @@ const Navigation = () => {
         aria-label="Main navigation"
       >
         {/* Close Button */}
-        <label 
-          htmlFor="nav-toggle" 
+        <label
+          htmlFor="nav-toggle"
           className={styles.closeButton}
           aria-label="Close navigation menu"
         >
@@ -65,7 +61,7 @@ const Navigation = () => {
         </label>
 
         {/* Navigation Links */}
-       <ul className={styles.navList}>
+        <ul className={styles.navList}>
           {navLinks.map((link) => (
             <li key={link.href} className={styles.navItem}>
               <ActiveNavLink href={link.href} className={styles.navLink}>
@@ -76,7 +72,7 @@ const Navigation = () => {
         </ul>
       </nav>
     </>
-  )
-}
+  );
+};
 
-export default Navigation
+export default Navigation;

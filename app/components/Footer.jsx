@@ -31,6 +31,9 @@ const Footer = () => {
           <li>
             <Link href="/member-login">Member Login</Link>
           </li>
+          <li>
+            <Link href="/new-job">New Job</Link>
+          </li>
         </ul>
       </div>
       <div className={styles.footerSection}>
@@ -45,13 +48,8 @@ const Footer = () => {
         </ul>
       </div>
       <div className={`${styles.footerSection} ${styles.contact}`}>
-        <h3>Contact us at</h3>
+        <h3>Contact</h3>
         <ul>
-          <li>
-            <Link href="https://goo.gl/maps/rkXQonMMRqg8tMKQ6">
-              PO Box 5010, South Melbourne, Vic 3205
-            </Link>
-          </li>
           <li>
             <Link href="mailto:info@freelancers.com.au">
               info@freelancers.com.au

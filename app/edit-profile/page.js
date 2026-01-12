@@ -1,4 +1,4 @@
-// app/edit-profile/page.jsx - ENHANCED WITH PENDING STATUS
+// app/edit-profile/page.jsx - FIXED TO LOAD ALL LINKS FROM TABLE
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -20,10 +20,10 @@ function EditProfileForm() {
     photoPreview: null,
     name: "",
     role: "",
-    website: "",
-    instagram: "",
-    imdb: "",
-    linkedin: "",
+    Website: "",
+    Instagram: "",
+    Imdb: "",
+    LinkedIn: "",
     description: "",
     cv: null,
   });
@@ -59,13 +59,19 @@ function EditProfileForm() {
   const loadUserProfile = async (slug) => {
     setLoading(true);
     try {
-      // Load public profile data (only verified)
-      const publicResponse = await fetch(`/api/freelancer/${slug}`);
-      if (!publicResponse.ok) {
-        throw new Error("Failed to load profile");
+      // CRITICAL FIX: Load from the new endpoint that gets ALL links from TABLE
+      // This ensures we don't lose existing link values when updating
+      const editDataResponse = await fetch(`/api/profile/load-for-edit`);
+
+      if (!editDataResponse.ok) {
+        throw new Error("Failed to load profile for editing");
       }
-      const publicResult = await publicResponse.json();
-      const publicData = publicResult.data;
+
+      const editResult = await editDataResponse.json();
+      const editData = editResult.data;
+
+      console.log("📝 Loaded profile for editing:", editData);
+      console.log("🔗 Links from TABLE:", editData.links);
 
       // Load pending verification status
       const pendingResponse = await fetch(`/api/my-pending-status`);
@@ -75,19 +81,25 @@ function EditProfileForm() {
         pendingData = pendingResult;
       }
 
-      // Set form data with public values
+      // Set form data with ALL current values (including empty links)
       setFormData({
         photo: null,
-        photoPreview: publicData.photoUrl || null,
-        name: publicData.name || "",
-        role: publicData.skills?.[0]?.skillName || "Film Crew Member",
-        website: publicData.links?.website || "",
-        instagram: publicData.links?.instagram || "",
-        imdb: publicData.links?.imdb || "",
-        linkedin: publicData.links?.linkedin || "",
-        description: publicData.bio || "",
+        photoPreview: editData.photoUrl || null,
+        name: editData.name || "",
+        role: "Film Crew Member", // This can be removed if not needed
+        Website: editData.links.Website || "", // ✅ Will have current value
+        Instagram: editData.links.Instagram || "", // ✅ Will have current value
+        Imdb: editData.links.Imdb || "", // ✅ Will have current value
+        LinkedIn: editData.links.LinkedIn || "", // ✅ Will have current value
+        description: editData.bio || "",
         cv: null,
       });
+
+      console.log("✅ Form initialized with current link values:");
+      console.log("   Website:", editData.links.Website || "(empty)");
+      console.log("   Instagram:", editData.links.Instagram || "(empty)");
+      console.log("   Imdb:", editData.links.Imdb || "(empty)");
+      console.log("   LinkedIn:", editData.links.LinkedIn || "(empty)");
 
       // Set pending status
       if (pendingData?.success) {
@@ -146,9 +158,13 @@ function EditProfileForm() {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    console.log(`📝 Field changed: ${name} = "${value}"`);
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
@@ -198,7 +214,7 @@ function EditProfileForm() {
         cvBlobId = await uploadToAzureBlob(formData.cv, cvFileName, "cv");
       }
 
-      // Prepare update data
+      // Prepare update data - ALL current form values
       const updateData = {
         displayName: formData.name,
         bio: formData.description,
@@ -207,12 +223,14 @@ function EditProfileForm() {
         photoFileName: formData.photo?.name,
         cvFileName: formData.cv?.name,
         links: {
-          website: formData.website,
-          instagram: formData.instagram,
-          imdb: formData.imdb,
-          linkedin: formData.linkedin,
+          Website: formData.Website, // ✅ Current value (unchanged or changed)
+          Instagram: formData.Instagram, // ✅ Current value (unchanged or changed)
+          Imdb: formData.Imdb, // ✅ Current value (unchanged or changed)
+          LinkedIn: formData.LinkedIn, // ✅ Current value (unchanged or changed)
         },
       };
+
+      console.log("📤 Submitting update with links:", updateData.links);
 
       // Save to database
       const response = await fetch("/api/profile/update", {
@@ -229,6 +247,8 @@ function EditProfileForm() {
       }
 
       const result = await response.json();
+
+      console.log("✅ Update response:", result);
 
       // Show verification modal if changes need verification
       if (result.needsVerification) {
@@ -287,7 +307,6 @@ function EditProfileForm() {
             />
           </svg>
         </div>
-        ;
       </div>
     );
   }
@@ -385,7 +404,7 @@ function EditProfileForm() {
                 placeholder={
                   pendingStatus.bio
                     ? "Your bio update is waiting for verification..."
-                    : "No bio provided..."
+                    : "Tell us about yourself..."
                 }
               />
               {pendingStatus.bio && (
@@ -397,14 +416,14 @@ function EditProfileForm() {
 
             {/* Links */}
             <div className={styles.formGroup}>
-              <label htmlFor="website" className={styles.label}>
+              <label htmlFor="Website" className={styles.label}>
                 Website
               </label>
               <input
                 type="url"
-                id="website"
-                name="website"
-                value={formData.website}
+                id="Website"
+                name="Website"
+                value={formData.Website}
                 onChange={handleChange}
                 className={styles.input}
                 placeholder="https://yourwebsite.com"
@@ -412,14 +431,14 @@ function EditProfileForm() {
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="instagram" className={styles.label}>
+              <label htmlFor="Instagram" className={styles.label}>
                 Instagram
               </label>
               <input
                 type="url"
-                id="instagram"
-                name="instagram"
-                value={formData.instagram}
+                id="Instagram"
+                name="Instagram"
+                value={formData.Instagram}
                 onChange={handleChange}
                 className={styles.input}
                 placeholder="https://instagram.com/yourusername"
@@ -427,14 +446,14 @@ function EditProfileForm() {
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="imdb" className={styles.label}>
+              <label htmlFor="Imdb" className={styles.label}>
                 IMDB
               </label>
               <input
                 type="url"
-                id="imdb"
-                name="imdb"
-                value={formData.imdb}
+                id="Imdb"
+                name="Imdb"
+                value={formData.Imdb}
                 onChange={handleChange}
                 className={styles.input}
                 placeholder="https://imdb.com/name/..."
@@ -442,14 +461,14 @@ function EditProfileForm() {
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="linkedin" className={styles.label}>
+              <label htmlFor="LinkedIn" className={styles.label}>
                 LinkedIn
               </label>
               <input
                 type="url"
-                id="linkedin"
-                name="linkedin"
-                value={formData.linkedin}
+                id="LinkedIn"
+                name="LinkedIn"
+                value={formData.LinkedIn}
                 onChange={handleChange}
                 className={styles.input}
                 placeholder="https://linkedin.com/in/..."

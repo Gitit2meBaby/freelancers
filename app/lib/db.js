@@ -183,14 +183,21 @@ export async function executeProcedure(procedureName, params = {}) {
   }
 }
 
+// Enhanced executeUpdate function for db.js
+// Replace the existing executeUpdate function with this version
+
 /**
- * Executes an UPDATE query
+ * Executes an UPDATE query with detailed debugging
  * @param {string} table - Table name
  * @param {Object} updates - Fields to update (key-value pairs)
  * @param {Object} where - WHERE clause conditions (key-value pairs)
  * @returns {Promise<number>} Number of rows affected
  */
 export async function executeUpdate(table, updates, where) {
+  console.log("\n" + "─".repeat(70));
+  console.log("🔧 executeUpdate() called");
+  console.log("─".repeat(70));
+
   try {
     const connection = await getDbConnection();
     const request = connection.request();
@@ -205,43 +212,96 @@ export async function executeUpdate(table, updates, where) {
       .map((key, index) => `${key} = @where${index}`)
       .join(" AND ");
 
+    console.log(`📊 UPDATE Details:`);
+    console.log(`   Table: ${table}`);
+    console.log(`   SET clause: ${setClause}`);
+    console.log(`   WHERE clause: ${whereClause}`);
+
     // Add update parameters
+    console.log(`\n🔢 SET Parameters:`);
     Object.entries(updates).forEach(([key, value], index) => {
+      const paramName = `update${index}`;
+      let sqlType;
+
       if (typeof value === "number") {
-        request.input(`update${index}`, sql.Int, value);
+        request.input(paramName, sql.Int, value);
+        sqlType = "Int";
       } else if (typeof value === "boolean") {
-        request.input(`update${index}`, sql.Bit, value);
+        request.input(paramName, sql.Bit, value);
+        sqlType = "Bit";
       } else if (value === null) {
-        request.input(`update${index}`, sql.NVarChar, null);
+        request.input(paramName, sql.NVarChar, null);
+        sqlType = "NVarChar(NULL)";
       } else {
-        request.input(`update${index}`, sql.NVarChar, value);
+        request.input(paramName, sql.NVarChar, value);
+        sqlType = "NVarChar";
       }
+
+      console.log(
+        `   @${paramName} (${sqlType}) = ${
+          value === null ? "NULL" : `"${value}"`
+        } → ${key}`
+      );
     });
 
     // Add where parameters
+    console.log(`\n🔍 WHERE Parameters:`);
     Object.entries(where).forEach(([key, value], index) => {
+      const paramName = `where${index}`;
+      let sqlType;
+
       if (typeof value === "number") {
-        request.input(`where${index}`, sql.Int, value);
+        request.input(paramName, sql.Int, value);
+        sqlType = "Int";
       } else {
-        request.input(`where${index}`, sql.NVarChar, value);
+        request.input(paramName, sql.NVarChar, value);
+        sqlType = "NVarChar";
       }
+
+      console.log(`   @${paramName} (${sqlType}) = "${value}" → ${key}`);
     });
 
     const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
+
+    console.log(`\n📝 Final SQL Query:`);
+    console.log(`   ${query}`);
+
+    console.log(`\n🚀 Executing query...`);
     const result = await request.query(query);
 
-    console.log("whereClause:", whereClause);
+    console.log(`✅ Query executed successfully`);
+    console.log(`   Rows affected: ${result.rowsAffected[0]}`);
 
+    if (result.rowsAffected[0] === 0) {
+      console.warn(`⚠️ WARNING: No rows were updated!`);
+      console.warn(`   This could mean:`);
+      console.warn(`   1. The WHERE clause didn't match any records`);
+      console.warn(`   2. The table doesn't exist`);
+      console.warn(`   3. The column names are incorrect`);
+      console.warn(`   4. There's a permissions issue`);
+    }
+
+    console.log("─".repeat(70));
     return result.rowsAffected[0];
   } catch (error) {
-    console.error("❌ Update failed:", error);
+    console.error("\n❌ executeUpdate() ERROR");
+    console.error("─".repeat(70));
     console.error("Table:", table);
-    console.error("Updates:", updates);
-    console.error("Where:", where);
+    console.error("Updates:", JSON.stringify(updates, null, 2));
+    console.error("Where:", JSON.stringify(where, null, 2));
+    console.error("Error message:", error.message);
+    console.error("Error code:", error.code);
+    console.error("Error number:", error.number);
+    console.error("Error state:", error.state);
+    console.error("Error class:", error.class);
+    console.error("Error lineNumber:", error.lineNumber);
+    console.error("Error serverName:", error.serverName);
+    console.error("Error procName:", error.procName);
+    console.error("Full error:", error);
+    console.error("─".repeat(70));
     throw error;
   }
 }
-
 /**
  * Executes an INSERT query
  * @param {string} table - Table name
