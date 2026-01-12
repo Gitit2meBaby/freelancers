@@ -8,7 +8,7 @@ import styles from "./styles/home.module.scss";
 
 export default function Home() {
   return (
-    <main data-page="home">
+    <main className={styles.home} data-page="home" data-zIndex="10">
       <Banner />
       <div className={styles.homeContainer}>
         <div className={styles.buttonContainer}>

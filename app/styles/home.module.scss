@@ -64,3 +64,7 @@
     transform: translateX(50%) translateY(-50%);
   }
 }
+
+:has([data-zIndex="10"]) .homeContainer {
+  z-index: 10;
+}
