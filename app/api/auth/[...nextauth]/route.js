@@ -191,6 +191,16 @@ export const authOptions = {
         } else {
           session.user.image = null;
         }
+
+        const adminEmails = [
+          "martine@freelancers.com.au",
+          "liz@freelancers.com.au",
+          "info@freelancers.com.au",
+          "accounts@freelancers.com.au",
+          "dan@officeexperts.com.au",
+          "paul.misfud@officeexperts.com.au",
+        ];
+        session.user.isAdmin = adminEmails.includes(session.user.email);
       }
 
       return session;

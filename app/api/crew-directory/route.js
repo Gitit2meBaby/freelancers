@@ -21,8 +21,6 @@ function generateSlug(name) {
  */
 const getCachedCrewDirectory = unstable_cache(
   async () => {
-    console.log("📊 Fetching crew directory from database...");
-
     // Query the departments and skills view
     const query = `
       SELECT 
@@ -35,7 +33,6 @@ const getCachedCrewDirectory = unstable_cache(
     `;
 
     const results = await executeQuery(query);
-    console.log(`📊 Retrieved ${results.length} rows from database`);
 
     // Build departments map with nested skills
     const departmentsMap = new Map();
@@ -65,8 +62,6 @@ const getCachedCrewDirectory = unstable_cache(
     });
 
     const departments = Array.from(departmentsMap.values());
-
-    console.log(`✅ Processed ${departments.length} departments`);
 
     return {
       departments,

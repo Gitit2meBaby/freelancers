@@ -43,6 +43,7 @@ export const VIEWS = {
     process.env.VIEW_SERVICE_CATEGORIES || "vwServiceCategoriesListWEB2",
   STORED_DOCUMENTS:
     process.env.VIEW_STORED_DOCUMENTS || "vwStoredDocumentsListWEB2",
+  NEWS_ITEMS: process.env.VIEW_NEWS_ITEMS || "vwNewsItemsWEB",
 };
 
 /**
@@ -55,6 +56,7 @@ export const TABLES = {
     process.env.TABLE_FREELANCER_WEBSITE_DATA_LINKS ||
     "tblFreelancerWebsiteDataLinks",
   STORED_DOCUMENTS: process.env.TABLE_STORED_DOCUMENTS || "tblStoredDocuments",
+  NEWS_ITEMS: process.env.TABLE_NEWS_ITEMS || "tblNewsItems",
 };
 
 /**

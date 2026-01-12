@@ -1,4 +1,4 @@
-// app/api/test-connection/route.js
+// app/api/tests/test-connection/route.js
 import { NextResponse } from "next/server";
 import { testConnection, executeQuery, VIEWS } from "../../../lib/db";
 

@@ -101,8 +101,6 @@ export default function UserProfilePage() {
     );
   }
 
-  console.log(profileData);
-
   if (error) {
     return (
       <div className={styles.profilePage}>

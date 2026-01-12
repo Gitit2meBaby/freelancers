@@ -15,12 +15,6 @@ const page = () => {
       <div className={styles.formContainer}>
         <div className={styles.content}>
           <h1>Contact Us</h1>
-          <div className={styles.details}>
-            <p>Address</p>
-            <a href="https://goo.gl/maps/rkXQonMMRqg8tMKQ6">
-              PO Box 5010, South Melbourne, Vic 3205
-            </a>
-          </div>
 
           <div className={styles.gridContainer}>
             <div className={styles.details}>

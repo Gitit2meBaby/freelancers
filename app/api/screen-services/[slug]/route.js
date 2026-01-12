@@ -48,12 +48,8 @@ export async function GET(request, { params }) {
     // IMPORTANT: In Next.js 15+, params is a Promise
     const { slug } = await params;
 
-    console.log(`📊 Fetching services for category slug: ${slug}`);
-
     // Get cached data
     const allResults = await getAllScreenServices();
-
-    console.log(`📊 Total rows from cache: ${allResults.length}`);
 
     // Find all rows that match the category slug
     const matchingRows = allResults.filter((row) => {
@@ -61,10 +57,7 @@ export async function GET(request, { params }) {
       return categorySlug === slug;
     });
 
-    console.log(`📊 Matching rows for slug "${slug}": ${matchingRows.length}`);
-
     if (matchingRows.length === 0) {
-      console.log(`❌ No category found with slug: ${slug}`);
       return NextResponse.json(
         { success: false, error: "Category not found" },
         { status: 404 }
@@ -95,10 +88,6 @@ export async function GET(request, { params }) {
     });
 
     const servicesForCategory = Array.from(servicesMap.values());
-
-    console.log(
-      `✅ Found ${servicesForCategory.length} services for category: ${matchedCategory.name}`
-    );
 
     return NextResponse.json({
       success: true,

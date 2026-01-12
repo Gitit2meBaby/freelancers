@@ -46,24 +46,15 @@ export async function GET(request, { params }) {
     // IMPORTANT: In Next.js 15+, params is a Promise
     const { departmentSlug } = await params;
 
-    console.log(`📊 Fetching skills for department slug: ${departmentSlug}`);
-
     // Get cached data
     const allResults = await getAllDepartmentsSkills();
-
-    console.log(`📊 Total rows from cache: ${allResults.length}`);
 
     // Find all rows that match the department slug
     const matchingRows = allResults.filter((row) => {
       return row.DepartmentSlug === departmentSlug; // Use DB slug
     });
 
-    console.log(
-      `📊 Matching rows for slug "${departmentSlug}": ${matchingRows.length}`
-    );
-
     if (matchingRows.length === 0) {
-      console.log(`❌ No department found with slug: ${departmentSlug}`);
       return NextResponse.json(
         { success: false, error: "Department not found" },
         { status: 404 }
@@ -85,10 +76,6 @@ export async function GET(request, { params }) {
         name: row.Skill,
         slug: row.SkillSlug, // Use DB slug
       }));
-
-    console.log(
-      `✅ Found ${skills.length} skills for department: ${matchedDepartment.name}`
-    );
 
     return NextResponse.json({
       success: true,

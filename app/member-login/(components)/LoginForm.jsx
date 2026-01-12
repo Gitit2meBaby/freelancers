@@ -39,7 +39,6 @@ const LoginForm = () => {
   // Redirect when session becomes available
   useEffect(() => {
     if (status === "authenticated" && session?.user?.slug) {
-      console.log(`✅ Redirecting to /my-account/${session.user.slug}`);
       router.push(`/my-account/${session.user.slug}`);
     }
   }, [status, session, router]);

@@ -45,6 +45,12 @@ const Footer = () => {
           <li>
             <Link href="/contact-us">Contact Us</Link>
           </li>
+          <li>
+            <Link href="/admin/news">Admin</Link>
+          </li>
+          <li>
+            <Link href="/privacy-policy">Privacy Policy</Link>
+          </li>
         </ul>
       </div>
       <div className={`${styles.footerSection} ${styles.contact}`}>

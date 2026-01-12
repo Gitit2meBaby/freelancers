@@ -32,8 +32,6 @@ export async function GET(request) {
       );
     }
 
-    console.log(`🔍 Searching freelancers: "${searchTerm}"`);
-
     // Build query based on filters
     let query;
     let params = {};
@@ -117,8 +115,6 @@ export async function GET(request) {
         };
       })
     );
-
-    console.log(`✅ Found ${enrichedResults.length} results`);
 
     return NextResponse.json({
       success: true,

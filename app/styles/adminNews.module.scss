@@ -1,0 +1,277 @@
+// app/styles/adminNews.module.scss
+.adminPage {
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: var(--color-background-pale-blue);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+
+  h1 {
+    font-size: var(--font-size-3xl);
+    color: var(--color-text-dark);
+  }
+}
+
+.addButton {
+  background: var(--color-brand-secondary);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.5s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background: var(--color-brand-primary);
+    color: var(--color-text-dark);
+  }
+}
+
+.errorMessage {
+  background: #fee;
+  color: #c33;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #c33;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+// Add News Form
+.addForm {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--color-text-dark);
+  }
+}
+
+.formGroup {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-dark);
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-brand-secondary);
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+.fileName {
+  margin-top: 8px;
+  color: #666;
+  font-size: var(--font-size-base);
+}
+
+.submitButton {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 6px;
+  font-size: var(--font-size-base);
+  transition: background 0.5s;
+
+  &:hover {
+    background: #218838;
+  }
+
+  &:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+  }
+}
+
+// News List
+.newsList {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--color-text-dark);
+  }
+}
+
+.noItems {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+}
+
+.newsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.newsItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.newsInfo {
+  flex: 1;
+
+  h3 {
+    margin: 0 0 8px 0;
+    color: var(--color-text-dark);
+    font-size: var(--font-size-base);
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: var(--color-text-dark);
+    font-size: var(--font-size-base);
+  }
+}
+
+.metadata {
+  display: flex;
+  gap: 15px;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.active {
+  color: #28a745;
+  font-weight: var(--font-weight-semibold);
+}
+
+.inactive {
+  color: #dc3545;
+  font-weight: var(--font-weight-semibold);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.viewButton,
+.toggleButton,
+.deleteButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.viewButton {
+  background: #17a2b8;
+  color: white;
+
+  &:hover {
+    background: #117a8b;
+  }
+}
+
+.toggleButton {
+  background: #ffc107;
+  color: #333;
+
+  &:hover {
+    background: #e0a800;
+  }
+}
+
+.deleteButton {
+  background: #dc3545;
+  color: white;
+
+  &:hover {
+    background: #c82333;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .newsItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .viewButton,
+  .toggleButton,
+  .deleteButton {
+    flex: 1;
+    text-align: center;
+  }
+}

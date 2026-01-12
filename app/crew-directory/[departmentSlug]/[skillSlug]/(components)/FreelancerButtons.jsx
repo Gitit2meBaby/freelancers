@@ -12,7 +12,6 @@ export default function FreelancerButtons({ freelancers, showCircles = true }) {
   const handleFreelancerClick = (freelancer) => {
     setSelectedFreelancer(freelancer);
     setIsModalOpen(true);
-    console.log(freelancer);
   };
 
   const handleCloseModal = () => {

@@ -4,8 +4,6 @@ import { executeQuery, VIEWS } from "../../../lib/db";
 
 export async function GET(request) {
   try {
-    console.log("🔍 Checking database schema...");
-
     // Get sample records to see actual column names
     const servicesQuery = `SELECT TOP 1 * FROM ${VIEWS.SERVICES}`;
     const categoriesQuery = `SELECT TOP 1 * FROM ${VIEWS.CATEGORIES}`;

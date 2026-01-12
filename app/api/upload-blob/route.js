@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
-import { uploadBlob, validateFile, generateBlobId } from "../../lib/azureBlob";
+import { uploadBlob, validateFile } from "../../lib/azureBlob";
 
 /**
  * POST /api/upload-blob

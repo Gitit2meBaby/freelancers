@@ -22,8 +22,6 @@ function generateSlug(name) {
  */
 const getCachedScreenServices = unstable_cache(
   async () => {
-    console.log("📊 Fetching screen services from database...");
-
     // Query the denormalized view that contains all data
     const query = `
       SELECT 
@@ -39,7 +37,6 @@ const getCachedScreenServices = unstable_cache(
     `;
 
     const results = await executeQuery(query);
-    console.log(`📊 Retrieved ${results.length} rows from database`);
 
     // Build unique services map
     const servicesMap = new Map();
@@ -93,10 +90,6 @@ const getCachedScreenServices = unstable_cache(
 
     const services = Array.from(servicesMap.values());
     const categories = Array.from(categoriesMap.values());
-
-    console.log(
-      `✅ Processed ${services.length} services and ${categories.length} categories`
-    );
 
     return {
       services,

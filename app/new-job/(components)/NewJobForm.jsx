@@ -35,6 +35,7 @@ const NewJobForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // TODO
     // Handle form submission
     console.log("Form submitted:", formData);
   };

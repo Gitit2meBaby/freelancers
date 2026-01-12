@@ -36,8 +36,6 @@ export async function PUT(request) {
     const freelancerId = parseInt(session.user.id);
     const data = await request.json();
 
-    console.log(`🔄 Updating profile for freelancer ID: ${freelancerId}`);
-
     // ==================================================
     // STEP 1: Get current photo and CV blob IDs for cleanup
     // ==================================================
@@ -64,11 +62,8 @@ export async function PUT(request) {
     // STEP 2: Handle Photo Update
     // ==================================================
     if (data.photoBlobId) {
-      console.log(`📸 Updating photo...`);
-
       // Delete old photo from Azure Blob if it exists and is different
       if (current.PhotoBlobID && current.PhotoBlobID !== data.photoBlobId) {
-        console.log(`🗑️ Deleting old photo: ${current.PhotoBlobID}`);
         try {
           await deleteBlob(current.PhotoBlobID);
         } catch (error) {
@@ -87,18 +82,14 @@ export async function PUT(request) {
       );
 
       hasChanges = true;
-      console.log(`✅ Photo updated successfully`);
     }
 
     // ==================================================
     // STEP 3: Handle CV Update
     // ==================================================
     if (data.cvBlobId) {
-      console.log(`📄 Updating CV...`);
-
       // Delete old CV from Azure Blob if it exists and is different
       if (current.CVBlobID && current.CVBlobID !== data.cvBlobId) {
-        console.log(`🗑️ Deleting old CV: ${current.CVBlobID}`);
         try {
           await deleteBlob(current.CVBlobID);
         } catch (error) {
@@ -117,7 +108,6 @@ export async function PUT(request) {
       );
 
       hasChanges = true;
-      console.log(`✅ CV updated successfully`);
     }
 
     // ==================================================
@@ -138,12 +128,10 @@ export async function PUT(request) {
       data.displayName !== currentValues.DisplayName
     ) {
       textUpdates.DisplayName = data.displayName;
-      console.log(`📝 Updating display name`);
     }
 
     if (data.bio !== undefined && data.bio !== currentValues.FreelancerBio) {
       textUpdates.FreelancerBio = data.bio;
-      console.log(`📝 Updating bio`);
     }
 
     if (Object.keys(textUpdates).length > 0) {
@@ -151,7 +139,6 @@ export async function PUT(request) {
         FreelancerID: freelancerId,
       });
       hasChanges = true;
-      console.log(`✅ Text fields updated successfully`);
     }
 
     // ==================================================
@@ -160,8 +147,6 @@ export async function PUT(request) {
     let linksChanged = false;
 
     if (data.links) {
-      console.log(`🔗 Updating links...`);
-
       // CRITICAL FIX: Query TABLE directly instead of VIEW
       // The VIEW filters out empty/null links, but we need to update them!
       const currentLinksQuery = `
@@ -170,14 +155,9 @@ export async function PUT(request) {
         WHERE FreelancerID = @freelancerId
       `;
 
-      console.log(
-        `📊 Querying TABLE directly: ${TABLES.FREELANCER_WEBSITE_DATA_LINKS}`
-      );
       const currentLinks = await executeQuery(currentLinksQuery, {
         freelancerId,
       });
-
-      console.log(`✅ Found ${currentLinks.length} link record(s) in TABLE`);
 
       // Update each of the 4 link types
       const linkTypes = [
@@ -201,10 +181,6 @@ export async function PUT(request) {
 
           // Only update if URL changed
           if (newUrl !== currentUrl) {
-            console.log(
-              `🔗 Updating ${linkType.name}: "${currentUrl}" → "${newUrl}"`
-            );
-
             await executeUpdate(
               TABLES.FREELANCER_WEBSITE_DATA_LINKS,
               { LinkURL: newUrl },
@@ -215,7 +191,6 @@ export async function PUT(request) {
             );
             linksChanged = true;
             hasChanges = true;
-            console.log(`✅ Updated ${linkType.name}`);
           } else {
             console.log(`ℹ️ ${linkType.name} unchanged`);
           }
@@ -226,12 +201,6 @@ export async function PUT(request) {
           );
         }
       }
-
-      if (linksChanged) {
-        console.log(`✅ Links updated successfully`);
-      } else {
-        console.log(`ℹ️ No link changes detected`);
-      }
     }
 
     // ==================================================
@@ -240,7 +209,6 @@ export async function PUT(request) {
 
     // If no changes were made, return early
     if (!hasChanges) {
-      console.log(`ℹ️ No changes detected - nothing to update`);
       return NextResponse.json({
         success: true,
         message: "No changes detected",
