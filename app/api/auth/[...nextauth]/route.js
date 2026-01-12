@@ -1,9 +1,19 @@
-// app/api/auth/[...nextauth]/route.js - UPDATED WITH PROFILE IMAGE
+// app/api/auth/[...nextauth]/route.js - PRODUCTION READY
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { executeQuery, VIEWS, STATUS_CODES } from "../../../../app/lib/db";
+import {
+  executeQuery,
+  VIEWS,
+  TABLES,
+  STATUS_CODES,
+} from "../../../../app/lib/db";
 import { getBlobUrl } from "../../../../app/lib/azureBlob";
+import {
+  hasPassword,
+  verifyPassword,
+  setInitialPassword,
+} from "../../../../app/lib/passwordUtils";
 
 export const authOptions = {
   providers: [
@@ -20,7 +30,7 @@ export const authOptions = {
       },
     }),
 
-    // Credentials Provider
+    // Credentials Provider (Email + Password)
     CredentialsProvider({
       id: "credentials",
       name: "Email and Password",
@@ -41,7 +51,7 @@ export const authOptions = {
             throw new Error("Email and password are required");
           }
 
-          // Query including PhotoBlobID and PhotoStatusID
+          // Step 1: Check if email exists in vwFreelancersListWEB2
           const query = `
             SELECT 
               FreelancerID,
@@ -58,39 +68,31 @@ export const authOptions = {
             email: credentials.email.toLowerCase().trim(),
           });
 
-          // Email not found
           if (!users || users.length === 0) {
             throw new Error("Email address not found in our database");
           }
 
           const user = users[0];
 
-          // TEMPORARY: Allow login without password verification
-          return {
-            id: user.FreelancerID.toString(),
-            name: user.DisplayName,
-            email: user.Email,
-            slug: user.Slug,
-            photoBlobId: user.PhotoBlobID,
-            photoStatusId: user.PhotoStatusID,
-            isFirstLogin: true,
-          };
-
-          // TODO: Uncomment when PasswordHash is added
-          /*
+          // Step 2: Get PasswordHash from tblFreelancerWebsiteData
           const passwordQuery = `
             SELECT PasswordHash
-            FROM tblFreelancerWebsiteData
+            FROM ${TABLES.FREELANCER_WEBSITE_DATA}
             WHERE FreelancerID = @freelancerId
           `;
-          
+
           const passwordData = await executeQuery(passwordQuery, {
-            freelancerId: user.FreelancerID
+            freelancerId: user.FreelancerID,
           });
 
-          const passwordHash = passwordData[0]?.PasswordHash;
+          if (passwordData.length === 0) {
+            throw new Error("User data not found");
+          }
+
+          const passwordHash = passwordData[0].PasswordHash;
           const userHasPassword = hasPassword(passwordHash);
 
+          // Step 3a: First-time login - set password
           if (!userHasPassword) {
             const result = await setInitialPassword(
               user.FreelancerID,
@@ -112,6 +114,7 @@ export const authOptions = {
             };
           }
 
+          // Step 3b: Returning user - verify password
           const isValidPassword = await verifyPassword(
             credentials.password,
             passwordHash
@@ -130,7 +133,6 @@ export const authOptions = {
             photoStatusId: user.PhotoStatusID,
             isFirstLogin: false,
           };
-          */
         } catch (error) {
           console.error("Authorization error:", error.message);
           throw error;
@@ -146,6 +148,7 @@ export const authOptions = {
 
   callbacks: {
     async jwt({ token, user, trigger }) {
+      // Initial sign in
       if (user) {
         token.id = user.id;
         token.slug = user.slug;
@@ -155,9 +158,11 @@ export const authOptions = {
         token.photoStatusId = user.photoStatusId;
       }
 
+      // Session update trigger (e.g., after profile photo update)
       if (trigger === "update" && user) {
         token.name = user.name;
         token.slug = user.slug;
+
         // Allow updating photo info on session update
         if (user.photoBlobId !== undefined) {
           token.photoBlobId = user.photoBlobId;
@@ -177,7 +182,7 @@ export const authOptions = {
         session.user.freelancerId = token.freelancerId;
         session.user.isFirstLogin = token.isFirstLogin;
 
-        // CRITICAL: Add profile image URL to session
+        // Add profile image URL to session
         if (
           token.photoBlobId &&
           token.photoStatusId === STATUS_CODES.VERIFIED
@@ -192,9 +197,10 @@ export const authOptions = {
     },
 
     async signIn({ user, account }) {
+      // Google OAuth sign-in
       if (account?.provider === "google") {
         try {
-          // Query including PhotoBlobID and PhotoStatusID for Google sign-in too
+          // Check if user exists in database
           const query = `
             SELECT 
               FreelancerID, 
@@ -209,9 +215,10 @@ export const authOptions = {
           const users = await executeQuery(query, { email: user.email });
 
           if (!users || users.length === 0) {
-            return false;
+            return false; // User not in database - deny access
           }
 
+          // User exists - populate session data
           user.id = users[0].FreelancerID.toString();
           user.slug = users[0].Slug;
           user.name = users[0].DisplayName;
@@ -225,12 +232,18 @@ export const authOptions = {
         }
       }
 
+      // Credentials sign-in (handled by authorize function)
       return true;
     },
 
     async redirect({ url, baseUrl }) {
+      // Redirect to the URL if it's relative
       if (url.startsWith("/")) return `${baseUrl}${url}`;
+
+      // Redirect to the URL if it's on the same origin
       if (new URL(url).origin === baseUrl) return url;
+
+      // Otherwise redirect to base URL
       return baseUrl;
     },
   },
@@ -243,7 +256,8 @@ export const authOptions = {
 
   events: {
     async signIn({ user, account }) {
-      const method = account.provider === "google" ? "Google" : "credentials";
+      const method =
+        account.provider === "google" ? "Google" : "Email/Password";
       console.log(`✅ ${method} sign-in: ${user.email}`);
     },
     async signOut({ token }) {
@@ -257,3 +271,42 @@ export const authOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
+
+/**
+ * ================================================
+ * HOW THIS AUTHENTICATION SYSTEM WORKS
+ * ================================================
+ *
+ * EMAIL/PASSWORD LOGIN:
+ * 1. User enters email + password
+ * 2. Check if email exists in vwFreelancersListWEB2 (verified freelancers)
+ * 3. Check if PasswordHash exists in tblFreelancerWebsiteData:
+ *    - NO HASH: First login → Set password, allow access
+ *    - HAS HASH: Verify password → Allow/deny access
+ *
+ * GOOGLE OAUTH LOGIN:
+ * 1. User clicks "Sign in with Google"
+ * 2. Google handles authentication
+ * 3. Check if email exists in vwFreelancersListWEB2
+ *    - YES: Allow access (no password needed)
+ *    - NO: Deny access (not a verified freelancer)
+ *
+ * NOTE: Google OAuth users bypass password system entirely.
+ * They can ONLY sign in via Google, not email/password.
+ *
+ * ================================================
+ * SESSION DATA STRUCTURE
+ * ================================================
+ *
+ * session.user = {
+ *   id: "1152",
+ *   email: "user@example.com",
+ *   name: "Display Name",
+ *   slug: "user-slug",
+ *   freelancerId: 1152,
+ *   isFirstLogin: false,
+ *   image: "https://...blob.core.windows.net/photo-123?sas-token"
+ * }
+ *
+ * ================================================
+ */

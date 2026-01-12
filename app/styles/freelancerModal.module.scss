@@ -88,6 +88,16 @@
   }
 }
 
+.modalContentNoPhoto {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 600px;
+  padding: 1.5rem;
+  .photoColumn {
+    display: none;
+  }
+}
+
 // Left Column - Photo
 .photoColumn {
   display: flex;
@@ -106,9 +116,7 @@
 
 .photoPlaceholder {
   width: 100%;
-  // aspect-ratio: 3 / 4;
   border-radius: 8px;
-  // background-color: var(--color-brand-third);
   display: flex;
   align-items: center;
   justify-content: center;

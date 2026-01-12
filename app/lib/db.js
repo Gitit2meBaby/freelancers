@@ -1,4 +1,4 @@
-// app/lib/db.js - CLEANED VERSION
+// app/lib/db.js
 import sql from "mssql";
 
 /**
@@ -247,83 +247,6 @@ export async function executeUpdate(table, updates, where) {
     throw error;
   }
 }
-
-// /**
-//  * Executes an INSERT query
-//  * @param {string} table - Table name
-//  * @param {Object} data - Data to insert (key-value pairs)
-//  * @returns {Promise<number>} Number of rows affected
-//  */
-// export async function executeInsert(table, data) {
-//   try {
-//     const connection = await getDbConnection();
-//     const request = connection.request();
-
-//     const columns = Object.keys(data).join(", ");
-//     const values = Object.keys(data)
-//       .map((_, index) => `@param${index}`)
-//       .join(", ");
-
-//     // Add parameters
-//     Object.entries(data).forEach(([key, value], index) => {
-//       if (typeof value === "number") {
-//         request.input(`param${index}`, sql.Int, value);
-//       } else if (typeof value === "boolean") {
-//         request.input(`param${index}`, sql.Bit, value);
-//       } else if (value === null) {
-//         request.input(`param${index}`, sql.NVarChar, null);
-//       } else {
-//         request.input(`param${index}`, sql.NVarChar, value);
-//       }
-//     });
-
-//     const query = `INSERT INTO ${table} (${columns}) VALUES (${values})`;
-//     const result = await request.query(query);
-
-//     return result.rowsAffected[0];
-//   } catch (error) {
-//     console.error("Insert failed:", error);
-//     console.error("Table:", table);
-//     console.error("Data:", data);
-//     throw error;
-//   }
-// }
-
-// /**
-//  * Executes a DELETE query
-//  * @param {string} table - Table name
-//  * @param {Object} where - WHERE clause conditions (key-value pairs)
-//  * @returns {Promise<number>} Number of rows affected
-//  */
-// export async function executeDelete(table, where) {
-//   try {
-//     const connection = await getDbConnection();
-//     const request = connection.request();
-
-//     const whereClause = Object.keys(where)
-//       .map((key, index) => `${key} = @param${index}`)
-//       .join(" AND ");
-
-//     // Add parameters
-//     Object.entries(where).forEach(([key, value], index) => {
-//       if (typeof value === "number") {
-//         request.input(`param${index}`, sql.Int, value);
-//       } else {
-//         request.input(`param${index}`, sql.NVarChar, value);
-//       }
-//     });
-
-//     const query = `DELETE FROM ${table} WHERE ${whereClause}`;
-//     const result = await request.query(query);
-
-//     return result.rowsAffected[0];
-//   } catch (error) {
-//     console.error("Delete failed:", error);
-//     console.error("Table:", table);
-//     console.error("Where:", where);
-//     throw error;
-//   }
-// }
 
 /**
  * Safely closes the database connection pool

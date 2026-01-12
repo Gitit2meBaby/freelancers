@@ -35,7 +35,10 @@ export default function FreelancerModal({ freelancer, onClose }) {
 
   return (
     <div className={styles.modalBackdrop} onClick={handleBackdropClick}>
-      <div className={styles.modal}>
+      <div
+        className={styles.modal}
+        style={{ maxWidth: freelancer.photoUrl ? "900px" : "450px" }}
+      >
         {/* Close Button */}
         <button
           className={styles.closeButton}
@@ -64,7 +67,13 @@ export default function FreelancerModal({ freelancer, onClose }) {
           </svg>
         </button>
 
-        <div className={styles.modalContent}>
+        <div
+          className={
+            freelancer.photoUrl
+              ? styles.modalContent
+              : styles.modalContentNoPhoto
+          }
+        >
           {/* Left Column - Photo */}
           <div className={styles.photoColumn}>
             {freelancer.photoUrl ? (
@@ -86,7 +95,10 @@ export default function FreelancerModal({ freelancer, onClose }) {
           </div>
 
           {/* Right Column - Details */}
-          <div className={styles.detailsColumn}>
+          <div
+            className={styles.detailsColumn}
+            style={{ gap: freelancer.bio ? "1.5rem" : "0" }}
+          >
             {/* Name */}
             <h2 className={styles.name}>{freelancer.name}</h2>
 
@@ -97,7 +109,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
               </div>
             ) : (
               <div className={styles.bio}>
-                <span>Bio not available...</span>
+                <span></span>
               </div>
             )}
 
@@ -258,7 +270,12 @@ export default function FreelancerModal({ freelancer, onClose }) {
 
             {/* CV Download */}
             {freelancer.cvUrl && (
-              <div className={styles.cvSection}>
+              <div
+                className={styles.cvSection}
+                style={{
+                  borderTop: freelancer.bio ? "2px solid #e5f4f8" : "none",
+                }}
+              >
                 <a
                   href={freelancer.cvUrl}
                   target="_blank"

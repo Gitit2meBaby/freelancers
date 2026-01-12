@@ -1,113 +1,158 @@
 // app/lib/passwordUtils.js
 import bcrypt from "bcryptjs";
+import { executeQuery, executeUpdate, TABLES } from "./db";
+
+const SALT_ROUNDS = 12;
 
 /**
- * Password Utilities with FULL Database Access
- * Table: tblFreelancerWebsiteData
+ * Hash a password using bcrypt
+ * @param {string} password - Plain text password
+ * @returns {Promise<string>} Hashed password
  */
+export async function hashPassword(password) {
+  return await bcrypt.hash(password, SALT_ROUNDS);
+}
 
 /**
- * Check if a password hash exists and is valid
+ * Verify a password against a hash
+ * @param {string} password - Plain text password
+ * @param {string} hash - Hashed password from database
+ * @returns {Promise<boolean>} True if password matches
  */
-export function hasPassword(hash) {
+export async function verifyPassword(password, hash) {
+  if (!hash) return false;
+  return await bcrypt.compare(password, hash);
+}
+
+/**
+ * Check if a user has a password set
+ * @param {string|null} passwordHash - Password hash from database
+ * @returns {boolean} True if user has a password
+ */
+export function hasPassword(passwordHash) {
   return (
-    hash !== null && hash !== undefined && hash !== "" && hash.trim().length > 0
+    passwordHash !== null && passwordHash !== undefined && passwordHash !== ""
   );
 }
 
 /**
- * Hash a password using bcrypt
+ * Set initial password for a user (first-time login)
+ * @param {number} freelancerId - The user's FreelancerID
+ * @param {string} password - Plain text password to set
+ * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function hashPassword(password) {
-  if (!password || typeof password !== "string") {
-    throw new Error("Password is required");
-  }
-
-  return await bcrypt.hash(password, 12);
-}
-
-/**
- * Verify password against bcrypt hash
- */
-export async function verifyPassword(password, hash) {
-  if (!password || !hash) {
-    return false;
-  }
-
+export async function setInitialPassword(freelancerId, password) {
   try {
-    return await bcrypt.compare(password, hash);
-  } catch (error) {
-    console.error("❌ Password verification error:", error);
-    return false;
-  }
-}
+    // Hash the password
+    const passwordHash = await hashPassword(password);
 
-/**
- * Set initial password for user (first-time login)
- */
-export async function setInitialPassword(userId, password) {
-  try {
-    const { executeUpdate } = await import("./db");
-
-    const hash = await hashPassword(password);
-
-    console.log(`🔐 Setting initial password for FreelancerID ${userId}`);
-
-    // You have FULL access to update this table
-    await executeUpdate(
-      "tblFreelancerWebsiteData",
-      {
-        PasswordHash: hash,
-        PasswordSetAt: new Date(),
-      },
-      { FreelancerID: userId }
+    // Update the database
+    const rowsAffected = await executeUpdate(
+      TABLES.FREELANCER_WEBSITE_DATA,
+      { PasswordHash: passwordHash },
+      { FreelancerID: freelancerId }
     );
 
-    console.log("✅ Initial password set successfully");
+    if (rowsAffected === 0) {
+      return {
+        success: false,
+        error: "Failed to update password - user not found",
+      };
+    }
 
-    return {
-      success: true,
-      hash,
-    };
+    return { success: true };
   } catch (error) {
-    console.error("❌ Failed to set initial password:", error);
+    console.error("Error setting initial password:", error);
     return {
       success: false,
-      error: error.message,
+      error: error.message || "Failed to set password",
     };
   }
 }
 
-export default {
-  hasPassword,
-  hashPassword,
-  verifyPassword,
-  setInitialPassword,
-};
+/**
+ * Update password for an existing user
+ * @param {number} freelancerId - The user's FreelancerID
+ * @param {string} currentPassword - Current password (for verification)
+ * @param {string} newPassword - New password to set
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function updatePassword(
+  freelancerId,
+  currentPassword,
+  newPassword
+) {
+  try {
+    // Get current password hash
+    const query = `
+      SELECT PasswordHash
+      FROM ${TABLES.FREELANCER_WEBSITE_DATA}
+      WHERE FreelancerID = @freelancerId
+    `;
+
+    const result = await executeQuery(query, { freelancerId });
+
+    if (result.length === 0) {
+      return {
+        success: false,
+        error: "User not found",
+      };
+    }
+
+    const currentHash = result[0].PasswordHash;
+
+    // Verify current password
+    const isValid = await verifyPassword(currentPassword, currentHash);
+
+    if (!isValid) {
+      return {
+        success: false,
+        error: "Current password is incorrect",
+      };
+    }
+
+    // Hash new password
+    const newPasswordHash = await hashPassword(newPassword);
+
+    // Update the database
+    const rowsAffected = await executeUpdate(
+      TABLES.FREELANCER_WEBSITE_DATA,
+      { PasswordHash: newPasswordHash },
+      { FreelancerID: freelancerId }
+    );
+
+    if (rowsAffected === 0) {
+      return {
+        success: false,
+        error: "Failed to update password",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating password:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to update password",
+    };
+  }
+}
 
 /**
- * YOU HAVE FULL ACCESS TO:
- *
- * tblFreelancerWebsiteData
- * ------------------------
- * - FreelancerID (PK)
- * - DisplayName ✅ READ, WRITE, UPDATE, DELETE
- * - FreelancerBio ✅ READ, WRITE, UPDATE, DELETE
- * - PhotoBlobID ✅ READ, WRITE, UPDATE, DELETE
- * - PhotoStatusID ✅ READ, WRITE, UPDATE, DELETE
- * - CVBlobID ✅ READ, WRITE, UPDATE, DELETE
- * - CVStatusID ✅ READ, WRITE, UPDATE, DELETE
- * - PasswordHash ✅ READ, WRITE, UPDATE, DELETE (once you add the field)
- * - PasswordSetAt ✅ READ, WRITE, UPDATE, DELETE (once you add the field)
- *
- * tblFreelancerWebsiteDataLinks
- * -----------------------------
- * - FreelancerLinkID (PK)
- * - FreelancerID (FK)
- * - LinkName ✅ READ, WRITE, UPDATE, DELETE
- * - LinkURL ✅ READ, WRITE, UPDATE, DELETE
- *
- * tblStoredDocuments
- * -----------------
- * - All fields ✅ READ, WRITE, UPDATE, DELETE
+ * Validate password strength
+ * @param {string} password - Password to validate
+ * @returns {{valid: boolean, error?: string}}
  */
+export function validatePasswordStrength(password) {
+  if (!password || password.length < 8) {
+    return {
+      valid: false,
+      error: "Password must be at least 8 characters long",
+    };
+  }
+
+  // Add more validation rules as needed
+  // Example: require uppercase, lowercase, numbers, special chars
+
+  return { valid: true };
+}
