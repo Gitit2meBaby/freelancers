@@ -205,7 +205,7 @@ export function validateFile(file, type) {
       ],
     },
     "news-pdf": {
-      mimeTypes: ["application/pdf"],
+      allowedTypes: ["application/pdf"],
       maxSize: 10 * 1024 * 1024, // 10MB
       errorMessage: "News PDF must be a PDF file and less than 10MB",
     },

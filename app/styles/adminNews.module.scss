@@ -1,277 +1,297 @@
-// app/styles/adminNews.module.scss
+// styles/adminNews.module.scss
+
 .adminPage {
   min-height: 100vh;
-  padding: 40px 20px;
-  background: var(--color-background-pale-blue);
+  padding: 2rem;
+  background: #f5f5f5;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 1rem;
 
   h1 {
-    font-size: var(--font-size-3xl);
-    color: var(--color-text-dark);
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 0.95rem;
   }
 }
 
-.addButton {
-  background: var(--color-brand-secondary);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.5s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
 
-  &:hover {
-    background: var(--color-brand-primary);
-    color: var(--color-text-dark);
+  p {
+    font-size: 1.1rem;
   }
 }
 
 .errorMessage {
   background: #fee;
-  color: #c33;
-  padding: 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  border-left: 4px solid #c33;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
 
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 1.1rem;
-}
-
-// Add News Form
-.addForm {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-
-  h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: var(--color-text-dark);
-  }
-}
-
-.formGroup {
-  margin-bottom: 20px;
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-dark);
-  }
-
-  input,
-  textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-
-    &:focus {
-      outline: none;
-      border-color: var(--color-brand-secondary);
-      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
-    }
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-}
-
-.fileName {
-  margin-top: 8px;
-  color: #666;
-  font-size: var(--font-size-base);
-}
-
-.submitButton {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: var(--font-size-base);
-  transition: background 0.5s;
-
-  &:hover {
-    background: #218838;
-  }
-
-  &:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-  }
-}
-
-// News List
-.newsList {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-
-  h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: var(--color-text-dark);
+  p {
+    color: #c33;
+    margin: 0;
   }
 }
 
 .noItems {
   text-align: center;
+  padding: 3rem;
   color: #999;
-  padding: 40px;
+  font-style: italic;
 }
 
-.newsTable {
+// News Items List
+.newsList {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 1.5rem;
 }
 
-.newsItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
+.newsItemCard {
+  border: 1px solid #ddd;
   border-radius: 6px;
+  padding: 1.5rem;
   background: #fafafa;
-  transition: box-shadow 0.2s;
+  transition: all 0.3s ease;
 
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
 }
 
 .newsInfo {
-  flex: 1;
+  margin-bottom: 1rem;
 
   h3 {
-    margin: 0 0 8px 0;
-    color: var(--color-text-dark);
-    font-size: var(--font-size-base);
+    font-size: 1.3rem;
+    color: #333;
+    margin-bottom: 0.5rem;
   }
 
-  p {
-    margin: 0 0 10px 0;
-    color: var(--color-text-dark);
-    font-size: var(--font-size-base);
+  .metadata {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    color: #666;
+    flex-wrap: wrap;
+
+    span {
+      display: flex;
+      align-items: center;
+    }
+
+    .fileName {
+      font-family: monospace;
+      background: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      border: 1px solid #e0e0e0;
+    }
   }
-}
-
-.metadata {
-  display: flex;
-  gap: 15px;
-  font-size: 0.85rem;
-  color: #999;
-}
-
-.active {
-  color: #28a745;
-  font-weight: var(--font-weight-semibold);
-}
-
-.inactive {
-  color: #dc3545;
-  font-weight: var(--font-weight-semibold);
 }
 
 .actions {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .viewButton,
-.toggleButton,
-.deleteButton {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-size-base);
+.editButton {
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  border: none;
   text-decoration: none;
   display: inline-block;
 }
 
 .viewButton {
-  background: #17a2b8;
+  background: #4a90e2;
   color: white;
 
   &:hover {
-    background: #117a8b;
+    background: #357abd;
   }
 }
 
-.toggleButton {
-  background: #ffc107;
-  color: #333;
-
-  &:hover {
-    background: #e0a800;
-  }
-}
-
-.deleteButton {
-  background: #dc3545;
+.editButton {
+  background: #f0ad4e;
   color: white;
 
   &:hover {
-    background: #c82333;
+    background: #ec971f;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+}
+
+// Edit Form
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+  }
+
+  input[type="text"] {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+  }
+
+  input[type="file"] {
+    padding: 0.5rem;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #4a90e2;
+    }
+  }
+
+  .fileName,
+  .currentFile {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+    margin-top: 0.25rem;
+  }
+
+  .currentFile {
+    color: #888;
+  }
+}
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.saveButton,
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.saveButton {
+  background: #5cb85c;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: #4cae4c;
+  }
+}
+
+.cancelButton {
+  background: #d9534f;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: #c9302c;
   }
 }
 
 // Responsive
 @media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
+  .adminPage {
+    padding: 1rem;
   }
 
-  .newsItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
+  .container {
+    padding: 1.5rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .newsInfo {
+    h3 {
+      font-size: 1.1rem;
+    }
+
+    .metadata {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
   }
 
   .actions {
-    width: 100%;
-    flex-wrap: wrap;
+    flex-direction: column;
+
+    button,
+    a {
+      width: 100%;
+      text-align: center;
+    }
   }
 
-  .viewButton,
-  .toggleButton,
-  .deleteButton {
-    flex: 1;
-    text-align: center;
+  .formActions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
   }
 }

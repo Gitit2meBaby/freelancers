@@ -4,7 +4,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Copyright from "./components/Copyright";
 import Navigation from "./components/Navigation";
-import CookieConsent from "./components/CookieConsent";
+// import CookieConsent from "./components/CookieConsent";
 import AuthProvider from "./components/SessionProvider";
 
 import "./globals.css";
@@ -156,7 +156,7 @@ export default function RootLayout({ children }) {
         </AuthProvider>
         <Footer />
         <Copyright />
-        <CookieConsent />
+        {/* <CookieConsent /> */}
         {/* Google Tag Manager */}
         <script
           id="google-gtag-init"

@@ -1,7 +1,7 @@
-// app/api/news/route.js
+// app/api/news/route.js - WORKING VERSION
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { executeQuery, VIEWS } from "../../lib/db";
+import { executeQuery } from "../../lib/db";
 import { getBlobUrl } from "../../lib/azureBlob";
 
 /**
@@ -9,33 +9,34 @@ import { getBlobUrl } from "../../lib/azureBlob";
  */
 const getActiveNewsItems = unstable_cache(
   async () => {
-    console.log("📰 Fetching news items from database...");
-
+    // Query tables directly - only columns we know exist
     const query = `
       SELECT 
-        NewsItemID,
-        Title,
-        PDFBlobID,
-        PDFFileName,
-        PublishDate
-      FROM ${VIEWS.NEWS_ITEMS}
-      ORDER BY PublishDate DESC
+        n.NewsItemID,
+        n.NewsItem,
+        n.NewsBlobID,
+        sd.DocumentTitle,
+        sd.OriginalFileName
+      FROM tblNewsItems n
+      LEFT JOIN tblStoredDocuments sd 
+        ON n.NewsBlobID = sd.BlobID 
+        AND sd.StoredDocumentTypeID = 4
+      ORDER BY n.NewsItemID
     `;
 
     const results = await executeQuery(query);
-    console.log(`✅ Retrieved ${results.length} news items`);
 
     return results.map((item) => ({
       id: item.NewsItemID,
-      title: item.Title,
-      pdfUrl: getBlobUrl(item.PDFBlobID),
-      pdfFileName: item.PDFFileName,
-      publishDate: item.PublishDate,
+      title: item.NewsItem,
+      pdfUrl: item.NewsBlobID ? getBlobUrl(item.NewsBlobID) : null,
+      pdfFileName: item.OriginalFileName,
+      blobId: item.NewsBlobID,
     }));
   },
   ["news-items"],
   {
-    revalidate: 3600, // Cache for 1 hour
+    revalidate: 3600,
     tags: ["news"],
   }
 );

@@ -13,9 +13,9 @@ export default function AdminNewsPage() {
   const [newsItems, setNewsItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
 
-  // Form state
+  // Form state for editing
   const [formData, setFormData] = useState({
     title: "",
     pdfFile: null,
@@ -24,8 +24,6 @@ export default function AdminNewsPage() {
 
   const isLoggedIn = status === "authenticated";
   const isLoading = status === "loading";
-
-  // Check if user is admin (you'll need to add isAdmin to your session)
   const isAdmin = session?.user?.isAdmin || false;
 
   useEffect(() => {
@@ -69,11 +67,29 @@ export default function AdminNewsPage() {
     setFormData({ ...formData, pdfFile: file });
   };
 
+  const startEdit = (item) => {
+    setEditingItem(item);
+    setFormData({
+      title: item.title,
+      pdfFile: null,
+    });
+    setError(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingItem(null);
+    setFormData({
+      title: "",
+      pdfFile: null,
+    });
+    setError(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.pdfFile) {
-      alert("Please provide a title and PDF file");
+    if (!formData.title) {
+      alert("Please provide a title");
       return;
     }
 
@@ -81,89 +97,57 @@ export default function AdminNewsPage() {
     setError(null);
 
     try {
-      // Upload PDF to Azure Blob
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", formData.pdfFile);
-      uploadFormData.append("blobId", `news-${Date.now()}`);
-      uploadFormData.append("type", "news-pdf");
+      let newBlobId = null;
 
-      const uploadResponse = await fetch("/api/upload-blob", {
-        method: "POST",
-        body: uploadFormData,
-      });
+      // If a new PDF file was selected, upload it to Azure Blob
+      if (formData.pdfFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", formData.pdfFile);
+        uploadFormData.append("blobId", editingItem.blobId); // Use existing blobId
+        uploadFormData.append("type", "news-pdf");
 
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload PDF");
+        const uploadResponse = await fetch("/api/upload-blob", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload PDF");
+        }
+
+        const uploadResult = await uploadResponse.json();
+        newBlobId = uploadResult.blobId;
       }
 
-      const uploadResult = await uploadResponse.json();
+      // Update news item in database
+      const updateResponse = await fetch(
+        `/api/admin/news/${editingItem.blobId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formData.title,
+            newBlobId: newBlobId, // Only sent if a new file was uploaded
+            fileName: formData.pdfFile ? formData.pdfFile.name : null,
+          }),
+        }
+      );
 
-      // Create news item in database
-      const createResponse = await fetch("/api/admin/news", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formData.title,
-          pdfBlobId: uploadResult.blobId,
-          pdfFileName: formData.pdfFile.name,
-        }),
-      });
-
-      if (!createResponse.ok) {
-        throw new Error("Failed to create news item");
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.error || "Failed to update news item");
       }
 
       // Reset form and refresh list
       setFormData({ title: "", pdfFile: null });
-      setShowAddForm(false);
+      setEditingItem(null);
       fetchNewsItems();
-      alert("News item added successfully!");
+      alert("News item updated successfully!");
     } catch (err) {
-      console.error("Error adding news:", err);
+      console.error("Error updating news:", err);
       setError(err.message);
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this news item?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/admin/news/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete news item");
-      }
-
-      fetchNewsItems();
-      alert("News item deleted successfully!");
-    } catch (err) {
-      console.error("Error deleting news:", err);
-      alert(err.message);
-    }
-  };
-
-  const toggleActive = async (id, currentStatus) => {
-    try {
-      const response = await fetch(`/api/admin/news/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update news item");
-      }
-
-      fetchNewsItems();
-    } catch (err) {
-      console.error("Error updating news:", err);
-      alert(err.message);
     }
   };
 
@@ -180,12 +164,9 @@ export default function AdminNewsPage() {
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Manage News</h1>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className={styles.addButton}
-          >
-            {showAddForm ? "Cancel" : "Add News Item"}
-          </button>
+          <p className={styles.subtitle}>
+            Update the 4 monthly news documents below
+          </p>
         </div>
 
         {error && (
@@ -194,105 +175,118 @@ export default function AdminNewsPage() {
           </div>
         )}
 
-        {showAddForm && (
-          <form onSubmit={handleSubmit} className={styles.addForm}>
-            <h2>Add New News Item</h2>
+        {loading ? (
+          <div className={styles.loading}>
+            <p>Loading news items...</p>
+          </div>
+        ) : (
+          <div className={styles.newsList}>
+            {newsItems.map((item) => (
+              <div key={item.id} className={styles.newsItemCard}>
+                {editingItem?.id === item.id ? (
+                  // Edit Mode
+                  <form onSubmit={handleSubmit} className={styles.editForm}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor={`title-${item.id}`}>Title *</label>
+                      <input
+                        type="text"
+                        id={`title-${item.id}`}
+                        value={formData.title}
+                        onChange={(e) =>
+                          setFormData({ ...formData, title: e.target.value })
+                        }
+                        placeholder="e.g., Drama Production Report Dec 25"
+                        required
+                      />
+                    </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="title">Title *</label>
-              <input
-                type="text"
-                id="title"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                placeholder="e.g., Drama Production Report Dec 25"
-                required
-              />
-            </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor={`pdfFile-${item.id}`}>
+                        PDF File{" "}
+                        {formData.pdfFile
+                          ? "*"
+                          : "(optional - leave empty to keep current file)"}
+                      </label>
+                      <input
+                        type="file"
+                        id={`pdfFile-${item.id}`}
+                        accept="application/pdf"
+                        onChange={handleFileChange}
+                      />
+                      {formData.pdfFile && (
+                        <p className={styles.fileName}>
+                          {formData.pdfFile.name}
+                        </p>
+                      )}
+                      {!formData.pdfFile && (
+                        <p className={styles.currentFile}>
+                          Current file: {item.pdfFileName}
+                        </p>
+                      )}
+                    </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="pdfFile">PDF File *</label>
-              <input
-                type="file"
-                id="pdfFile"
-                accept="application/pdf"
-                onChange={handleFileChange}
-                required
-              />
-              {formData.pdfFile && (
-                <p className={styles.fileName}>{formData.pdfFile.name}</p>
-              )}
-            </div>
+                    <div className={styles.formActions}>
+                      <button
+                        type="submit"
+                        className={styles.saveButton}
+                        disabled={uploading}
+                      >
+                        {uploading ? "Updating..." : "Save Changes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className={styles.cancelButton}
+                        disabled={uploading}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  // View Mode
+                  <>
+                    <div className={styles.newsInfo}>
+                      <h3>{item.title}</h3>
+                      <div className={styles.metadata}>
+                        <span>
+                          Published:{" "}
+                          {new Date(item.publishDate).toLocaleDateString()}
+                        </span>
+                        <span className={styles.fileName}>
+                          File: {item.pdfFileName}
+                        </span>
+                      </div>
+                    </div>
 
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={uploading}
-            >
-              {uploading ? "Uploading..." : "Add News Item"}
-            </button>
-          </form>
+                    <div className={styles.actions}>
+                      <a
+                        // href={item.pdfUrl}
+                        href={`https://fpsblobstorage.blob.core.windows.net/fpsblob/${item.blobId}?si=fpspolicy1&spr=https&sv=2024-11-04&sr=c&sig=htuZz2ljPtxw1Vze%2BkpKm7eNA59fdMw1ZNRQN9PW3XE%3D`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.viewButton}
+                      >
+                        View PDF
+                      </a>
+                      <button
+                        onClick={() => startEdit(item)}
+                        className={styles.editButton}
+                        disabled={editingItem !== null}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         )}
 
-        <div className={styles.newsList}>
-          <h2>Current News Items</h2>
-
-          {loading ? (
-            <div className={styles.loading}>
-              <p>Loading news items...</p>
-            </div>
-          ) : newsItems.length === 0 ? (
-            <p className={styles.noItems}>No news items yet</p>
-          ) : (
-            <div className={styles.newsTable}>
-              {newsItems.map((item) => (
-                <div key={item.id} className={styles.newsItem}>
-                  <div className={styles.newsInfo}>
-                    <h3>{item.title}</h3>
-                    <div className={styles.metadata}>
-                      <span>
-                        Published:{" "}
-                        {new Date(item.publishDate).toLocaleDateString()}
-                      </span>
-                      <span
-                        className={
-                          item.isActive ? styles.active : styles.inactive
-                        }
-                      >
-                        {item.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles.actions}>
-                    <a
-                      href={item.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.viewButton}
-                    >
-                      View PDF
-                    </a>
-                    <button
-                      onClick={() => toggleActive(item.id, item.isActive)}
-                      className={styles.toggleButton}
-                    >
-                      {item.isActive ? "Deactivate" : "Activate"}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {newsItems.length === 0 && !loading && (
+          <p className={styles.noItems}>No news items found</p>
+        )}
       </div>
     </div>
   );
