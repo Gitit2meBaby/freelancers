@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 
 import styles from "../styles/editProfile.module.scss";
 
+export const dynamic = "force-dynamic";
 function EditProfileForm() {
   const router = useRouter();
   const { data: session, status } = useSession();

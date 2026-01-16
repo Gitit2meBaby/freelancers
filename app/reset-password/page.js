@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import styles from "../styles/forgotPassword.module.scss";
 
+export const dynamic = "force-dynamic";
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

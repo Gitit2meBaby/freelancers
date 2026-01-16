@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "../styles/forgotPassword.module.scss";
 
+export const dynamic = "force-dynamic";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle, loading, success, error

@@ -11,6 +11,8 @@ import News from "../../components/News";
 
 import styles from "../../styles/profile.module.scss";
 
+export const dynamic = "force-dynamic";
+
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();

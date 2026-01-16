@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 
 import styles from "../../styles/adminNews.module.scss";
 
+export const dynamic = "force-dynamic";
 export default function AdminNewsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();

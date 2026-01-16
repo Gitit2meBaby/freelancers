@@ -1,9 +1,10 @@
-import React from "react";
-import Image from "next/image";
+import { Suspense } from "react";
 
 import styles from "../styles/contactUs.module.scss";
 
 import ContactForm from "../components/ContactForm";
+
+export const dynamic = "force-dynamic";
 
 const page = () => {
   return (
@@ -33,8 +34,9 @@ const page = () => {
             </div>
           </div>
         </div>
-
-        <ContactForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <ContactForm />
+        </Suspense>
       </div>
 
       <div className={styles.imageContainer}></div>

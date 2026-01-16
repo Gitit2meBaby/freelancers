@@ -1,8 +1,11 @@
 import React from "react";
+import { Suspense } from "react";
 
 import LoginForm from "./(components)/LoginForm";
 
 import styles from "../styles/memberLogin.module.scss";
+
+export const dynamic = "force-dynamic";
 const page = () => {
   return (
     <section
@@ -15,7 +18,9 @@ const page = () => {
       <div className={styles.formContainer}>
         <div className={styles.content}>
           <h1>Member Login</h1>
-          <LoginForm />
+          <Suspense fallback={null}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </section>
