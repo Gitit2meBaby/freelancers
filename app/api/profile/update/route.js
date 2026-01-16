@@ -1,25 +1,26 @@
-// app/api/profile/update/route.js - FIXED VERSION
+// app/api/profile/update/route.js - CORRECTED (No Verification Changes)
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { revalidateTag } from "next/cache";
 import {
   executeQuery,
   executeUpdate,
-  executeDelete,
   VIEWS,
   TABLES,
   LINK_TYPES,
-  STATUS_CODES,
 } from "@/app/lib/db";
-import { deleteBlob } from "@/app/lib/azureBlob";
 
 /**
  * PUT /api/profile/update
  * Simple profile updates - bio, photo, and 4 links
  * Only UPDATE operations, no INSERTs needed
  *
- * FIXED: Now queries TABLE directly for links instead of VIEW
- * (VIEW filters out empty links, but we need to update them)
+ * CRITICAL RULES:
+ * 1. Blob IDs are FIXED (P000123, C000123) based on FreelancerID
+ * 2. Azure Blob automatically overwrites when uploading with same ID
+ * 3. NO DELETION needed - we just update the database references
+ * 4. NO VERIFICATION STATUS CHANGES - verification is set once during setup
  */
 export async function PUT(request) {
   try {
@@ -36,84 +37,63 @@ export async function PUT(request) {
     const freelancerId = parseInt(session.user.id);
     const data = await request.json();
 
-    // ==================================================
-    // STEP 1: Get current photo and CV blob IDs for cleanup
-    // ==================================================
-    const currentDataQuery = `
-      SELECT PhotoBlobID, CVBlobID
-      FROM ${VIEWS.FREELANCERS}
-      WHERE FreelancerID = @freelancerId
-    `;
+    console.log(`🔵 Updating profile for freelancer ${freelancerId}`);
+    console.log(`📝 Data received:`, {
+      hasPhoto: !!data.photoBlobId,
+      hasCv: !!data.cvBlobId,
+      hasName: !!data.displayName,
+      hasBio: !!data.bio,
+      hasLinks: !!data.links,
+    });
 
-    const currentData = await executeQuery(currentDataQuery, { freelancerId });
-
-    if (currentData.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Freelancer not found" },
-        { status: 404 }
-      );
-    }
-
-    const current = currentData[0];
     let hasChanges = false;
     let textUpdates = {};
 
     // ==================================================
-    // STEP 2: Handle Photo Update
+    // STEP 1: Handle Photo Update
     // ==================================================
     if (data.photoBlobId) {
-      // Delete old photo from Azure Blob if it exists and is different
-      if (current.PhotoBlobID && current.PhotoBlobID !== data.photoBlobId) {
-        try {
-          await deleteBlob(current.PhotoBlobID);
-        } catch (error) {
-          console.warn(`⚠️ Failed to delete old photo blob: ${error.message}`);
-        }
-      }
+      console.log(`📸 Updating photo blob ID to: ${data.photoBlobId}`);
 
-      // Update freelancer with new photo blob ID
+      // Simply update the database with the new blob ID
+      // NO DELETION - Azure Blob has already overwritten the file
+      // NO VERIFICATION STATUS CHANGE - verification is permanent
       await executeUpdate(
         TABLES.FREELANCER_WEBSITE_DATA,
         {
           PhotoBlobID: data.photoBlobId,
-          PhotoStatusID: STATUS_CODES.TO_BE_VERIFIED,
         },
         { FreelancerID: freelancerId }
       );
 
       hasChanges = true;
+      console.log(`✅ Photo blob ID updated in database`);
     }
 
     // ==================================================
-    // STEP 3: Handle CV Update
+    // STEP 2: Handle CV Update
     // ==================================================
     if (data.cvBlobId) {
-      // Delete old CV from Azure Blob if it exists and is different
-      if (current.CVBlobID && current.CVBlobID !== data.cvBlobId) {
-        try {
-          await deleteBlob(current.CVBlobID);
-        } catch (error) {
-          console.warn(`⚠️ Failed to delete old CV blob: ${error.message}`);
-        }
-      }
+      console.log(`📄 Updating CV blob ID to: ${data.cvBlobId}`);
 
-      // Update freelancer with new CV blob ID
+      // Simply update the database with the new blob ID
+      // NO DELETION - Azure Blob has already overwritten the file
+      // NO VERIFICATION STATUS CHANGE - verification is permanent
       await executeUpdate(
         TABLES.FREELANCER_WEBSITE_DATA,
         {
           CVBlobID: data.cvBlobId,
-          CVStatusID: STATUS_CODES.TO_BE_VERIFIED,
         },
         { FreelancerID: freelancerId }
       );
 
       hasChanges = true;
+      console.log(`✅ CV blob ID updated in database`);
     }
 
     // ==================================================
-    // STEP 4: Update Bio and Name (with change detection)
+    // STEP 3: Update Bio and Name (with change detection)
     // ==================================================
-    // First, get current values to check if they actually changed
     const currentTextQuery = `
       SELECT DisplayName, FreelancerBio
       FROM ${VIEWS.FREELANCERS}
@@ -128,10 +108,12 @@ export async function PUT(request) {
       data.displayName !== currentValues.DisplayName
     ) {
       textUpdates.DisplayName = data.displayName;
+      console.log(`📝 Name changed to: ${data.displayName}`);
     }
 
     if (data.bio !== undefined && data.bio !== currentValues.FreelancerBio) {
       textUpdates.FreelancerBio = data.bio;
+      console.log(`📝 Bio changed`);
     }
 
     if (Object.keys(textUpdates).length > 0) {
@@ -139,16 +121,16 @@ export async function PUT(request) {
         FreelancerID: freelancerId,
       });
       hasChanges = true;
+      console.log(`✅ Text updates saved`);
     }
 
     // ==================================================
-    // STEP 5: Update Links (4 existing links only, with change detection)
+    // STEP 4: Update Links (4 existing links only, with change detection)
     // ==================================================
     let linksChanged = false;
 
     if (data.links) {
-      // CRITICAL FIX: Query TABLE directly instead of VIEW
-      // The VIEW filters out empty/null links, but we need to update them!
+      // Query TABLE directly (not VIEW) to include empty links
       const currentLinksQuery = `
         SELECT FreelancerWebsiteDataLinkID, LinkName, LinkURL
         FROM ${TABLES.FREELANCER_WEBSITE_DATA_LINKS}
@@ -176,7 +158,6 @@ export async function PUT(request) {
         );
 
         if (existingLink) {
-          // Handle null values in database (treat as empty string)
           const currentUrl = existingLink.LinkURL || "";
 
           // Only update if URL changed
@@ -191,11 +172,9 @@ export async function PUT(request) {
             );
             linksChanged = true;
             hasChanges = true;
-          } else {
-            console.log(`ℹ️ ${linkType.name} unchanged`);
+            console.log(`🔗 ${linkType.name} link updated`);
           }
         } else {
-          // Link record doesn't exist - this shouldn't happen if DB is set up correctly
           console.warn(
             `⚠️ Link record for '${linkType.name}' not found for freelancer ${freelancerId}`
           );
@@ -204,15 +183,13 @@ export async function PUT(request) {
     }
 
     // ==================================================
-    // STEP 6: Return success response
+    // STEP 5: Return success response
     // ==================================================
-
-    // If no changes were made, return early
     if (!hasChanges) {
+      console.log(`ℹ️ No changes detected`);
       return NextResponse.json({
         success: true,
         message: "No changes detected",
-        needsVerification: false,
         changes: {
           photo: false,
           cv: false,
@@ -223,10 +200,15 @@ export async function PUT(request) {
       });
     }
 
+    console.log(`✅ Profile update completed successfully`);
+
+    // CRITICAL: Invalidate the freelancer cache so new data shows immediately
+    revalidateTag("freelancers");
+    console.log(`♻️ Invalidated freelancer cache`);
+
     return NextResponse.json({
       success: true,
       message: "Profile updated successfully",
-      needsVerification: true, // Always show modal when changes are made
       changes: {
         photo: !!data.photoBlobId,
         cv: !!data.cvBlobId,

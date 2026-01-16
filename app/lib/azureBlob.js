@@ -1,6 +1,14 @@
 /**
  * Azure Blob Storage Utility
  * Handles file uploads, downloads, and deletions using SAS token authentication
+ *
+ * BLOB ID NAMING CONVENTIONS (per Paul's instructions):
+ * - News PDFs: N000001, N000002, N000003, N000004 (FIXED, never change)
+ * - Freelancer Photos: P + FreelancerID padded to 6 digits (e.g., P000123)
+ * - Freelancer CVs: C + FreelancerID padded to 6 digits (e.g., C000123)
+ *
+ * CRITICAL: These IDs are FIXED and never change. Azure Blob automatically
+ * overwrites when you upload with the same blob ID. No deletion needed!
  */
 
 /**
@@ -16,6 +24,26 @@ export const blobConfig = {
 };
 
 /**
+ * Document type IDs from tblStoredDocumentTypes
+ */
+export const STORED_DOCUMENT_TYPES = {
+  SERVICE_COMPANY_LOGOS: 1,
+  FREELANCER_PHOTOS: 2,
+  FREELANCER_CVS: 3,
+  NEWS_ITEMS: 4,
+};
+
+/**
+ * Fixed News Blob IDs - these never change, only the content gets replaced
+ */
+export const NEWS_BLOB_IDS = {
+  DRAMA_PRODUCTION_GRAPH: "N000001",
+  TVC_PRODUCTION_REPORT: "N000002",
+  CREW_NEWS: "N000003",
+  DRAMA_PRODUCTION_REPORT: "N000004",
+};
+
+/**
  * Constructs a blob URL with SAS token
  * @param {string} blobId - The blob identifier
  * @returns {string} Full URL to access the blob
@@ -28,15 +56,67 @@ export function getBlobUrl(blobId) {
 }
 
 /**
- * Constructs a public blob URL without SAS token (for verified/public files)
- * Note: This will only work if the container has public read access
- * @param {string} blobId - The blob identifier
- * @returns {string} Public URL to access the blob
+ * Generates a blob ID for freelancer photos
+ * Format: P + FreelancerID padded to 6 digits
+ * Example: FreelancerID 123 → P000123
+ *
+ * This ID is FIXED and never changes for a freelancer.
+ * Azure Blob automatically overwrites when uploading with the same ID.
+ *
+ * @param {number} freelancerId - The freelancer's ID
+ * @returns {string} Photo blob ID
  */
-export function getPublicBlobUrl(blobId) {
-  if (!blobId) return null;
+export function generatePhotoBlobId(freelancerId) {
+  if (!freelancerId || typeof freelancerId !== "number") {
+    throw new Error("Valid freelancerId required for photo blob ID");
+  }
 
-  return `${blobConfig.baseUrl}/${blobId}`;
+  // Pad to 6 digits: P000123
+  return `P${String(freelancerId).padStart(6, "0")}`;
+}
+
+/**
+ * Generates a blob ID for freelancer CVs
+ * Format: C + FreelancerID padded to 6 digits
+ * Example: FreelancerID 123 → C000123
+ *
+ * This ID is FIXED and never changes for a freelancer.
+ * Azure Blob automatically overwrites when uploading with the same ID.
+ *
+ * @param {number} freelancerId - The freelancer's ID
+ * @returns {string} CV blob ID
+ */
+export function generateCvBlobId(freelancerId) {
+  if (!freelancerId || typeof freelancerId !== "number") {
+    throw new Error("Valid freelancerId required for CV blob ID");
+  }
+
+  // Pad to 6 digits: C000123
+  return `C${String(freelancerId).padStart(6, "0")}`;
+}
+
+/**
+ * Validates and returns the news blob ID
+ * News items have FIXED blob IDs that never change
+ *
+ * @param {number} newsItemId - The news item ID (1-4)
+ * @returns {string} News blob ID (N000001-N000004)
+ */
+export function getNewsBlobId(newsItemId) {
+  const newsIds = {
+    1: NEWS_BLOB_IDS.DRAMA_PRODUCTION_GRAPH,
+    2: NEWS_BLOB_IDS.TVC_PRODUCTION_REPORT,
+    3: NEWS_BLOB_IDS.CREW_NEWS,
+    4: NEWS_BLOB_IDS.DRAMA_PRODUCTION_REPORT,
+  };
+
+  const blobId = newsIds[newsItemId];
+
+  if (!blobId) {
+    throw new Error(`Invalid news item ID: ${newsItemId}. Must be 1-4.`);
+  }
+
+  return blobId;
 }
 
 /**
@@ -127,6 +207,9 @@ export async function downloadBlob(blobId) {
 
 /**
  * Deletes a file from Azure Blob Storage
+ * NOTE: You should rarely need this function since Azure Blob automatically
+ * overwrites files with the same blob ID. Only use for cleanup/migration.
+ *
  * @param {string} blobId - The blob identifier
  * @returns {Promise<{success: boolean}>}
  */
@@ -178,7 +261,7 @@ export async function blobExists(blobId) {
 /**
  * Validates file type and size
  * @param {File} file - The file to validate
- * @param {string} type - 'image', 'cv', or 'equipment'
+ * @param {string} type - 'image', 'cv', 'equipment', or 'news-pdf'
  * @returns {{valid: boolean, error?: string}}
  */
 export function validateFile(file, type) {
@@ -234,23 +317,4 @@ export function validateFile(file, type) {
   }
 
   return { valid: true };
-}
-
-/**
- * Generates a clean blob ID from filename
- * @param {string} filename - Original filename
- * @param {string} prefix - Optional prefix (e.g., 'photo', 'cv')
- * @returns {string} Clean blob ID
- */
-export function generateBlobId(filename, prefix = "") {
-  const timestamp = Date.now();
-  const cleanName = filename
-    .toLowerCase()
-    .replace(/[^a-z0-9.]/g, "-")
-    .replace(/--+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  return prefix
-    ? `${prefix}-${timestamp}-${cleanName}`
-    : `${timestamp}-${cleanName}`;
 }

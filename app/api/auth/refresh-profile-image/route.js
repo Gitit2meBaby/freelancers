@@ -1,4 +1,4 @@
-// app/api/auth/refresh-profile-image/route.js
+// app/api/auth/refresh-profile-image/route.js - CORRECTED
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../[...nextauth]/route";
@@ -9,6 +9,8 @@ import { getBlobUrl } from "@/app/lib/azureBlob";
  * POST /api/auth/refresh-profile-image
  * Fetches the latest profile image and returns it
  * Client can use this to update local state without full session refresh
+ *
+ * NO VERIFICATION FILTERING - shows photo if blob ID exists
  */
 export async function POST() {
   try {
@@ -23,11 +25,12 @@ export async function POST() {
 
     const freelancerId = parseInt(session.user.id);
 
+    console.log(`🔵 Refreshing profile image for freelancer ${freelancerId}`);
+
     // Get latest photo info
     const query = `
       SELECT 
-        PhotoBlobID,
-        PhotoStatusID
+        PhotoBlobID
       FROM ${VIEWS.FREELANCERS}
       WHERE FreelancerID = @freelancerId
     `;
@@ -43,20 +46,24 @@ export async function POST() {
 
     const user = users[0];
 
-    // Build image URL
+    console.log(`📸 Photo Blob ID: ${user.PhotoBlobID || "none"}`);
+
+    // Build image URL - show if blob ID exists, regardless of verification status
     let imageUrl = null;
-    if (user.PhotoBlobID && user.PhotoStatusID === 2) {
+    if (user.PhotoBlobID) {
       imageUrl = getBlobUrl(user.PhotoBlobID);
+      console.log(`✅ Generated photo URL`);
+    } else {
+      console.log(`ℹ️ No photo blob ID found`);
     }
 
     return NextResponse.json({
       success: true,
       imageUrl,
       photoBlobId: user.PhotoBlobID,
-      photoStatusId: user.PhotoStatusID,
     });
   } catch (error) {
-    console.error("Error refreshing profile image:", error);
+    console.error("❌ Error refreshing profile image:", error);
     return NextResponse.json(
       {
         success: false,

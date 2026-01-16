@@ -1,4 +1,4 @@
-// app/edit-profile/page.jsx - CLEANED VERSION
+// app/edit-profile/page.jsx - CORRECTED VERSION
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -123,11 +123,16 @@ function EditProfileForm() {
     });
   };
 
-  const uploadToAzureBlob = async (file, blobId, type) => {
+  /**
+   * Upload file to Azure Blob Storage
+   * FIXED: Sends correct type parameter and removes unnecessary blobId
+   */
+  const uploadToAzureBlob = async (file, type) => {
     const formDataToUpload = new FormData();
     formDataToUpload.append("file", file);
-    formDataToUpload.append("blobId", blobId);
-    formDataToUpload.append("type", type);
+    formDataToUpload.append("type", type); // "photo" or "cv"
+
+    console.log(`📤 Uploading ${type}...`);
 
     const response = await fetch("/api/upload-blob", {
       method: "POST",
@@ -140,6 +145,7 @@ function EditProfileForm() {
     }
 
     const result = await response.json();
+    console.log(`✅ Upload successful - Blob ID: ${result.blobId}`);
     return result.blobId;
   };
 
@@ -149,24 +155,18 @@ function EditProfileForm() {
     setErrors({});
 
     try {
-      const freelancerId = session.user.freelancerId;
-
       // Upload files to Azure Blob if provided
       let photoBlobId = null;
       let cvBlobId = null;
 
       if (formData.photo) {
-        const photoFileName = `photo-${freelancerId}-${Date.now()}`;
-        photoBlobId = await uploadToAzureBlob(
-          formData.photo,
-          photoFileName,
-          "image"
-        );
+        // FIXED: Pass "photo" as type (not "image")
+        photoBlobId = await uploadToAzureBlob(formData.photo, "photo");
       }
 
       if (formData.cv) {
-        const cvFileName = `cv-${freelancerId}-${Date.now()}`;
-        cvBlobId = await uploadToAzureBlob(formData.cv, cvFileName, "cv");
+        // Already correct - "cv" is the right type
+        cvBlobId = await uploadToAzureBlob(formData.cv, "cv");
       }
 
       // Prepare update data
@@ -175,8 +175,6 @@ function EditProfileForm() {
         bio: formData.description,
         photoBlobId,
         cvBlobId,
-        photoFileName: formData.photo?.name,
-        cvFileName: formData.cv?.name,
         links: {
           Website: formData.Website,
           Instagram: formData.Instagram,
@@ -184,6 +182,8 @@ function EditProfileForm() {
           LinkedIn: formData.LinkedIn,
         },
       };
+
+      console.log(`💾 Saving profile update...`);
 
       // Save to database
       const response = await fetch("/api/profile/update", {
@@ -199,11 +199,17 @@ function EditProfileForm() {
         throw new Error(errorData.error || "Failed to save profile");
       }
 
+      console.log(`✅ Profile saved successfully`);
+
+      // Dispatch custom event to notify ProfilePic to refresh
+      window.dispatchEvent(new CustomEvent("profileUpdated"));
+      console.log("📢 Dispatched profileUpdated event");
+
       // Redirect to profile page
       router.push(`/my-account/${session.user.slug}`);
       router.refresh();
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error("❌ Error saving profile:", error);
       setErrors({
         submit: error.message || "Failed to save profile. Please try again.",
       });

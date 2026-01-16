@@ -1,10 +1,8 @@
 // app/api/auth/forgot-password/route.js
 import { NextResponse } from "next/server";
 import { createResetToken } from "../../../../app/lib/passwordReset";
-import {
-  getPasswordResetEmail,
-  sendEmail,
-} from "../../../../app/lib/emailTemplates";
+import { getPasswordResetEmail } from "../../../../app/lib/emailTemplates";
+import { sendGraphEmail } from "../../../../app/lib/graphClient";
 
 /**
  * POST /api/auth/forgot-password
@@ -31,6 +29,8 @@ export async function POST(request) {
       );
     }
 
+    console.log("🔐 Password reset requested for:", email);
+
     // Create reset token
     const result = await createResetToken(email.toLowerCase().trim());
 
@@ -41,25 +41,37 @@ export async function POST(request) {
 
     // If token created successfully, send email
     if (result.success && result.token && result.user) {
+      console.log("✅ Reset token created for:", result.user.name);
+
       // Generate reset email
       const resetEmail = getPasswordResetEmail(result.user, result.token);
 
-      // TODO: Send email via Microsoft Graph API
-      // Uncomment once Graph API is configured:
-      /*
-      const emailResult = await sendEmail(result.user.email, resetEmail);
-      
-      if (!emailResult.success) {
-        console.error("Failed to send reset email:", emailResult.error);
+      // Send email via Microsoft Graph API
+      try {
+        const senderEmail =
+          process.env.GRAPH_SENDER_EMAIL || "info@freelancers.com.au";
+
+        console.log("📤 Sending password reset email...");
+
+        const emailResult = await sendGraphEmail(
+          senderEmail,
+          result.user.email,
+          resetEmail.subject,
+          resetEmail.html
+        );
+
+        if (emailResult.success) {
+          console.log("✅ Password reset email sent successfully");
+        } else {
+          console.error("❌ Failed to send reset email:", emailResult.error);
+          // Don't reveal error to user for security
+        }
+      } catch (error) {
+        console.error("❌ Error sending reset email:", error);
         // Don't reveal error to user for security
       }
-      */
-
-      // Temporary: Log email preview
-      console.log("📧 Password Reset Email Preview:");
-      console.log("To:", result.user.email);
-      console.log("Subject:", resetEmail.subject);
-      console.log("Token:", result.token);
+    } else {
+      console.log("ℹ️ No account found for email:", email);
     }
 
     // Always return success to prevent email enumeration
@@ -70,7 +82,7 @@ export async function POST(request) {
         "If an account exists with that email, you will receive password reset instructions.",
     });
   } catch (error) {
-    console.error("Forgot password error:", error);
+    console.error("❌ Forgot password error:", error);
 
     // Don't reveal internal errors to user
     return NextResponse.json(
@@ -95,7 +107,7 @@ export async function POST(request) {
  *    - Tokens are cryptographically random (32 bytes)
  *    - Tokens expire after 1 hour
  *    - Tokens can only be used once
- *    - Tokens are stored hashed in database (TODO)
+ *    - Tokens are stored in memory (will move to database)
  *
  * 3. Rate Limiting:
  *    - Should add rate limiting to prevent abuse
@@ -104,6 +116,5 @@ export async function POST(request) {
  *
  * 4. Email Validation:
  *    - Only sends to registered email addresses
- *    - Only sends to active accounts
  *    - Email content doesn't reveal if account exists
  */

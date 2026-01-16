@@ -1,8 +1,8 @@
-// app/api/freelancer/[slug]/route.js
+// app/api/freelancer/[slug]/route.js - CORRECTED (No Verification Filtering)
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
-import { executeQuery, VIEWS, STATUS_CODES, LINK_TYPES } from "../../../lib/db";
+import { executeQuery, VIEWS, LINK_TYPES } from "../../../lib/db";
 import { getBlobUrl } from "../../../lib/azureBlob";
 
 /**
@@ -18,9 +18,7 @@ const getAllFreelancerData = unstable_cache(
         DisplayName,
         FreelancerBio,
         PhotoBlobID,
-        PhotoStatusID,
-        CVBlobID,
-        CVStatusID
+        CVBlobID
       FROM ${VIEWS.FREELANCERS}
     `;
 
@@ -70,6 +68,8 @@ export async function GET(request, { params }) {
     // IMPORTANT: In Next.js 15+, params is a Promise
     const { slug } = await params;
 
+    console.log(`🔵 Fetching profile: ${slug}`);
+
     // Get cached data
     const { freelancers, skills, links } = await getAllFreelancerData();
 
@@ -84,6 +84,9 @@ export async function GET(request, { params }) {
         { status: 404 }
       );
     }
+
+    console.log(`📸 Photo Blob ID: ${freelancer.PhotoBlobID || "none"}`);
+    console.log(`📄 CV Blob ID: ${freelancer.CVBlobID || "none"}`);
 
     // Get freelancer's skills
     const freelancerSkills = skills
@@ -106,25 +109,30 @@ export async function GET(request, { params }) {
         return acc;
       }, {});
 
+    // CRITICAL FIX: Show photos and CVs if they exist, regardless of verification status
+    // Verification is set once during initial setup and never changes
+    const photoUrl = freelancer.PhotoBlobID
+      ? getBlobUrl(freelancer.PhotoBlobID)
+      : null;
+    const cvUrl = freelancer.CVBlobID ? getBlobUrl(freelancer.CVBlobID) : null;
+
+    if (photoUrl) {
+      console.log(`✅ Showing photo`);
+    }
+    if (cvUrl) {
+      console.log(`✅ Showing CV`);
+    }
+
     // Build complete freelancer object
     const freelancerData = {
       id: freelancer.FreelancerID,
       name: freelancer.DisplayName,
       slug: freelancer.Slug,
       bio: freelancer.FreelancerBio || null,
-      photoUrl:
-        freelancer.PhotoStatusID === STATUS_CODES.VERIFIED &&
-        freelancer.PhotoBlobID
-          ? getBlobUrl(freelancer.PhotoBlobID)
-          : null,
-      cvUrl:
-        freelancer.CVStatusID === STATUS_CODES.VERIFIED && freelancer.CVBlobID
-          ? getBlobUrl(freelancer.CVBlobID)
-          : null,
+      photoUrl: photoUrl,
+      cvUrl: cvUrl,
       photoBlobId: freelancer.PhotoBlobID,
       cvBlobId: freelancer.CVBlobID,
-      photoStatus: freelancer.PhotoStatusID,
-      cvStatus: freelancer.CVStatusID,
       skills: freelancerSkills,
       links: {
         Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
@@ -141,7 +149,7 @@ export async function GET(request, { params }) {
       data: freelancerData,
     });
   } catch (error) {
-    console.error("Error fetching freelancer:", error);
+    console.error("❌ Error fetching freelancer:", error);
     return NextResponse.json(
       {
         success: false,

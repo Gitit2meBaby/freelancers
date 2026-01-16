@@ -1,77 +1,3 @@
-// import { Resend } from "resend";
-// import { NextResponse } from "next/server";
-
-// const resend = new Resend(process.env.RESEND_API_KEY);
-
-// export async function POST(request) {
-//   try {
-//     const body = await request.json();
-//     const { name, email, subject, message, cv, honeypot } = body;
-
-//     // Check honeypot (hidden field) to detect bot submissions
-//     if (honeypot) {
-//       return Response.json(
-//         { error: "Bot submission detected" },
-//         { status: 400 }
-//       );
-//     }
-
-//     // Validation
-//     if (!name || !email || !subject) {
-//       return NextResponse.json(
-//         { error: "Missing required fields" },
-//         { status: 400 }
-//       );
-//     }
-
-//     // Email validation
-//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     if (!emailRegex.test(email)) {
-//       return NextResponse.json(
-//         { error: "Invalid email address" },
-//         { status: 400 }
-//       );
-//     }
-
-//     // Send email
-//     const { data, error } = await resend.emails.send({
-//       from: process.env.EMAIL_FROM,
-//       to: process.env.EMAIL_TO,
-//       replyTo: email, // So client can reply directly to user
-//       subject: `Contact Form: ${subject}`,
-//       html: `
-//         <h2>New Contact Form Submission</h2>
-//         <p><strong>Name:</strong> ${name}</p>
-//         <p><strong>Email:</strong> ${email}</p>
-//         <p><strong>Subject:</strong> ${subject}</p>
-//         <p><strong>Message:</strong></p>
-//         <p>${message || "No message provided"}</p>
-//         ${cv ? "<p><strong>CV:</strong> Attached</p>" : ""}
-//       `,
-//     });
-
-//     if (error) {
-//       console.error("Resend error:", error);
-//       return NextResponse.json(
-//         { error: "Failed to send email" },
-//         { status: 500 }
-//       );
-//     }
-
-//     return NextResponse.json(
-//       { success: true, messageId: data.id },
-//       { status: 200 }
-//     );
-//   } catch (error) {
-//     console.error("API error:", error);
-//     return NextResponse.json(
-//       { error: "Internal server error" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// *************** NEW EDITION ***************
 // app/api/contact/route.js
 import { NextResponse } from "next/server";
 import {
@@ -83,7 +9,7 @@ import {
 /**
  * POST /api/contact
  * Handles contact form submissions
- * Sends emails to both admin and user
+ * Sends emails to both admin and user via Microsoft Graph API
  */
 export async function POST(request) {
   try {
@@ -116,6 +42,16 @@ export async function POST(request) {
       );
     }
 
+    // Check honeypot field (bot detection)
+    if (data.honeypot && data.honeypot !== "") {
+      console.log("🤖 Bot submission detected via honeypot");
+      // Return success to not reveal the honeypot mechanism
+      return NextResponse.json({
+        success: true,
+        message: "Message received",
+      });
+    }
+
     // Sanitize input (basic XSS prevention)
     const sanitizedData = {
       name: data.name.trim().substring(0, 100),
@@ -125,78 +61,88 @@ export async function POST(request) {
       message: data.message.trim().substring(0, 2000),
     };
 
-    console.log("📧 Contact form submission:", {
-      name: sanitizedData.name,
-      email: sanitizedData.email,
-      subject: sanitizedData.subject,
-    });
-
-    // ==================================================
-    // TODO: SEND EMAILS VIA MICROSOFT GRAPH API
-    // ==================================================
-    // Once Martine provides Graph API credentials, uncomment this:
-
-    /*
-    // Send notification to admin
-    const adminEmail = getContactFormNotification(sanitizedData);
-    const adminResult = await sendEmail(
-      process.env.ADMIN_EMAIL || "info@freelancers.com.au",
-      adminEmail
-    );
-
-    if (!adminResult.success) {
-      throw new Error("Failed to send admin notification");
-    }
-
-    // Send auto-reply to user
-    const userEmail = getContactFormAutoReply(sanitizedData);
-    const userResult = await sendEmail(sanitizedData.email, userEmail);
-
-    if (!userResult.success) {
-      console.error("Failed to send auto-reply, but continuing");
-    }
-    */
-
-    // ==================================================
-    // TEMPORARY: Log submission details
-    // ==================================================
-    // Remove this section once email sending is implemented
-    console.log("====================================");
-    console.log("📧 CONTACT FORM SUBMISSION");
-    console.log("====================================");
-    console.log("From:", sanitizedData.name, `<${sanitizedData.email}>`);
-    console.log("Phone:", sanitizedData.phone || "Not provided");
+    console.log("📧 Contact form submission received:");
+    console.log("Name:", sanitizedData.name);
+    console.log("Email:", sanitizedData.email);
     console.log("Subject:", sanitizedData.subject);
-    console.log("Message:\n", sanitizedData.message);
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("====================================");
 
-    // Generate email previews for testing
-    const adminEmailPreview = getContactFormNotification(sanitizedData);
-    const userEmailPreview = getContactFormAutoReply(sanitizedData);
+    // ==================================================
+    // SEND EMAILS VIA MICROSOFT GRAPH API
+    // ==================================================
 
-    console.log("\n📧 Admin Email Preview:");
-    console.log("Subject:", adminEmailPreview.subject);
-    console.log(
-      "Body preview:",
-      adminEmailPreview.html.substring(0, 200) + "..."
-    );
+    let adminEmailSuccess = false;
+    let userEmailSuccess = false;
 
-    console.log("\n📧 User Auto-Reply Preview:");
-    console.log("Subject:", userEmailPreview.subject);
-    console.log(
-      "Body preview:",
-      userEmailPreview.html.substring(0, 200) + "..."
-    );
+    try {
+      // 1. Send notification to admin
+      console.log("📤 Sending notification to admin...");
+      const adminEmail = getContactFormNotification(sanitizedData);
+      const adminEmailAddress =
+        process.env.ADMIN_EMAIL || "info@freelancers.com.au";
 
-    // Return success response
+      const adminResult = await sendEmail(adminEmailAddress, adminEmail);
+
+      if (adminResult.success) {
+        console.log("✅ Admin notification sent successfully");
+        adminEmailSuccess = true;
+      } else {
+        console.error(
+          "❌ Failed to send admin notification:",
+          adminResult.error
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error sending admin email:", error);
+    }
+
+    try {
+      // 2. Send auto-reply to user
+      console.log("📤 Sending auto-reply to user...");
+      const userEmail = getContactFormAutoReply(sanitizedData);
+
+      const userResult = await sendEmail(sanitizedData.email, userEmail);
+
+      if (userResult.success) {
+        console.log("✅ Auto-reply sent successfully");
+        userEmailSuccess = true;
+      } else {
+        console.error("❌ Failed to send auto-reply:", userResult.error);
+      }
+    } catch (error) {
+      console.error("❌ Error sending user email:", error);
+    }
+
+    // ==================================================
+    // RETURN RESPONSE
+    // ==================================================
+
+    // If admin email failed, this is critical - return error
+    if (!adminEmailSuccess) {
+      console.error("❌ Critical: Admin notification failed");
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Failed to send your message. Please try again or contact us directly at info@freelancers.com.au",
+          details: {
+            adminEmailSent: false,
+            autoReplySent: userEmailSuccess,
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    // Admin email succeeded - return success even if auto-reply failed
+    console.log("✅ Contact form submission processed successfully");
+
     return NextResponse.json({
       success: true,
       message:
-        "Thank you for contacting us. We will respond to your inquiry as soon as possible.",
-      // Remove this debug info in production:
-      debug: {
-        note: "Email sending not yet configured. Submission logged to console.",
+        "Thank you for contacting us. We have received your message and will respond as soon as possible.",
+      details: {
+        adminEmailSent: adminEmailSuccess,
+        autoReplySent: userEmailSuccess,
         timestamp: new Date().toISOString(),
       },
     });
@@ -207,7 +153,7 @@ export async function POST(request) {
       {
         success: false,
         error:
-          "An error occurred while processing your request. Please try again later.",
+          "An error occurred while processing your request. Please try again later or contact us directly at info@freelancers.com.au",
         // Only include details in development
         ...(process.env.NODE_ENV === "development" && {
           details: error.message,
@@ -234,64 +180,63 @@ export async function OPTIONS(request) {
 }
 
 /**
- * INTEGRATION CHECKLIST:
+ * TESTING THE CONTACT FORM:
  *
- * ✅ Form validation implemented
- * ✅ Input sanitization implemented
- * ✅ Email templates created (in emailTemplates.js)
- * ⏳ Microsoft Graph API integration (waiting for credentials)
- * ⏳ Database logging (optional, table doesn't exist yet)
+ * 1. Test from the website:
+ *    - Go to https://freelancers.com.au/contact-us
+ *    - Fill out and submit the form
+ *    - Check console logs
+ *    - Check email inbox (info@freelancers.com.au and your test email)
  *
- * NEXT STEPS:
+ * 2. Test with curl:
+ *    curl -X POST https://freelancers.com.au/api/contact \
+ *      -H "Content-Type: application/json" \
+ *      -d '{
+ *        "name": "Test User",
+ *        "email": "test@example.com",
+ *        "subject": "Test Subject",
+ *        "message": "This is a test message"
+ *      }'
  *
- * 1. Get Microsoft Graph API credentials from Martine:
- *    - Client ID
- *    - Client Secret
- *    - Tenant ID
+ * 3. Test with JavaScript (browser console):
+ *    fetch('/api/contact', {
+ *      method: 'POST',
+ *      headers: { 'Content-Type': 'application/json' },
+ *      body: JSON.stringify({
+ *        name: 'Test User',
+ *        email: 'test@example.com',
+ *        subject: 'Test Subject',
+ *        message: 'This is a test message',
+ *        phone: '0412 345 678'
+ *      })
+ *    }).then(r => r.json()).then(console.log);
  *
- * 2. Set up environment variables:
- *    GRAPH_CLIENT_ID=...
- *    GRAPH_CLIENT_SECRET=...
- *    GRAPH_TENANT_ID=...
- *    ADMIN_EMAIL=info@freelancers.com.au
+ * TROUBLESHOOTING:
  *
- * 3. Implement sendEmail function in emailTemplates.js
+ * If emails are not being sent:
  *
- * 4. Test with real submissions
+ * 1. Check environment variables are set correctly:
+ *    - GRAPH_TENANT_ID
+ *    - GRAPH_CLIENT_ID
+ *    - GRAPH_CLIENT_SECRET
+ *    - GRAPH_SENDER_EMAIL (should be info@freelancers.com.au)
+ *    - ADMIN_EMAIL (optional, defaults to info@freelancers.com.au)
  *
- * 5. Optional: Ask Paul to create tblContactFormSubmissions table:
- *    - ContactFormID (PK, INT, IDENTITY)
- *    - Name (NVARCHAR(100))
- *    - Email (NVARCHAR(100))
- *    - Phone (NVARCHAR(20), NULL)
- *    - Subject (NVARCHAR(200))
- *    - Message (NVARCHAR(MAX))
- *    - SubmittedAt (DATETIME)
- *    - IPAddress (NVARCHAR(50))
- *    - ReadAt (DATETIME, NULL)
+ * 2. Verify Azure AD app registration:
+ *    - Mail.Send permission is granted
+ *    - Admin consent is provided
+ *    - Client secret is not expired
  *
- * TESTING:
+ * 3. Check sender mailbox exists:
+ *    - info@freelancers.com.au must exist as a mailbox
+ *    - The app must have permissions to send from this mailbox
  *
- * # Test the endpoint with curl:
- * curl -X POST http://localhost:3000/api/contact \
- *   -H "Content-Type: application/json" \
- *   -d '{
- *     "name": "Test User",
- *     "email": "test@example.com",
- *     "subject": "Test Subject",
- *     "message": "This is a test message"
- *   }'
+ * 4. Review application logs:
+ *    - Look for error messages in console
+ *    - Check Azure AD sign-in logs for auth failures
  *
- * # Or test with JavaScript in browser console:
- * fetch('/api/contact', {
- *   method: 'POST',
- *   headers: { 'Content-Type': 'application/json' },
- *   body: JSON.stringify({
- *     name: 'Test User',
- *     email: 'test@example.com',
- *     subject: 'Test Subject',
- *     message: 'This is a test message',
- *     phone: '0412 345 678'
- *   })
- * }).then(r => r.json()).then(console.log);
+ * 5. Test Graph API connection:
+ *    - Create test endpoint (see graphClient.js comments)
+ *    - Call GET /api/test-email to verify connection
+ *    - Call POST /api/test-email to send test email
  */

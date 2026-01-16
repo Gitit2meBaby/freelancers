@@ -1,5 +1,7 @@
 // app/lib/emailTemplates.js
 
+import { sendGraphEmail } from "./graphClient";
+
 /**
  * Email Templates Library
  * Provides HTML email templates for various user notifications
@@ -334,146 +336,136 @@ export function getPasswordResetEmail(user, resetToken) {
   };
 }
 
-/**
- * Welcome Email for New Users
- * Sent when a new freelancer account is created
- */
-export function getWelcomeEmail(user) {
-  const content = `
-    <h2>Welcome to Freelancers Promotions! 🎬</h2>
-    <p>Hello ${user.name},</p>
-    <p>
-      Welcome to Melbourne's primary portal to employment on screen productions. 
-      We're excited to have you join our community of experienced film technicians.
-    </p>
+// /**
+//  * Welcome Email for New Users
+//  * Sent when a new freelancer account is created
+//  */
+// export function getWelcomeEmail(user) {
+//   const content = `
+//     <h2>Welcome to Freelancers Promotions! 🎬</h2>
+//     <p>Hello ${user.name},</p>
+//     <p>
+//       Welcome to Melbourne's primary portal to employment on screen productions.
+//       We're excited to have you join our community of experienced film technicians.
+//     </p>
 
-    <a href="https://freelancers.com.au/member-login" class="button">Complete Your Profile</a>
+//     <a href="https://freelancers.com.au/member-login" class="button">Complete Your Profile</a>
 
-    <div class="divider"></div>
+//     <div class="divider"></div>
 
-    <h3>Getting Started</h3>
-    <p>Here's what you can do next:</p>
-    <ul>
-      <li><strong>Complete Your Profile:</strong> Add your bio, photo, and CV</li>
-      <li><strong>Add Your Skills:</strong> List your departments and specializations</li>
-      <li><strong>Connect Your Links:</strong> Link your IMDB, website, and social media</li>
-      <li><strong>Stay Updated:</strong> Check out our latest news and opportunities</li>
-    </ul>
+//     <h3>Getting Started</h3>
+//     <p>Here's what you can do next:</p>
+//     <ul>
+//       <li><strong>Complete Your Profile:</strong> Add your bio, photo, and CV</li>
+//       <li><strong>Add Your Skills:</strong> List your departments and specializations</li>
+//       <li><strong>Connect Your Links:</strong> Link your IMDB, website, and social media</li>
+//       <li><strong>Stay Updated:</strong> Check out our latest news and opportunities</li>
+//     </ul>
 
-    <div class="divider"></div>
+//     <div class="divider"></div>
 
-    <h3>Important Links</h3>
-    <p style="font-size: 14px;">
-      <a href="https://freelancers.com.au/crew-directory">Browse Crew Directory</a><br>
-      <a href="https://freelancers.com.au/screen-services">Screen Services</a><br>
-      <a href="https://freelancers.com.au/booking-guidelines">Booking Guidelines</a><br>
-      <a href="https://freelancers.com.au/about-us">About Us</a>
-    </p>
+//     <h3>Important Links</h3>
+//     <p style="font-size: 14px;">
+//       <a href="https://freelancers.com.au/crew-directory">Browse Crew Directory</a><br>
+//       <a href="https://freelancers.com.au/screen-services">Screen Services</a><br>
+//       <a href="https://freelancers.com.au/booking-guidelines">Booking Guidelines</a><br>
+//       <a href="https://freelancers.com.au/about-us">About Us</a>
+//     </p>
 
-    <p>
-      If you have any questions, don't hesitate to reach out to us at 
-      <a href="mailto:info@freelancers.com.au">info@freelancers.com.au</a>
-    </p>
-  `;
+//     <p>
+//       If you have any questions, don't hesitate to reach out to us at
+//       <a href="mailto:info@freelancers.com.au">info@freelancers.com.au</a>
+//     </p>
+//   `;
 
-  return {
-    subject: "Welcome to Freelancers Promotions! 🎬",
-    html: getEmailWrapper(content, "Welcome to Freelancers Promotions"),
-  };
-}
+//   return {
+//     subject: "Welcome to Freelancers Promotions! 🎬",
+//     html: getEmailWrapper(content, "Welcome to Freelancers Promotions"),
+//   };
+// }
 
-/**
- * Profile Update Confirmation
- * Sent when a user updates their profile
- */
-export function getProfileUpdateEmail(user, updatedFields) {
-  const fieldsList = updatedFields.join(", ");
+// /**
+//  * Profile Update Confirmation
+//  * Sent when a user updates their profile
+//  */
+// export function getProfileUpdateEmail(user, updatedFields) {
+//   const fieldsList = updatedFields.join(", ");
 
-  const content = `
-    <h2>Profile Updated Successfully</h2>
-    <p>Hello ${user.name},</p>
-    <p>
-      Your Freelancers Promotions profile was successfully updated on 
-      <strong>${new Date().toLocaleString("en-AU", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: "Australia/Melbourne",
-      })}</strong>.
-    </p>
+//   const content = `
+//     <h2>Profile Updated Successfully</h2>
+//     <p>Hello ${user.name},</p>
+//     <p>
+//       Your Freelancers Promotions profile was successfully updated on
+//       <strong>${new Date().toLocaleString("en-AU", {
+//         dateStyle: "full",
+//         timeStyle: "short",
+//         timeZone: "Australia/Melbourne",
+//       })}</strong>.
+//     </p>
 
-    <div style="background-color: #f5f5f0; padding: 20px; border-radius: 4px; margin: 20px 0;">
-      <p style="margin: 0;"><strong>Updated fields:</strong> ${fieldsList}</p>
-    </div>
+//     <div style="background-color: #f5f5f0; padding: 20px; border-radius: 4px; margin: 20px 0;">
+//       <p style="margin: 0;"><strong>Updated fields:</strong> ${fieldsList}</p>
+//     </div>
 
-    ${
-      updatedFields.includes("photo") || updatedFields.includes("cv")
-        ? `
-    <p style="color: #7a8450;">
-      <strong>Note:</strong> Your uploaded files are pending verification by our team. 
-      They will be visible on your public profile once approved.
-    </p>
-    `
-        : ""
-    }
+//     ${
+//       updatedFields.includes("photo") || updatedFields.includes("cv")
+//         ? `
+//     <p style="color: #7a8450;">
+//       <strong>Note:</strong> Your uploaded files are pending verification by our team.
+//       They will be visible on your public profile once approved.
+//     </p>
+//     `
+//         : ""
+//     }
 
-    <a href="https://freelancers.com.au/my-account/${
-      user.slug
-    }" class="button">View Your Profile</a>
+//     <a href="https://freelancers.com.au/my-account/${
+//       user.slug
+//     }" class="button">View Your Profile</a>
 
-    <p style="font-size: 14px; color: #999; margin-top: 30px;">
-      If you did not make these changes, please contact us immediately.
-    </p>
-  `;
+//     <p style="font-size: 14px; color: #999; margin-top: 30px;">
+//       If you did not make these changes, please contact us immediately.
+//     </p>
+//   `;
 
-  return {
-    subject: "Profile Updated - Freelancers Promotions",
-    html: getEmailWrapper(content, "Your profile has been updated"),
-  };
-}
+//   return {
+//     subject: "Profile Updated - Freelancers Promotions",
+//     html: getEmailWrapper(content, "Your profile has been updated"),
+//   };
+// }
 
-/**
- * Helper function to send email (placeholder for Microsoft Graph API)
- * This is where you'll integrate with Microsoft Graph API
- */
-export async function sendEmail(to, emailTemplate) {
-  try {
-    // TODO: Replace this with actual Microsoft Graph API call
-    // This is a placeholder implementation
+// /**
+//  * Helper function to send email via Microsoft Graph API
+//  * @param {string} to - Recipient email address
+//  * @param {Object} emailTemplate - Email template with subject and html
+//  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+//  */
+// export async function sendEmail(to, emailTemplate) {
+//   try {
+//     const senderEmail =
+//       process.env.GRAPH_SENDER_EMAIL || "info@freelancers.com.au";
 
-    console.log("📧 Email would be sent:");
-    console.log("To:", to);
-    console.log("Subject:", emailTemplate.subject);
-    console.log("HTML length:", emailTemplate.html.length);
+//     console.log("📧 Preparing to send email:");
+//     console.log("From:", senderEmail);
+//     console.log("To:", to);
+//     console.log("Subject:", emailTemplate.subject);
 
-    // In production, this would call Microsoft Graph API:
-    /*
-    const response = await fetch('https://graph.microsoft.com/v1.0/users/sender@freelancers.com.au/sendMail', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message: {
-          subject: emailTemplate.subject,
-          body: {
-            contentType: 'HTML',
-            content: emailTemplate.html
-          },
-          toRecipients: [
-            { emailAddress: { address: to } }
-          ]
-        }
-      })
-    });
-    */
+//     // Send email via Microsoft Graph API
+//     const result = await sendGraphEmail(
+//       senderEmail,
+//       to,
+//       emailTemplate.subject,
+//       emailTemplate.html
+//     );
 
-    return { success: true, message: "Email sent successfully" };
-  } catch (error) {
-    console.error("Error sending email:", error);
-    return { success: false, error: error.message };
-  }
-}
+//     return result;
+//   } catch (error) {
+//     console.error("❌ Error sending email:", error);
+//     return {
+//       success: false,
+//       error: error.message,
+//     };
+//   }
+// }
 
 /**
  * USAGE EXAMPLES:

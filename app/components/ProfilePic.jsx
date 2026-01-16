@@ -1,4 +1,4 @@
-// app/components/ProfilePic.jsx - UPDATED
+// app/components/ProfilePic.jsx - WITH EVENT LISTENER
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -25,33 +25,44 @@ const ProfilePic = () => {
   const shouldRender = pathname !== "/" && isLoggedIn;
 
   useEffect(() => {
-    if (isLoggedIn && session?.user) {
-      // If session has image, use it
-      if (session.user.image) {
-        setProfileImageUrl(session.user.image);
-      }
-      // If no image in session but user is logged in, try to fetch it
-      else if (!isFetchingImage) {
-        fetchProfileImage();
-      }
-    }
-  }, [isLoggedIn, session, isFetchingImage]);
+    if (!isLoggedIn || !session?.user?.id) return;
+
+    fetchProfileImage();
+  }, [isLoggedIn, session?.user?.id]);
+
+  // NEW: Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log(
+        "📸 ProfilePic: Received profile update event, refreshing..."
+      );
+      fetchProfileImage();
+    };
+
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
+  }, []);
 
   const fetchProfileImage = async () => {
+    if (isFetchingImage) return;
+
     setIsFetchingImage(true);
     try {
       const response = await fetch("/api/auth/refresh-profile-image", {
         method: "POST",
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.imageUrl) {
-          setProfileImageUrl(data.imageUrl);
-        }
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success) {
+        setProfileImageUrl(data.imageUrl ?? null);
       }
-    } catch (error) {
-      console.error("Error fetching profile image:", error);
+    } catch (err) {
+      console.error("❌ ProfilePic fetch failed:", err);
     } finally {
       setIsFetchingImage(false);
     }
@@ -107,6 +118,7 @@ const ProfilePic = () => {
             height={56}
             className={styles.profilePic}
             priority
+            key={profileImageUrl} // Force re-render when URL changes
           />
         ) : (
           <Image

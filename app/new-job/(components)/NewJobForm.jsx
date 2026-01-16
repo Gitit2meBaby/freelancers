@@ -24,6 +24,11 @@ const NewJobForm = () => {
   });
 
   const [showTooltip, setShowTooltip] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState({
+    loading: false,
+    success: false,
+    error: null,
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,13 +36,68 @@ const NewJobForm = () => {
       ...prevState,
       [name]: value,
     }));
+
+    // Clear error when user starts typing
+    if (submitStatus.error) {
+      setSubmitStatus({ loading: false, success: false, error: null });
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO
-    // Handle form submission
-    console.log("Form submitted:", formData);
+
+    setSubmitStatus({ loading: true, success: false, error: null });
+
+    try {
+      const response = await fetch("/api/new-job", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to submit job");
+      }
+
+      // Success!
+      setSubmitStatus({ loading: false, success: true, error: null });
+
+      // Reset form
+      setFormData({
+        jobTitle: "",
+        status: "",
+        dateOfAward: "",
+        jobType: "",
+        productionCompany: "",
+        productionManager: "",
+        contactName: "",
+        contactNumber: "",
+        contactEmail: "",
+        directorName: "",
+        producerName: "",
+        dopName: "",
+        jobBreakdown: "",
+        location: "",
+        notes: "",
+        crewCheck: "",
+      });
+
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setSubmitStatus({ loading: false, success: false, error: null });
+      }, 5000);
+    } catch (error) {
+      console.error("Submit error:", error);
+      setSubmitStatus({
+        loading: false,
+        success: false,
+        error: error.message,
+      });
+    }
   };
 
   const toggleTooltip = (field) => {
@@ -60,6 +120,7 @@ const NewJobForm = () => {
           required
           aria-required="true"
           className={styles.input}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -83,6 +144,7 @@ const NewJobForm = () => {
               onChange={handleChange}
               required
               aria-required="true"
+              disabled={submitStatus.loading}
             />
             <span>Awarded</span>
           </label>
@@ -95,6 +157,7 @@ const NewJobForm = () => {
               onChange={handleChange}
               required
               aria-required="true"
+              disabled={submitStatus.loading}
             />
             <span>Quote Hold</span>
           </label>
@@ -107,6 +170,7 @@ const NewJobForm = () => {
               onChange={handleChange}
               required
               aria-required="true"
+              disabled={submitStatus.loading}
             />
             <span>In Development</span>
           </label>
@@ -119,6 +183,7 @@ const NewJobForm = () => {
               onChange={handleChange}
               required
               aria-required="true"
+              disabled={submitStatus.loading}
             />
             <span>Greenlit</span>
           </label>
@@ -137,6 +202,7 @@ const NewJobForm = () => {
           placeholder="If quote hold, provide award date"
           className={styles.input}
           aria-describedby="dateOfAwardHelp"
+          disabled={submitStatus.loading}
         />
         <span id="dateOfAwardHelp" className={styles.helpText}>
           If job is a quote hold, please provide the date the job is due to
@@ -154,114 +220,31 @@ const NewJobForm = () => {
           role="radiogroup"
           aria-required="true"
         >
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Documentary"
-              checked={formData.jobType === "Documentary"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Documentary</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Feature Film"
-              checked={formData.jobType === "Feature Film"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Feature Film</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="TV Series"
-              checked={formData.jobType === "TV Series"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>TV Series</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Music Video"
-              checked={formData.jobType === "Music Video"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Music Video</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Online Content"
-              checked={formData.jobType === "Online Content"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Online Content</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Promotional"
-              checked={formData.jobType === "Promotional"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Promotional</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Stills"
-              checked={formData.jobType === "Stills"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Stills</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="TV Commercial"
-              checked={formData.jobType === "TV Commercial"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>TV Commercial</span>
-          </label>
-          <label className={styles.radioLabel}>
-            <input
-              type="radio"
-              name="jobType"
-              value="Stills and Motion"
-              checked={formData.jobType === "Stills and Motion"}
-              onChange={handleChange}
-              required
-              aria-required="true"
-            />
-            <span>Stills and Motion</span>
-          </label>
+          {[
+            "Documentary",
+            "Feature Film",
+            "TV Series",
+            "Music Video",
+            "Online Content",
+            "Promotional",
+            "Stills",
+            "TV Commercial",
+            "Stills and Motion",
+          ].map((type) => (
+            <label key={type} className={styles.radioLabel}>
+              <input
+                type="radio"
+                name="jobType"
+                value={type}
+                checked={formData.jobType === type}
+                onChange={handleChange}
+                required
+                aria-required="true"
+                disabled={submitStatus.loading}
+              />
+              <span>{type}</span>
+            </label>
+          ))}
         </div>
       </div>
 
@@ -279,6 +262,7 @@ const NewJobForm = () => {
           required
           aria-required="true"
           className={styles.input}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -293,6 +277,7 @@ const NewJobForm = () => {
           onChange={handleChange}
           placeholder="if known..."
           className={styles.input}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -311,6 +296,7 @@ const NewJobForm = () => {
           required
           aria-required="true"
           className={styles.input}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -324,6 +310,7 @@ const NewJobForm = () => {
           value={formData.contactNumber}
           onChange={handleChange}
           className={styles.input}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -342,6 +329,7 @@ const NewJobForm = () => {
           required
           aria-required="true"
           className={styles.input}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -356,7 +344,7 @@ const NewJobForm = () => {
           onChange={handleChange}
           placeholder="Leave blank if not finalised"
           className={styles.input}
-          aria-describedby="directorHelp"
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -371,7 +359,7 @@ const NewJobForm = () => {
           onChange={handleChange}
           placeholder="Leave blank if not finalised"
           className={styles.input}
-          aria-describedby="producerHelp"
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -386,7 +374,7 @@ const NewJobForm = () => {
           onChange={handleChange}
           placeholder="Leave blank if not finalised"
           className={styles.input}
-          aria-describedby="dopHelp"
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -402,6 +390,7 @@ const NewJobForm = () => {
             onMouseLeave={() => setShowTooltip(null)}
             aria-label="More information about job breakdown"
             aria-describedby="jobBreakdownTooltip"
+            disabled={submitStatus.loading}
           >
             ?
           </button>
@@ -424,6 +413,7 @@ const NewJobForm = () => {
           placeholder="Add recce, shoot, prep, travel dates"
           rows="4"
           className={styles.textarea}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -438,7 +428,7 @@ const NewJobForm = () => {
           onChange={handleChange}
           placeholder="Melbourne Metro, Rural, Interstate/OS?"
           className={styles.input}
-          aria-describedby="locationHelp"
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -454,6 +444,7 @@ const NewJobForm = () => {
             onMouseLeave={() => setShowTooltip(null)}
             aria-label="More information about notes"
             aria-describedby="notesTooltip"
+            disabled={submitStatus.loading}
           >
             ?
           </button>
@@ -474,6 +465,7 @@ const NewJobForm = () => {
           placeholder="Important job requirements, deals, other crew holds"
           rows="4"
           className={styles.textarea}
+          disabled={submitStatus.loading}
         />
       </div>
 
@@ -489,6 +481,7 @@ const NewJobForm = () => {
             onMouseLeave={() => setShowTooltip(null)}
             aria-label="More information about crew check"
             aria-describedby="crewCheckTooltip"
+            disabled={submitStatus.loading}
           >
             ?
           </button>
@@ -507,12 +500,52 @@ const NewJobForm = () => {
           placeholder="Crew names and availability dates"
           rows="4"
           className={styles.textarea}
+          disabled={submitStatus.loading}
         />
       </div>
 
+      {/* Success Message */}
+      {submitStatus.success && (
+        <div className={styles.successMessage} role="alert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+          <span>
+            Job submitted successfully! We'll review your submission and get
+            back to you shortly.
+          </span>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {submitStatus.error && (
+        <div className={styles.errorMessageBox} role="alert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" />
+          </svg>
+          <span>{submitStatus.error}</span>
+        </div>
+      )}
+
       {/* Submit Button */}
-      <button type="submit" className={styles.submitButton}>
-        Submit New Job
+      <button
+        type="submit"
+        className={styles.submitButton}
+        disabled={submitStatus.loading}
+      >
+        {submitStatus.loading ? "Submitting..." : "Submit New Job"}
       </button>
     </form>
   );

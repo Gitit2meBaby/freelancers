@@ -57,6 +57,7 @@ export default function UserProfilePage() {
       };
 
       setProfileData(profileData);
+      console.log(profileData);
     } catch (error) {
       console.error("Error loading profile:", error);
       setError(error.message);
