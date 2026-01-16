@@ -1,7 +1,7 @@
 // app/api/tests/test-links/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "../../auth/[...nextauth]/route";
 import {
   executeQuery,
   executeUpdate,
