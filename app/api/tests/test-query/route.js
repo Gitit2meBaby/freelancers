@@ -2,7 +2,7 @@
 
 import sql from "mssql";
 import { NextResponse } from "next/server";
-import { dbConfig, VIEWS } from "@/lib/db";
+import { dbConfig, VIEWS } from "../../../lib/db";
 
 /**
  * Test API endpoint for running custom queries

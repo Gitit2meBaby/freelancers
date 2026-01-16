@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { executeQuery, VIEWS, TABLES } from "@/app/lib/db";
+import { executeQuery, VIEWS, TABLES } from "../../../lib/db";
 
 /**
  * GET /api/test-last-update

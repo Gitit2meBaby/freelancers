@@ -1,6 +1,6 @@
 // app/api/test-links-structure/route.js
 import { NextResponse } from "next/server";
-import { executeQuery, VIEWS, TABLES } from "@/app/lib/db";
+import { executeQuery, VIEWS, TABLES } from "../../../lib/db";
 
 export async function GET() {
   const results = {};

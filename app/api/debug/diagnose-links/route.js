@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { executeQuery, VIEWS, TABLES, LINK_TYPES } from "@/app/lib/db";
+import { executeQuery, VIEWS, TABLES, LINK_TYPES } from "../../../lib/db";
 
 /**
  * GET /api/diagnose-links

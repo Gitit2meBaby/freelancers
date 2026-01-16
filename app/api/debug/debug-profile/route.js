@@ -8,8 +8,8 @@ import {
   TABLES,
   LINK_TYPES,
   STATUS_CODES,
-  DOCUMENT_TYPES,
-} from "@/app/lib/db";
+  // DOCUMENT_TYPES,
+} from "../../../lib/db";
 
 /**
  * GET /api/debug-profile
@@ -375,7 +375,7 @@ export async function GET() {
         statusCodes: STATUS_CODES,
         statusMeanings,
         linkTypes: LINK_TYPES,
-        documentTypes: DOCUMENT_TYPES,
+        // documentTypes: DOCUMENT_TYPES,
         documentTypeMeanings,
         views: VIEWS,
         tables: TABLES,

@@ -1,6 +1,6 @@
 // app/api/test-db-write/route.js
 import { NextResponse } from "next/server";
-import { executeQuery, executeUpdate, VIEWS, TABLES } from "@/app/lib/db";
+import { executeQuery, executeUpdate, VIEWS, TABLES } from "../../../lib/db";
 
 export async function GET() {
   try {
