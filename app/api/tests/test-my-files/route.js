@@ -2,8 +2,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { executeQuery, VIEWS } from "../../../app/lib/db";
-import { getBlobUrl } from "../../../app/lib/azureBlob";
+import { executeQuery, VIEWS } from "../../../lib/db";
+import { getBlobUrl } from "../../../lib/azureBlob";
 
 /**
  * GET /api/test-my-files

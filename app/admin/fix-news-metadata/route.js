@@ -1,8 +1,8 @@
 // app/api/admin/fix-news-metadata/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
-import { blobConfig } from "../../../lib/azureBlob";
+import { authOptions } from "../../api/auth/[...nextauth]/route";
+import { blobConfig } from "../../lib/azureBlob";
 
 /**
  * POST /api/admin/fix-news-metadata
