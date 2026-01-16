@@ -1,102 +1,78 @@
 // app/crew-directory/page.js
-"use client";
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 
+import { executeQuery, VIEWS } from "../lib/db";
 import SearchBar from "../components/SearchBar";
 import DownloadSelect from "./(components)/DownloadSelect";
-import FreelancerModal from "./[departmentSlug]/[skillSlug]/(components)/FreelancerModal";
 
 import styles from "../styles/crewDirectory.module.scss";
 
-export default function CrewDirectoryPage() {
-  // State
-  const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
-  // Modal state
-  const [selectedFreelancer, setSelectedFreelancer] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+/**
+ * Cached function to fetch departments directly from database
+ */
+const getCachedDepartments = unstable_cache(
+  async () => {
+    try {
+      // Query to get all departments with their slugs
+      const query = `
+        SELECT DISTINCT
+          Department,
+          DepartmentSlug
+        FROM ${VIEWS.DEPARTMENTS_SKILLS}
+        ORDER BY Department
+      `;
 
-  // Fetch departments on mount
-  useEffect(() => {
-    async function fetchDepartments() {
-      try {
-        const res = await fetch("/api/crew-directory");
+      const results = await executeQuery(query);
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch crew directory");
-        }
-
-        const data = await res.json();
-        setDepartments(data.departments || []);
-      } catch (error) {
-        console.error("Error fetching crew directory:", error);
-        setDepartments([]);
-      } finally {
-        setLoading(false);
-      }
+      // Transform to match expected format
+      return results.map((row) => ({
+        id: row.DepartmentSlug, // Use slug as ID for uniqueness
+        name: row.Department,
+        slug: row.DepartmentSlug,
+      }));
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      return [];
     }
+  },
+  ["crew-directory-departments"],
+  {
+    revalidate: 3600,
+    tags: ["crew-directory"],
+  }
+);
 
-    fetchDepartments();
-  }, []);
-
-  // Handle search result selection
-  const handleSearchSelect = (freelancerData) => {
-    setSelectedFreelancer(freelancerData);
-    setIsModalOpen(true);
-  };
-
-  // Handle modal close
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => {
-      setSelectedFreelancer(null);
-    }, 300);
-  };
+/**
+ * Server Component with ISR
+ * Static department list rendered on server
+ * Search bar is client component for interactivity
+ */
+export default async function CrewDirectoryPage() {
+  const departments = await getCachedDepartments();
 
   return (
     <section
-      className={`${styles.crewDirectory}`}
+      className={styles.crewDirectory}
       data-page="plain"
       data-footer="noBorder"
     >
       <div className={styles.crewHead}>
         <div></div>
         <h1>Crew Directory</h1>
-        <SearchBar scope="all" onSelectFreelancer={handleSearchSelect} />
+        {/* SearchBar is already a client component with modal handling */}
+        <SearchBar scope="all" />
       </div>
 
-      {loading ? (
-        <div className={styles.loadingSpinner}>
-          <svg
-            width="66"
-            height="66"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className={styles.spinner}
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              strokeOpacity="0.3"
-            />
-            <path
-              d="M12 2a10 10 0 0 1 10 10"
-              stroke="currentColor"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      ) : (
-        <div className={styles.buttonSection}>
-          {departments.map((department) => (
+      {/* Server-rendered department buttons */}
+      <div className={styles.buttonSection}>
+        {departments.length === 0 ? (
+          <p>No departments available</p>
+        ) : (
+          departments.map((department) => (
             <Link
               key={department.id}
               href={`/crew-directory/${department.slug}`}
@@ -104,20 +80,24 @@ export default function CrewDirectoryPage() {
             >
               <button>{department.name}</button>
             </Link>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       {/* Download component - data fetched on demand */}
       <DownloadSelect title="Download Crew Directory" downloadType="all" />
-
-      {/* Modal - shows when search result is clicked */}
-      {isModalOpen && selectedFreelancer && (
-        <FreelancerModal
-          freelancer={selectedFreelancer}
-          onClose={handleCloseModal}
-        />
-      )}
     </section>
   );
 }
+
+/**
+ * Metadata for the page
+ */
+export const metadata = {
+  title: "Crew Directory - Freelancers Promotions",
+  description:
+    "Browse our comprehensive directory of film and television crew members in Melbourne and Australia. Find experienced professionals for your production needs.",
+  alternates: {
+    canonical: "https://freelancers.com.au/crew-directory",
+  },
+};

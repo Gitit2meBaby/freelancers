@@ -2,6 +2,7 @@ import React from "react";
 import { Suspense } from "react";
 
 import LoginForm from "./(components)/LoginForm";
+import Spinner from "../components/Spinner";
 
 import styles from "../styles/memberLogin.module.scss";
 
@@ -18,7 +19,13 @@ const page = () => {
       <div className={styles.formContainer}>
         <div className={styles.content}>
           <h1>Member Login</h1>
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <>
+                <Spinner />
+              </>
+            }
+          >
             <LoginForm />
           </Suspense>
         </div>

@@ -390,25 +390,3 @@
 :has([data-spacing="large"]) .crewHead {
   padding-top: 2rem;
 }
-
-// LOADING ************
-
-.loadingSpinner {
-  margin: 20vh auto;
-  display: flex;
-  align-items: center;
-  color: var(--color-brand-primary);
-}
-
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}

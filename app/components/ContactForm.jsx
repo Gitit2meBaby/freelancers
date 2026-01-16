@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 
 import styles from "../styles/contactUs.module.scss";
 
+export const dynamic = "force-dynamic";
 const ContactForm = () => {
   const [formData, setFormData] = useState({
     name: "",

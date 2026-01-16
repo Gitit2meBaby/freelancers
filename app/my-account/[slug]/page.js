@@ -1,127 +1,71 @@
 // app/my-account/[slug]/page.js
-"use client";
+// SIMPLIFIED VERSION - Queries from existing API to avoid schema issues
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { notFound } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 
 import News from "../../components/News";
+import EditProfileButton from "./(components)/EditProfileButton";
 
 import styles from "../../styles/profile.module.scss";
 
-export const dynamic = "force-dynamic";
+// Enable ISR - revalidate every hour
+export const revalidate = 3600;
 
-export default function UserProfilePage() {
-  const params = useParams();
-  const router = useRouter();
-  const { data: session, status } = useSession();
-  const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const isLoggedIn = status === "authenticated";
-  const isLoadingAuth = status === "loading";
-  const isOwnProfile = isLoggedIn && session?.user?.slug === params.slug;
-
-  useEffect(() => {
-    if (!isLoadingAuth) {
-      fetchProfileData(params.slug);
-    }
-  }, [params.slug, isLoadingAuth]);
-
-  const fetchProfileData = async (slug) => {
-    setLoading(true);
-    setError(null);
-
+/**
+ * Cached function to fetch freelancer profile from existing API
+ * This avoids schema/column name issues by using the working API
+ */
+const getCachedFreelancerProfile = unstable_cache(
+  async (slug) => {
     try {
-      const response = await fetch(`/api/freelancer/${slug}`);
+      // Use the existing API that already works
+      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const response = await fetch(`${baseUrl}/api/freelancer/${slug}`, {
+        next: { revalidate: 3600 },
+      });
 
       if (!response.ok) {
-        throw new Error("Profile not found");
+        return null;
       }
 
       const result = await response.json();
-      const data = result.data;
-
-      const profileData = {
-        id: data.id,
-        name: data.name,
-        slug: data.slug,
-        bio: data.bio,
-        role: data.skills?.[0]?.skillName || "Film Crew Member",
-        department: data.skills?.[0]?.departmentName || "",
-        photoUrl: data.photoUrl,
-        cvUrl: data.cvUrl,
-        links: data.links || {},
-        skills: data.skills || [],
-      };
-
-      setProfileData(profileData);
-      console.log(profileData);
+      return result.data;
     } catch (error) {
-      console.error("Error loading profile:", error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching profile:", error);
+      return null;
     }
-  };
-
-  if (loading || isLoadingAuth) {
-    return (
-      <div
-        className={styles.profilePage}
-        data-footer="noBorder"
-        data-page="plain"
-      >
-        <div className={styles.loadingSpinner}>
-          <svg
-            width="66"
-            height="66"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className={styles.spinner}
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              strokeOpacity="0.3"
-            />
-            <path
-              d="M12 2a10 10 0 0 1 10 10"
-              stroke="currentColor"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </div>
-    );
+  },
+  ["freelancer-profile"],
+  {
+    revalidate: 3600,
+    tags: ["freelancers"],
   }
+);
 
-  if (error) {
-    return (
-      <div className={styles.profilePage}>
-        <h1 className={styles.pageTitle}>Crew Profile</h1>
-        <p className={styles.error}>Profile not found</p>
-      </div>
-    );
-  }
+/**
+ * Server Component - Uses existing working API
+ * Only the Edit button is a client component
+ */
+export default async function UserProfilePage({ params }) {
+  const { slug } = await params;
+  const profileData = await getCachedFreelancerProfile(slug);
 
+  // Show 404 if profile not found
   if (!profileData) {
-    return null;
+    notFound();
   }
+
+  // Extract role from skills array
+  const role = profileData.skills?.[0]?.skillName || "Film Crew Member";
 
   return (
     <section
       className={styles.profilePage}
-      data-page="plain"
       data-footer="noBorder"
+      data-page="plain"
     >
       <h1 className={styles.pageTitle}>Crew Profile</h1>
 
@@ -135,6 +79,7 @@ export default function UserProfilePage() {
               width={430}
               height={680}
               className={styles.profilePhoto}
+              priority={false}
             />
           ) : (
             <div className={styles.placeholderPhoto}>
@@ -151,28 +96,24 @@ export default function UserProfilePage() {
             </div>
           )}
 
-          {/* Edit Profile Button (only show on desktop) */}
-          {isOwnProfile && (
-            <Link
-              href="/edit-profile"
-              className={`${styles.editButton} ${styles.desk}`}
-            >
-              Edit Profile
-            </Link>
-          )}
+          {/* Edit Profile Button (desktop) - CLIENT COMPONENT */}
+          <EditProfileButton
+            profileSlug={profileData.slug}
+            className={styles.desk}
+          />
         </div>
 
         {/* Right: Info */}
         <div className={styles.infoSection}>
           <h2 className={styles.name}>{profileData.name}</h2>
-          <p className={styles.role}>{profileData.role}</p>
-          <p className={styles.bio}>{profileData.bio}</p>
+          <p className={styles.role}>{role}</p>
+          {profileData.bio && <p className={styles.bio}>{profileData.bio}</p>}
 
           {/* Links */}
-          {(profileData.links.Website ||
-            profileData.links.Instagram ||
-            profileData.links.Imdb ||
-            profileData.links.LinkedIn) && (
+          {(profileData.links?.Website ||
+            profileData.links?.Instagram ||
+            profileData.links?.Imdb ||
+            profileData.links?.LinkedIn) && (
             <div className={styles.links}>
               {profileData.links.Website && (
                 <Link
@@ -351,17 +292,56 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Edit Profile Button (only show on mobile) */}
-      {isOwnProfile && (
-        <Link
-          href="/edit-profile"
-          className={`${styles.editButton} ${styles.mob}`}
-        >
-          Edit Profile
-        </Link>
-      )}
+      {/* Edit Profile Button (mobile) - CLIENT COMPONENT */}
+      <EditProfileButton
+        profileSlug={profileData.slug}
+        className={styles.mob}
+      />
 
       <News />
     </section>
   );
+}
+
+/**
+ * Generate metadata for each profile page
+ */
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+
+  try {
+    const profileData = await getCachedFreelancerProfile(slug);
+
+    if (!profileData) {
+      return {
+        title: "Profile Not Found - Freelancers Promotions",
+      };
+    }
+
+    const role = profileData.skills?.[0]?.skillName || "Film Crew Member";
+    const title = `${profileData.name} - ${role} | Freelancers Promotions`;
+    const description =
+      profileData.bio ||
+      `${profileData.name} is a ${role} available for film and television production work in Melbourne and Australia.`;
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical: `https://freelancers.com.au/my-account/${slug}`,
+      },
+      openGraph: {
+        title,
+        description,
+        url: `https://freelancers.com.au/my-account/${slug}`,
+        type: "profile",
+        images: profileData.photoUrl ? [profileData.photoUrl] : [],
+      },
+    };
+  } catch (error) {
+    console.error("Error generating metadata:", error);
+    return {
+      title: "Profile - Freelancers Promotions",
+    };
+  }
 }

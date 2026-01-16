@@ -1,32 +1,114 @@
 // app/screen-services/page.js
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
+import { executeQuery, VIEWS } from "../lib/db";
+import { getBlobUrl } from "../lib/azureBlob";
 import styles from "../styles/crewDirectory.module.scss";
 
-// Enable static generation with revalidation
-export const revalidate = 3600; // Revalidate every hour (3600 seconds)
+// Enable ISR with 1 hour revalidation
+export const revalidate = 3600;
 
-async function getScreenServices() {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/screen-services`, {
-      // Cache for 1 hour on the server
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch screen services");
-    }
-
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching screen services:", error);
-    return { categories: [], services: [] };
-  }
+/**
+ * Generates a URL-friendly slug from a name
+ */
+function generateSlug(name) {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
+/**
+ * Cached database query - moved from API route to page level
+ * More efficient: eliminates API roundtrip
+ */
+const getCachedScreenServices = unstable_cache(
+  async () => {
+    const query = `
+      SELECT 
+        ServiceCategoryID,
+        ServiceID,
+        Service,
+        CategoryID,
+        Category,
+        WebsiteURL,
+        LogoBlobID
+      FROM ${VIEWS.SERVICE_CATEGORIES}
+      ORDER BY Category, Service
+    `;
+
+    const results = await executeQuery(query);
+
+    // Build unique services map
+    const servicesMap = new Map();
+    const categoriesMap = new Map();
+
+    results.forEach((row) => {
+      // Add service
+      if (!servicesMap.has(row.ServiceID)) {
+        servicesMap.set(row.ServiceID, {
+          id: row.ServiceID,
+          name: row.Service,
+          slug: generateSlug(row.Service),
+          websiteUrl: row.WebsiteURL,
+          logoUrl: row.LogoBlobID ? getBlobUrl(row.LogoBlobID) : null,
+          logoBlobId: row.LogoBlobID,
+          categories: [],
+        });
+      }
+
+      // Add category
+      if (!categoriesMap.has(row.CategoryID)) {
+        categoriesMap.set(row.CategoryID, {
+          id: row.CategoryID,
+          name: row.Category,
+          slug: generateSlug(row.Category),
+          services: [],
+        });
+      }
+
+      // Link service to category
+      const service = servicesMap.get(row.ServiceID);
+      const category = categoriesMap.get(row.CategoryID);
+
+      if (!service.categories.some((c) => c.id === category.id)) {
+        service.categories.push({
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+        });
+      }
+
+      if (!category.services.some((s) => s.id === service.id)) {
+        category.services.push({
+          id: service.id,
+          name: service.name,
+          slug: service.slug,
+        });
+      }
+    });
+
+    const services = Array.from(servicesMap.values());
+    const categories = Array.from(categoriesMap.values());
+
+    return {
+      services,
+      categories,
+      totalServices: services.length,
+      totalCategories: categories.length,
+    };
+  },
+  ["screen-services-all"],
+  {
+    revalidate: 3600,
+    tags: ["screen-services"],
+  }
+);
+
 export default async function ScreenServicesPage() {
-  const data = await getScreenServices();
+  // Fetch directly from database - no API roundtrip needed!
+  const data = await getCachedScreenServices();
   const categories = data.categories || [];
 
   return (

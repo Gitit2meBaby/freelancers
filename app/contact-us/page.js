@@ -3,9 +3,7 @@ import { Suspense } from "react";
 import styles from "../styles/contactUs.module.scss";
 
 import ContactForm from "../components/ContactForm";
-
-export const dynamic = "force-dynamic";
-
+import Spinner from "../components/Spinner";
 const page = () => {
   return (
     <section
@@ -34,7 +32,13 @@ const page = () => {
             </div>
           </div>
         </div>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <>
+              <Spinner />
+            </>
+          }
+        >
           <ContactForm />
         </Suspense>
       </div>
