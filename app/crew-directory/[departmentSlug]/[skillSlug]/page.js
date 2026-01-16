@@ -37,8 +37,6 @@ export async function generateStaticParams() {
 
     const results = await executeQuery(query);
 
-    console.log(`✅ Generated ${results.length} skill page params`);
-
     return results.map((row) => ({
       departmentSlug: row.DepartmentSlug,
       skillSlug: row.SkillSlug,
@@ -146,9 +144,6 @@ const getCachedSkillData = unstable_cache(
 
         // If it's a timeout and we have retries left, try again
         if (error.code === "ETIMEOUT" && retries > 0) {
-          console.log(
-            `⚠️ Timeout fetching ${departmentSlug}/${skillSlug}, retrying... (${retries} left)`
-          );
           // Wait 1 second before retry
           await new Promise((resolve) => setTimeout(resolve, 1000));
           continue;
