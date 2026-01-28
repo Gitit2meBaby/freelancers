@@ -91,7 +91,7 @@ const getCachedDepartmentData = unstable_cache(
   {
     revalidate: 3600,
     tags: ["crew-directory"],
-  }
+  },
 );
 
 /**

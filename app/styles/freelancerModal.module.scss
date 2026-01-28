@@ -175,6 +175,21 @@
   }
 }
 
+.skills {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  h3,
+  span,
+  div {
+    width: 100%;
+  }
+  span,
+  h3 {
+    text-align: left;
+  }
+}
+
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -210,6 +225,8 @@
   margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 2px solid var(--color-background-pale-blue);
+  display: flex;
+  gap: 2rem;
 }
 
 .cvButton {
@@ -234,5 +251,21 @@
   svg {
     width: 24px;
     height: 24px;
+  }
+}
+
+.equipmentButton {
+  color: var(--color-brand-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  scale: 1;
+  transition: all 0.3s ease;
+  text-decoration: underline;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: var(--color-brand-third);
+    scale: 1.1;
   }
 }

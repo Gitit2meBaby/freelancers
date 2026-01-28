@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import styles from "../../../styles/adminNews.module.scss";
-import Spinner from "@/app/components/Spinner";
+import Spinner from "../../../components/Spinner";
 
 export const dynamic = "force-dynamic";
 export default function AdminNewsPage() {
@@ -132,7 +132,7 @@ export default function AdminNewsPage() {
             newBlobId: newBlobId, // Only sent if a new file was uploaded
             fileName: formData.pdfFile ? formData.pdfFile.name : null,
           }),
-        }
+        },
       );
 
       if (!updateResponse.ok) {
@@ -264,7 +264,7 @@ export default function AdminNewsPage() {
                     <div className={styles.actions}>
                       <a
                         // href={item.pdfUrl}
-                        href={`https://fpsblobstorage.blob.core.windows.net/fpsblob/${item.blobId}?si=fpspolicy1&spr=https&sv=2024-11-04&sr=c&sig=htuZz2ljPtxw1Vze%2BkpKm7eNA59fdMw1ZNRQN9PW3XE%3D`}
+                        href={`${process.env.AZURE_BLOB_BASE_URL}/${item.blobId}?${process.env.AZURE_BLOB_SAS_TOKEN}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={styles.viewButton}

@@ -44,3 +44,6 @@ media/
 cleanedMedia/
 duplicates/
 downloaded_media/
+/scripts/downloaded_media_final
+/scripts/output
+/scripts/azure_ready_media

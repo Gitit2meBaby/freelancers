@@ -1,9 +1,9 @@
-// app/api/freelancer/[slug]/route.js - CORRECTED (No Verification Filtering)
+// app/api/freelancer/[slug]/route.js - UPDATED WITH PROXIED URLS
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
 import { executeQuery, VIEWS, LINK_TYPES } from "../../../lib/db";
-import { getBlobUrl } from "../../../lib/azureBlob";
+import { getProxiedBlobUrl } from "../../../lib/blobProxy";
 
 /**
  * Cached function to get all freelancer data
@@ -18,7 +18,8 @@ const getAllFreelancerData = unstable_cache(
         DisplayName,
         FreelancerBio,
         PhotoBlobID,
-        CVBlobID
+        CVBlobID,
+        EquipmentBlobID
       FROM ${VIEWS.FREELANCERS}
     `;
 
@@ -56,11 +57,11 @@ const getAllFreelancerData = unstable_cache(
 
     return { freelancers, skills, links };
   },
-  ["freelancer-data-raw"],
+  ["freelancer-data-proxied-v3"],
   {
     revalidate: 3600,
     tags: ["freelancers"],
-  }
+  },
 );
 
 export async function GET(request, { params }) {
@@ -75,18 +76,21 @@ export async function GET(request, { params }) {
 
     // Find the freelancer with matching slug
     const freelancer = freelancers.find(
-      (f) => f.Slug.toLowerCase() === slug.toLowerCase()
+      (f) => f.Slug.toLowerCase() === slug.toLowerCase(),
     );
 
     if (!freelancer) {
       return NextResponse.json(
         { success: false, error: "Freelancer not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     console.log(`📸 Photo Blob ID: ${freelancer.PhotoBlobID || "none"}`);
     console.log(`📄 CV Blob ID: ${freelancer.CVBlobID || "none"}`);
+    console.log(
+      `🔗 Equipment List Blob ID: ${freelancer.EquipmentBlobID || "none"}`,
+    );
 
     // Get freelancer's skills
     const freelancerSkills = skills
@@ -109,19 +113,22 @@ export async function GET(request, { params }) {
         return acc;
       }, {});
 
-    // CRITICAL FIX: Show photos and CVs if they exist, regardless of verification status
-    // Verification is set once during initial setup and never changes
-    const photoUrl = freelancer.PhotoBlobID
-      ? getBlobUrl(freelancer.PhotoBlobID)
+    // Use proxied URLs to avoid CORS issues
+    const photoUrl = freelancer.PhotoBlobID?.trim()
+      ? getProxiedBlobUrl(freelancer.PhotoBlobID)
       : null;
-    const cvUrl = freelancer.CVBlobID ? getBlobUrl(freelancer.CVBlobID) : null;
 
-    if (photoUrl) {
-      console.log(`✅ Showing photo`);
-    }
-    if (cvUrl) {
-      console.log(`✅ Showing CV`);
-    }
+    const cvUrl = freelancer.CVBlobID?.trim()
+      ? getProxiedBlobUrl(freelancer.CVBlobID)
+      : null;
+
+    const equipmentUrl = freelancer.EquipmentBlobID?.trim()
+      ? getProxiedBlobUrl(freelancer.EquipmentBlobID)
+      : null;
+
+    console.log(`🖼️  Proxied Photo URL: ${photoUrl}`);
+    console.log(`📄 Proxied CV URL: ${cvUrl}`);
+    console.log(`📋 Proxied Equipment URL: ${equipmentUrl}`);
 
     // Build complete freelancer object
     const freelancerData = {
@@ -131,8 +138,10 @@ export async function GET(request, { params }) {
       bio: freelancer.FreelancerBio || null,
       photoUrl: photoUrl,
       cvUrl: cvUrl,
+      equipmentListUrl: equipmentUrl,
       photoBlobId: freelancer.PhotoBlobID,
       cvBlobId: freelancer.CVBlobID,
+      equipmentBlobId: freelancer.EquipmentBlobID,
       skills: freelancerSkills,
       links: {
         Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
@@ -155,7 +164,7 @@ export async function GET(request, { params }) {
         success: false,
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

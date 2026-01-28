@@ -4,7 +4,10 @@
   position: relative;
   width: 100%;
   max-width: 600px;
-  //   margin: 0 auto 2rem;
+
+  @media screen and (max-width: 768px) {
+    display: none;
+  }
 }
 
 .searchBar {

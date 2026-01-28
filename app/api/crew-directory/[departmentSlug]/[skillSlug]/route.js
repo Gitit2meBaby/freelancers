@@ -1,13 +1,8 @@
-// app/api/crew-directory/[departmentSlug]/[skillSlug]/route.js - CLEANED VERSION
+// app/api/crew-directory/[departmentSlug]/[skillSlug]/route.js - NO VERIFICATION
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
-import {
-  executeQuery,
-  VIEWS,
-  STATUS_CODES,
-  LINK_TYPES,
-} from "../../../../lib/db";
+import { executeQuery, VIEWS, LINK_TYPES } from "../../../../lib/db";
 import { getBlobUrl } from "../../../../lib/azureBlob";
 
 /**
@@ -23,9 +18,8 @@ const getAllFreelancersWithSkills = unstable_cache(
         DisplayName,
         FreelancerBio,
         PhotoBlobID,
-        PhotoStatusID,
         CVBlobID,
-        CVStatusID
+        EquipmentBlobID
       FROM ${VIEWS.FREELANCERS}
     `;
 
@@ -62,7 +56,7 @@ const getAllFreelancersWithSkills = unstable_cache(
   {
     revalidate: 3600,
     tags: ["crew-directory", "freelancers"],
-  }
+  },
 );
 
 export async function GET(request, { params }) {
@@ -88,7 +82,7 @@ export async function GET(request, { params }) {
     if (matchingSkills.length === 0) {
       return NextResponse.json(
         { success: false, error: "Skill not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -107,7 +101,7 @@ export async function GET(request, { params }) {
     if (deptSkillInfo.length === 0) {
       return NextResponse.json(
         { success: false, error: "Skill not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -125,7 +119,7 @@ export async function GET(request, { params }) {
 
     // Get all freelancer IDs that have this skill
     const freelancerIdsWithSkill = new Set(
-      matchingSkills.map((s) => s.FreelancerID)
+      matchingSkills.map((s) => s.FreelancerID),
     );
 
     // Build links map for quick lookup
@@ -149,16 +143,16 @@ export async function GET(request, { params }) {
           name: freelancer.DisplayName,
           slug: freelancer.Slug,
           bio: freelancer.FreelancerBio || null,
-          photoUrl:
-            freelancer.PhotoStatusID === STATUS_CODES.VERIFIED &&
-            freelancer.PhotoBlobID
-              ? getBlobUrl(freelancer.PhotoBlobID)
-              : null,
-          cvUrl:
-            freelancer.CVStatusID === STATUS_CODES.VERIFIED &&
-            freelancer.CVBlobID
-              ? getBlobUrl(freelancer.CVBlobID)
-              : null,
+          // ✅ FIXED: Check for empty strings with .trim()
+          photoUrl: freelancer.PhotoBlobID?.trim()
+            ? getBlobUrl(freelancer.PhotoBlobID)
+            : null,
+          cvUrl: freelancer.CVBlobID?.trim()
+            ? getBlobUrl(freelancer.CVBlobID)
+            : null,
+          equipmentListUrl: freelancer.EquipmentBlobID?.trim()
+            ? getBlobUrl(freelancer.EquipmentBlobID)
+            : null,
           links: {
             Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
             Instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
@@ -187,7 +181,7 @@ export async function GET(request, { params }) {
         success: false,
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

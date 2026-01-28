@@ -17,7 +17,7 @@ export async function GET() {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -32,7 +32,8 @@ export async function GET() {
         DisplayName,
         FreelancerBio,
         PhotoBlobID,
-        CVBlobID
+        CVBlobID,
+        EquipmentBlobID
       FROM ${VIEWS.FREELANCERS}
       WHERE FreelancerID = @freelancerId
     `;
@@ -43,7 +44,7 @@ export async function GET() {
       console.error(`❌ Profile not found for freelancer ${freelancerId}`);
       return NextResponse.json(
         { success: false, error: "Profile not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -51,6 +52,9 @@ export async function GET() {
 
     console.log(`📸 Photo Blob ID: ${profile.PhotoBlobID || "none"}`);
     console.log(`📄 CV Blob ID: ${profile.CVBlobID || "none"}`);
+    console.log(
+      `🛠️ Equipment List Blob ID: ${profile.EquipmentBlobID || "none"}`,
+    );
 
     // Get links from TABLE (not VIEW) to include empty links
     const linksQuery = `
@@ -77,13 +81,17 @@ export async function GET() {
     });
 
     // Generate blob URLs
-    const photoUrl = profile.PhotoBlobID
+    const photoUrl = profile.PhotoBlobID?.trim()
       ? getBlobUrl(profile.PhotoBlobID)
       : null;
-    const cvUrl = profile.CVBlobID ? getBlobUrl(profile.CVBlobID) : null;
 
-    console.log(`🔗 Photo URL generated: ${photoUrl ? "yes" : "no"}`);
-    console.log(`🔗 CV URL generated: ${cvUrl ? "yes" : "no"}`);
+    const cvUrl = profile.CVBlobID?.trim()
+      ? getBlobUrl(profile.CVBlobID)
+      : null;
+
+    const equipmentListUrl = profile.EquipmentBlobID?.trim()
+      ? getBlobUrl(profile.EquipmentBlobID)
+      : null;
 
     const responseData = {
       freelancerId: profile.FreelancerID,
@@ -94,6 +102,8 @@ export async function GET() {
       photoBlobId: profile.PhotoBlobID, // Include blob ID for debugging
       cvUrl: cvUrl,
       cvBlobId: profile.CVBlobID, // Include blob ID for debugging
+      equipmentListUrl: equipmentListUrl,
+      EquipmentBlobID: profile.EquipmentBlobID, // Include blob ID for debugging
       links: links,
     };
 
@@ -110,7 +120,7 @@ export async function GET() {
         success: false,
         error: error.message || "Failed to load profile",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

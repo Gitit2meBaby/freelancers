@@ -3,7 +3,7 @@ import Link from "next/link";
 import { unstable_cache } from "next/cache";
 
 import { executeQuery, VIEWS } from "../lib/db";
-import SearchBar from "../components/SearchBar";
+import CrewDirectorySearch from "./(components)/CrewDirectorySearch";
 import DownloadSelect from "./(components)/DownloadSelect";
 
 import styles from "../styles/crewDirectory.module.scss";
@@ -43,7 +43,7 @@ const getCachedDepartments = unstable_cache(
   {
     revalidate: 3600,
     tags: ["crew-directory"],
-  }
+  },
 );
 
 /**
@@ -63,8 +63,8 @@ export default async function CrewDirectoryPage() {
       <div className={styles.crewHead}>
         <div></div>
         <h1>Crew Directory</h1>
-        {/* SearchBar is already a client component with modal handling */}
-        <SearchBar scope="all" />
+        {/* Client component that manages SearchBar + Modal */}
+        <CrewDirectorySearch />
       </div>
 
       {/* Server-rendered department buttons */}

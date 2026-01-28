@@ -125,6 +125,12 @@
   gap: var(--spacing-20);
 }
 
+.formUploads {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 50% 1fr;
+}
+
 .uploadButton {
   display: inline-block;
   padding: var(--spacing-10) var(--spacing-15);
@@ -146,6 +152,23 @@
 
 .fileInput {
   display: none;
+}
+
+.existingFile {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.fileLink {
+  color: #0070f3;
+  text-decoration: none;
+  font-size: 0.9rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .helpText {

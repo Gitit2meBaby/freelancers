@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
 
-import { executeQuery, VIEWS } from "../../../lib/db";
+import { executeQuery, VIEWS, LINK_TYPES } from "../../../lib/db";
 import { getBlobUrl } from "../../../lib/azureBlob";
 import DownloadSelect from "../../(components)/DownloadSelect";
 import FreelancerButtons from "./(components)/FreelancerButtons";
@@ -90,8 +90,7 @@ const getCachedSkillData = unstable_cache(
           },
         };
 
-        // Get all freelancers with this skill
-        // Use DISTINCT to prevent duplicates
+        // ✅ UPDATED: Get all freelancers with this skill
         const freelancersQuery = `
           SELECT DISTINCT
             f.FreelancerID,
@@ -99,7 +98,8 @@ const getCachedSkillData = unstable_cache(
             f.Slug,
             f.FreelancerBio,
             f.PhotoBlobID,
-            f.CVBlobID
+            f.CVBlobID,
+            f.EquipmentBlobID
           FROM ${VIEWS.FREELANCERS} f
           INNER JOIN ${VIEWS.FREELANCER_SKILLS} fs 
             ON f.FreelancerID = fs.FreelancerID
@@ -108,21 +108,53 @@ const getCachedSkillData = unstable_cache(
           ORDER BY f.DisplayName
         `;
 
-        const freelancersData = await executeQuery(freelancersQuery, {
-          departmentSlug,
-          skillSlug,
+        // ✅ ADDED: Get freelancer links
+        const linksQuery = `
+          SELECT 
+            fl.FreelancerID,
+            fl.LinkName,
+            fl.LinkURL
+          FROM ${VIEWS.FREELANCER_LINKS} fl
+          INNER JOIN ${VIEWS.FREELANCER_SKILLS} fs 
+            ON fl.FreelancerID = fs.FreelancerID
+          WHERE fs.DepartmentSlug = @departmentSlug
+            AND fs.SkillSlug = @skillSlug
+            AND fl.LinkURL IS NOT NULL 
+            AND fl.LinkURL != ''
+        `;
+
+        // ✅ UPDATED: Fetch both in parallel
+        const [freelancersData, linksData] = await Promise.all([
+          executeQuery(freelancersQuery, { departmentSlug, skillSlug }),
+          executeQuery(linksQuery, { departmentSlug, skillSlug }),
+        ]);
+
+        // ✅ ADDED: Build links map
+        const linksMap = new Map();
+        linksData.forEach((link) => {
+          if (!linksMap.has(link.FreelancerID)) {
+            linksMap.set(link.FreelancerID, {});
+          }
+          linksMap.get(link.FreelancerID)[link.LinkName] = link.LinkURL;
         });
 
-        // Process freelancers data
+        // Process freelancers data with links
         const freelancers = freelancersData.map((freelancer) => {
-          // Generate blob URLs for photos and CVs
-          const photoUrl = freelancer.PhotoBlobID
+          // ✅ FIXED: Check for empty strings with .trim()
+          const photoUrl = freelancer.PhotoBlobID?.trim()
             ? getBlobUrl(freelancer.PhotoBlobID)
             : null;
 
-          const cvUrl = freelancer.CVBlobID
+          const cvUrl = freelancer.CVBlobID?.trim()
             ? getBlobUrl(freelancer.CVBlobID)
             : null;
+
+          const equipmentListUrl = freelancer.EquipmentBlobID?.trim()
+            ? getBlobUrl(freelancer.EquipmentBlobID)
+            : null;
+
+          // Get links for this freelancer
+          const freelancerLinks = linksMap.get(freelancer.FreelancerID) || {};
 
           return {
             id: freelancer.FreelancerID,
@@ -131,6 +163,13 @@ const getCachedSkillData = unstable_cache(
             bio: freelancer.FreelancerBio,
             photoUrl,
             cvUrl,
+            equipmentListUrl,
+            links: {
+              Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
+              Instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
+              Imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
+              LinkedIn: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
+            },
           };
         });
 
@@ -152,7 +191,7 @@ const getCachedSkillData = unstable_cache(
         // Non-timeout error or out of retries
         console.error(
           `❌ Error fetching skill data (${retries} retries left):`,
-          error
+          error,
         );
 
         if (retries === 0) {
@@ -164,7 +203,7 @@ const getCachedSkillData = unstable_cache(
     // If all retries failed, log and return null (will show 404)
     console.error(
       `❌ Failed to fetch ${departmentSlug}/${skillSlug} after all retries:`,
-      lastError
+      lastError,
     );
     return null;
   },
@@ -172,7 +211,7 @@ const getCachedSkillData = unstable_cache(
   {
     revalidate: 3600,
     tags: ["crew-directory"],
-  }
+  },
 );
 
 /**

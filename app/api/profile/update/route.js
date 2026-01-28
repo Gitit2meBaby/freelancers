@@ -1,4 +1,4 @@
-// app/api/profile/update/route.js - CORRECTED (No Verification Changes)
+// app/api/profile/update/route.js - CORRECTED WITH EQUIPMENT LIST
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
@@ -13,11 +13,11 @@ import {
 
 /**
  * PUT /api/profile/update
- * Simple profile updates - bio, photo, and 4 links
+ * Simple profile updates - bio, photo, CV, equipment list, and 4 links
  * Only UPDATE operations, no INSERTs needed
  *
  * CRITICAL RULES:
- * 1. Blob IDs are FIXED (P000123, C000123) based on FreelancerID
+ * 1. Blob IDs are FIXED (P000123, C000123, E000123) based on FreelancerID
  * 2. Azure Blob automatically overwrites when uploading with same ID
  * 3. NO DELETION needed - we just update the database references
  * 4. NO VERIFICATION STATUS CHANGES - verification is set once during setup
@@ -30,7 +30,7 @@ export async function PUT(request) {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -41,6 +41,7 @@ export async function PUT(request) {
     console.log(`📝 Data received:`, {
       hasPhoto: !!data.photoBlobId,
       hasCv: !!data.cvBlobId,
+      hasEquipment: !!data.EquipmentBlobID, // ✅ ADDED
       hasName: !!data.displayName,
       hasBio: !!data.bio,
       hasLinks: !!data.links,
@@ -63,7 +64,7 @@ export async function PUT(request) {
         {
           PhotoBlobID: data.photoBlobId,
         },
-        { FreelancerID: freelancerId }
+        { FreelancerID: freelancerId },
       );
 
       hasChanges = true;
@@ -84,11 +85,35 @@ export async function PUT(request) {
         {
           CVBlobID: data.cvBlobId,
         },
-        { FreelancerID: freelancerId }
+        { FreelancerID: freelancerId },
       );
 
       hasChanges = true;
       console.log(`✅ CV blob ID updated in database`);
+    }
+
+    // ==================================================
+    // STEP 2.5: Handle Equipment List Update
+    // ==================================================
+    // ✅ ADDED EQUIPMENT LIST HANDLING
+    if (data.EquipmentBlobID) {
+      console.log(
+        `🛠️ Updating equipment list blob ID to: ${data.EquipmentBlobID}`,
+      );
+
+      // Simply update the database with the new blob ID
+      // NO DELETION - Azure Blob has already overwritten the file
+      // NO VERIFICATION STATUS CHANGE - verification is permanent
+      await executeUpdate(
+        TABLES.FREELANCER_WEBSITE_DATA,
+        {
+          EquipmentBlobID: data.EquipmentBlobID,
+        },
+        { FreelancerID: freelancerId },
+      );
+
+      hasChanges = true;
+      console.log(`✅ Equipment list blob ID updated in database`);
     }
 
     // ==================================================
@@ -154,7 +179,7 @@ export async function PUT(request) {
 
         // Find the existing link record
         const existingLink = currentLinks.find(
-          (l) => l.LinkName.toLowerCase() === linkType.name.toLowerCase()
+          (l) => l.LinkName.toLowerCase() === linkType.name.toLowerCase(),
         );
 
         if (existingLink) {
@@ -168,7 +193,7 @@ export async function PUT(request) {
               {
                 FreelancerWebsiteDataLinkID:
                   existingLink.FreelancerWebsiteDataLinkID,
-              }
+              },
             );
             linksChanged = true;
             hasChanges = true;
@@ -176,7 +201,7 @@ export async function PUT(request) {
           }
         } else {
           console.warn(
-            `⚠️ Link record for '${linkType.name}' not found for freelancer ${freelancerId}`
+            `⚠️ Link record for '${linkType.name}' not found for freelancer ${freelancerId}`,
           );
         }
       }
@@ -193,6 +218,7 @@ export async function PUT(request) {
         changes: {
           photo: false,
           cv: false,
+          equipment: false, // ✅ ADDED
           name: false,
           bio: false,
           links: false,
@@ -212,6 +238,7 @@ export async function PUT(request) {
       changes: {
         photo: !!data.photoBlobId,
         cv: !!data.cvBlobId,
+        equipment: !!data.EquipmentBlobID, // ✅ ADDED
         name: textUpdates.DisplayName !== undefined,
         bio: textUpdates.FreelancerBio !== undefined,
         links: linksChanged,
@@ -224,7 +251,7 @@ export async function PUT(request) {
         success: false,
         error: error.message || "Failed to update profile",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

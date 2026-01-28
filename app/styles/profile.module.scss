@@ -143,6 +143,23 @@
     transform: translateY(-2px);
   }
 
+  &.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: #999;
+    pointer-events: none; // Prevent clicking
+
+    &:hover {
+      background: transparent;
+      transform: none;
+      color: #999;
+    }
+
+    svg {
+      opacity: 0.5;
+    }
+  }
+
   svg {
     width: 20px;
     height: 20px;
@@ -153,6 +170,14 @@
   margin-top: 1rem;
   padding-top: 1.5rem;
   border-top: 2px solid var(--color-background-pale-blue);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+
+  @media screen and (max-width: 480px) {
+    flex-direction: column;
+    gap: 1rem;
+  }
 }
 
 .cvButton {
@@ -174,9 +199,52 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+    color: #999;
+    border: 1px solid #ddd;
+    pointer-events: none; // Prevent clicking
+
+    &:hover {
+      background: #f5f5f5;
+      transform: none;
+      box-shadow: none;
+    }
+
+    svg {
+      opacity: 0.5;
+    }
+  }
+
   svg {
     width: 24px;
     height: 24px;
+  }
+}
+
+.disabledLabel {
+  display: inline-block;
+  margin-left: 0.1rem;
+  font-size: 0.65em;
+  font-style: italic;
+  color: #999;
+}
+
+.equipmentButton {
+  color: var(--color-brand-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  scale: 1;
+  transition: all 0.3s ease;
+  text-decoration: underline;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: var(--color-brand-third);
+    scale: 1.1;
   }
 }
 
