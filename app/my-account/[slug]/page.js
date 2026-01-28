@@ -11,6 +11,8 @@ import styles from "../../styles/profile.module.scss";
 
 // Enable ISR - revalidate every hour
 export const revalidate = 3600;
+// Allow dynamic params - don't pre-generate at build time
+export const dynamicParams = true;
 
 /**
  * Cached function to fetch freelancer profile from existing API

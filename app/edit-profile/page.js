@@ -139,8 +139,6 @@ function EditProfileForm() {
     formDataToUpload.append("file", file);
     formDataToUpload.append("type", type);
 
-    console.log(`📤 Uploading ${type}...`);
-
     const response = await fetch("/api/upload-blob", {
       method: "POST",
       body: formDataToUpload,
@@ -152,7 +150,6 @@ function EditProfileForm() {
     }
 
     const result = await response.json();
-    console.log(`✅ Upload successful - Blob ID: ${result.blobId}`);
     return result.blobId;
   };
 
@@ -194,8 +191,6 @@ function EditProfileForm() {
           LinkedIn: formData.LinkedIn,
         },
       };
-
-      console.log(`💾 Saving profile update...`);
 
       const response = await fetch("/api/profile/update", {
         method: "PUT",

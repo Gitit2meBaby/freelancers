@@ -69,8 +69,6 @@ export async function GET(request, { params }) {
     // IMPORTANT: In Next.js 15+, params is a Promise
     const { slug } = await params;
 
-    console.log(`🔵 Fetching profile: ${slug}`);
-
     // Get cached data
     const { freelancers, skills, links } = await getAllFreelancerData();
 
@@ -85,12 +83,6 @@ export async function GET(request, { params }) {
         { status: 404 },
       );
     }
-
-    console.log(`📸 Photo Blob ID: ${freelancer.PhotoBlobID || "none"}`);
-    console.log(`📄 CV Blob ID: ${freelancer.CVBlobID || "none"}`);
-    console.log(
-      `🔗 Equipment List Blob ID: ${freelancer.EquipmentBlobID || "none"}`,
-    );
 
     // Get freelancer's skills
     const freelancerSkills = skills
@@ -125,10 +117,6 @@ export async function GET(request, { params }) {
     const equipmentUrl = freelancer.EquipmentBlobID?.trim()
       ? getProxiedBlobUrl(freelancer.EquipmentBlobID)
       : null;
-
-    console.log(`🖼️  Proxied Photo URL: ${photoUrl}`);
-    console.log(`📄 Proxied CV URL: ${cvUrl}`);
-    console.log(`📋 Proxied Equipment URL: ${equipmentUrl}`);
 
     // Build complete freelancer object
     const freelancerData = {

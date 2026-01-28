@@ -22,7 +22,6 @@ export async function GET() {
     }
 
     const freelancerId = parseInt(session.user.id);
-    console.log(`🔵 Loading profile for editing - Freelancer ${freelancerId}`);
 
     // Get main profile data
     const profileQuery = `
@@ -49,12 +48,6 @@ export async function GET() {
     }
 
     const profile = profileData[0];
-
-    console.log(`📸 Photo Blob ID: ${profile.PhotoBlobID || "none"}`);
-    console.log(`📄 CV Blob ID: ${profile.CVBlobID || "none"}`);
-    console.log(
-      `🛠️ Equipment List Blob ID: ${profile.EquipmentBlobID || "none"}`,
-    );
 
     // Get links from TABLE (not VIEW) to include empty links
     const linksQuery = `
@@ -106,8 +99,6 @@ export async function GET() {
       EquipmentBlobID: profile.EquipmentBlobID, // Include blob ID for debugging
       links: links,
     };
-
-    console.log(`✅ Profile loaded successfully`);
 
     return NextResponse.json({
       success: true,

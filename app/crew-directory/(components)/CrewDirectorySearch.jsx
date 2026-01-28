@@ -19,7 +19,6 @@ export default function CrewDirectorySearch() {
 
   // Handle freelancer selection from SearchBar
   const handleSelectFreelancer = (freelancerData) => {
-    console.log("🔵 SearchBar selected freelancer:", freelancerData);
     setSelectedFreelancer(freelancerData);
     setIsModalOpen(true);
   };

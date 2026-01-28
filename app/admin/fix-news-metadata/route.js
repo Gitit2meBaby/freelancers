@@ -16,7 +16,7 @@ export async function POST() {
     if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -42,7 +42,6 @@ export async function POST() {
             success: true,
             message: "Metadata updated",
           });
-          console.log(`✅ Updated metadata for ${blobId}`);
         } else {
           const errorText = await response.text();
           results.push({
@@ -77,7 +76,7 @@ export async function POST() {
         success: false,
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

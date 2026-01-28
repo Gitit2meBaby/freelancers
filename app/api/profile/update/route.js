@@ -37,16 +37,6 @@ export async function PUT(request) {
     const freelancerId = parseInt(session.user.id);
     const data = await request.json();
 
-    console.log(`🔵 Updating profile for freelancer ${freelancerId}`);
-    console.log(`📝 Data received:`, {
-      hasPhoto: !!data.photoBlobId,
-      hasCv: !!data.cvBlobId,
-      hasEquipment: !!data.EquipmentBlobID, // ✅ ADDED
-      hasName: !!data.displayName,
-      hasBio: !!data.bio,
-      hasLinks: !!data.links,
-    });
-
     let hasChanges = false;
     let textUpdates = {};
 
@@ -54,8 +44,6 @@ export async function PUT(request) {
     // STEP 1: Handle Photo Update
     // ==================================================
     if (data.photoBlobId) {
-      console.log(`📸 Updating photo blob ID to: ${data.photoBlobId}`);
-
       // Simply update the database with the new blob ID
       // NO DELETION - Azure Blob has already overwritten the file
       // NO VERIFICATION STATUS CHANGE - verification is permanent
@@ -68,15 +56,12 @@ export async function PUT(request) {
       );
 
       hasChanges = true;
-      console.log(`✅ Photo blob ID updated in database`);
     }
 
     // ==================================================
     // STEP 2: Handle CV Update
     // ==================================================
     if (data.cvBlobId) {
-      console.log(`📄 Updating CV blob ID to: ${data.cvBlobId}`);
-
       // Simply update the database with the new blob ID
       // NO DELETION - Azure Blob has already overwritten the file
       // NO VERIFICATION STATUS CHANGE - verification is permanent
@@ -89,7 +74,6 @@ export async function PUT(request) {
       );
 
       hasChanges = true;
-      console.log(`✅ CV blob ID updated in database`);
     }
 
     // ==================================================
@@ -97,10 +81,6 @@ export async function PUT(request) {
     // ==================================================
     // ✅ ADDED EQUIPMENT LIST HANDLING
     if (data.EquipmentBlobID) {
-      console.log(
-        `🛠️ Updating equipment list blob ID to: ${data.EquipmentBlobID}`,
-      );
-
       // Simply update the database with the new blob ID
       // NO DELETION - Azure Blob has already overwritten the file
       // NO VERIFICATION STATUS CHANGE - verification is permanent
@@ -113,7 +93,6 @@ export async function PUT(request) {
       );
 
       hasChanges = true;
-      console.log(`✅ Equipment list blob ID updated in database`);
     }
 
     // ==================================================
@@ -133,12 +112,10 @@ export async function PUT(request) {
       data.displayName !== currentValues.DisplayName
     ) {
       textUpdates.DisplayName = data.displayName;
-      console.log(`📝 Name changed to: ${data.displayName}`);
     }
 
     if (data.bio !== undefined && data.bio !== currentValues.FreelancerBio) {
       textUpdates.FreelancerBio = data.bio;
-      console.log(`📝 Bio changed`);
     }
 
     if (Object.keys(textUpdates).length > 0) {
@@ -146,7 +123,6 @@ export async function PUT(request) {
         FreelancerID: freelancerId,
       });
       hasChanges = true;
-      console.log(`✅ Text updates saved`);
     }
 
     // ==================================================
@@ -197,7 +173,6 @@ export async function PUT(request) {
             );
             linksChanged = true;
             hasChanges = true;
-            console.log(`🔗 ${linkType.name} link updated`);
           }
         } else {
           console.warn(
@@ -211,7 +186,6 @@ export async function PUT(request) {
     // STEP 5: Return success response
     // ==================================================
     if (!hasChanges) {
-      console.log(`ℹ️ No changes detected`);
       return NextResponse.json({
         success: true,
         message: "No changes detected",
@@ -226,11 +200,8 @@ export async function PUT(request) {
       });
     }
 
-    console.log(`✅ Profile update completed successfully`);
-
     // CRITICAL: Invalidate the freelancer cache so new data shows immediately
     revalidateTag("freelancers");
-    console.log(`♻️ Invalidated freelancer cache`);
 
     return NextResponse.json({
       success: true,

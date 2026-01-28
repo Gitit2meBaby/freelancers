@@ -42,13 +42,11 @@ export default function FreelancerModal({ freelancer, onClose }) {
     const img = new window.Image();
 
     img.onload = () => {
-      console.log("✅ Photo loaded successfully");
       setHasPhoto(true);
       setIsCheckingPhoto(false);
     };
 
     img.onerror = () => {
-      console.log("❌ Photo failed to load");
       setHasPhoto(false);
       setIsCheckingPhoto(false);
     };
@@ -71,14 +69,11 @@ export default function FreelancerModal({ freelancer, onClose }) {
         });
 
         if (response.ok) {
-          console.log("✅ Equipment list exists");
           setHasEquipment(true);
         } else {
-          console.log("❌ Equipment list returned", response.status);
           setHasEquipment(false);
         }
       } catch (error) {
-        console.log("❌ Equipment list failed to load:", error);
         setHasEquipment(false);
       } finally {
         setIsCheckingEquipment(false);

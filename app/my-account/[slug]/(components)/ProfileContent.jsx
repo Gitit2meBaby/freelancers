@@ -42,12 +42,10 @@ export default function ProfileContent({ profileData }) {
     const img = new window.Image();
 
     img.onload = () => {
-      console.log("✅ Profile photo loaded successfully");
       setIsCheckingPhoto(false);
     };
 
     img.onerror = () => {
-      console.log("❌ Profile photo failed to load, using default avatar");
       setPhotoError(true);
       setIsCheckingPhoto(false);
     };
@@ -69,14 +67,11 @@ export default function ProfileContent({ profileData }) {
         });
 
         if (response.ok) {
-          console.log("✅ CV exists");
           setHasCv(true);
         } else {
-          console.log("❌ CV returned", response.status);
           setHasCv(false);
         }
       } catch (error) {
-        console.log("❌ CV failed to load:", error);
         setHasCv(false);
       } finally {
         setIsCheckingCv(false);
@@ -100,14 +95,11 @@ export default function ProfileContent({ profileData }) {
         });
 
         if (response.ok) {
-          console.log("✅ Equipment list exists");
           setHasEquipment(true);
         } else {
-          console.log("❌ Equipment list returned", response.status);
           setHasEquipment(false);
         }
       } catch (error) {
-        console.log("❌ Equipment list failed to load:", error);
         setHasEquipment(false);
       } finally {
         setIsCheckingEquipment(false);
@@ -133,7 +125,6 @@ export default function ProfileContent({ profileData }) {
               className={styles.profilePhoto}
               priority={false}
               onError={() => {
-                console.log("❌ Image component error, showing default avatar");
                 setPhotoError(true);
               }}
             />
