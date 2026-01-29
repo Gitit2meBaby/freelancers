@@ -5,12 +5,10 @@ import Link from "next/link";
 import styles from "../../../../styles/freelancerModal.module.scss";
 
 export default function FreelancerModal({ freelancer, onClose }) {
-  // Start assuming NO photo (will check on load)
+  // Start assuming NO photo or equipment
   const [hasPhoto, setHasPhoto] = useState(false);
-  const [isCheckingPhoto, setIsCheckingPhoto] = useState(!!freelancer.photoUrl);
-
-  // Equipment list validation
   const [hasEquipment, setHasEquipment] = useState(false);
+  const [isCheckingPhoto, setIsCheckingPhoto] = useState(!!freelancer.photoUrl);
   const [isCheckingEquipment, setIsCheckingEquipment] = useState(
     !!freelancer.equipmentListUrl,
   );
@@ -42,11 +40,13 @@ export default function FreelancerModal({ freelancer, onClose }) {
     const img = new window.Image();
 
     img.onload = () => {
+      console.log("✅ Photo loaded successfully");
       setHasPhoto(true);
       setIsCheckingPhoto(false);
     };
 
     img.onerror = () => {
+      console.log("❌ Photo failed to load");
       setHasPhoto(false);
       setIsCheckingPhoto(false);
     };
@@ -61,7 +61,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
       return;
     }
 
-    // Use fetch with HEAD request to check if file exists (now works with proxy)
+    // Use fetch with HEAD request to check if file exists
     const checkEquipment = async () => {
       try {
         const response = await fetch(freelancer.equipmentListUrl, {
@@ -69,11 +69,14 @@ export default function FreelancerModal({ freelancer, onClose }) {
         });
 
         if (response.ok) {
+          console.log("✅ Equipment list exists");
           setHasEquipment(true);
         } else {
+          console.log("❌ Equipment list returned", response.status);
           setHasEquipment(false);
         }
       } catch (error) {
+        console.log("❌ Equipment list failed to load:", error);
         setHasEquipment(false);
       } finally {
         setIsCheckingEquipment(false);
@@ -86,6 +89,51 @@ export default function FreelancerModal({ freelancer, onClose }) {
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
+    }
+  };
+
+  // ✅ ADDED: Download handler for PDFs
+  const handleDownload = async (url, defaultFilename) => {
+    try {
+      console.log(`📥 Downloading: ${url}`);
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+
+      // Try to get filename from Content-Disposition header
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = defaultFilename;
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      console.log(`💾 Saving as: ${filename}`);
+
+      // Create download link and trigger it
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up
+      window.URL.revokeObjectURL(downloadUrl);
+
+      console.log(`✅ Download complete: ${filename}`);
+    } catch (error) {
+      console.error("❌ Download error:", error);
+      alert("Failed to download file. Please try again.");
     }
   };
 
@@ -303,31 +351,15 @@ export default function FreelancerModal({ freelancer, onClose }) {
                     >
                       <rect
                         x="2"
-                        y="6"
+                        y="3"
                         width="20"
-                        height="12"
+                        height="18"
                         rx="2"
                         stroke="currentColor"
                         strokeWidth="2"
                       />
                       <path
-                        d="M7 10v4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M12 10v4l2-4v4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <rect
-                        x="17"
-                        y="10"
-                        width="2"
-                        height="4"
+                        d="M7 7v10M10 7v10M13 7l2 10M17 7l2 10"
                         stroke="currentColor"
                         strokeWidth="2"
                       />
@@ -350,36 +382,13 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                     >
+                      <path
+                        d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
                       <rect
                         x="2"
-                        y="2"
-                        width="20"
-                        height="20"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M8 11v5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="8" cy="8" r="1" fill="currentColor" />
-                      <path
-                        d="M12 16v-5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M12 11a2 2 0 0 1 4 0v5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <rect
-                        x="16"
                         y="9"
                         width="4"
                         height="12"
@@ -402,12 +411,15 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   borderTop: "2px solid #e5f4f8",
                 }}
               >
-                {/* CV Download */}
+                {/* CV Download - ✅ CHANGED: a tag to button with onClick */}
                 {freelancer.cvUrl && (
-                  <a
-                    href={freelancer.cvUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() =>
+                      handleDownload(
+                        freelancer.cvUrl,
+                        `${freelancer.name}-CV.pdf`,
+                      )
+                    }
                     className={styles.cvButton}
                   >
                     <svg
@@ -437,21 +449,68 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       />
                     </svg>
                     Download CV
-                  </a>
+                  </button>
                 )}
 
-                {/* Equipment List Download - Only show after validation */}
+                {/* Equipment List Download - ✅ CHANGED: a tag to button with onClick */}
                 {!isCheckingEquipment &&
                   hasEquipment &&
                   freelancer.equipmentListUrl && (
-                    <a
-                      href={freelancer.equipmentListUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.equipmentButton}
+                    <button
+                      onClick={() =>
+                        handleDownload(
+                          freelancer.equipmentListUrl,
+                          `${freelancer.name}-Equipment-List.pdf`,
+                        )
+                      }
+                      className={styles.cvButton}
                     >
-                      Equipment List
-                    </a>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="7"
+                          height="7"
+                          rx="1"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <rect
+                          x="14"
+                          y="3"
+                          width="7"
+                          height="7"
+                          rx="1"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <rect
+                          x="3"
+                          y="14"
+                          width="7"
+                          height="7"
+                          rx="1"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <rect
+                          x="14"
+                          y="14"
+                          width="7"
+                          height="7"
+                          rx="1"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      View Equipment List
+                    </button>
                   )}
               </div>
             )}

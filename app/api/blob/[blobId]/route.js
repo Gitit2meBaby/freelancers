@@ -1,43 +1,34 @@
-// app/api/blob/[blobId]/route.js
+// app/api/blob/[blobId]/route.js - FIXED VERSION
+// This route proxies Azure Blob Storage requests through Next.js
+// Fixes the missing .pdf extension issue by adding Content-Disposition header
+
 import { NextResponse } from "next/server";
 import { getBlobUrl } from "../../../lib/azureBlob";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
- * Determine filename based on blob ID prefix
- * C = CV (pdf), E = Equipment (pdf), P = Photo (display only, no download)
+ * Determines the appropriate filename based on blob ID prefix
+ * @param {string} blobId - The blob ID (e.g., "C000003", "E000007", "P000123")
+ * @returns {string} Appropriate filename with extension
  */
 function getFilenameFromBlobId(blobId) {
   const prefix = blobId.charAt(0).toUpperCase();
 
   switch (prefix) {
     case "C":
-      return `CV-${blobId}.pdf`;
+      return `CV-${blobId}.pdf`; // CV PDFs
     case "E":
-      return `equipment-list-${blobId}.pdf`;
-    case "P":
-      // Photos are for display only, but return original blob ID
-      return blobId;
+      return `Equipment-List-${blobId}.pdf`; // Equipment List PDFs
     default:
-      return `download-${blobId}.pdf`;
+      return `download-${blobId}`; // Fallback
   }
 }
 
 /**
- * Determine if this blob should be downloadable (vs display inline)
- */
-function isDownloadable(blobId) {
-  const prefix = blobId.charAt(0).toUpperCase();
-  // Only CVs and Equipment lists are downloadable
-  return prefix === "C" || prefix === "E";
-}
-
-/**
- * Proxy Azure Blob requests to avoid CORS issues
- *
- * Supports both GET (download/display) and HEAD (check existence) methods
- * - Photos (P): Display inline in browser
- * - CVs (C): Download as PDF
- * - Equipment (E): Download as PDF
+ * GET /api/blob/[blobId]
+ * Fetches a blob from Azure Blob Storage and serves it with proper headers
  */
 export async function GET(request, { params }) {
   try {
@@ -45,77 +36,70 @@ export async function GET(request, { params }) {
 
     if (!blobId) {
       return NextResponse.json(
-        { error: "Blob ID is required" },
+        { success: false, error: "Blob ID is required" },
         { status: 400 },
       );
     }
 
-    // Get the Azure Blob URL with SAS token
+    console.log(`📥 Fetching blob: ${blobId}`);
+
+    // Get the blob URL with SAS token
     const blobUrl = getBlobUrl(blobId);
 
     if (!blobUrl) {
-      return NextResponse.json({ error: "Invalid blob ID" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Failed to generate blob URL" },
+        { status: 500 },
+      );
     }
 
     // Fetch the blob from Azure
-    const response = await fetch(blobUrl);
+    const response = await fetch(blobUrl, {
+      method: "GET",
+    });
 
     if (!response.ok) {
-      console.error(`❌ Failed to fetch blob ${blobId}: ${response.status}`);
+      console.error(`❌ Blob fetch failed: ${response.status}`);
       return NextResponse.json(
-        { error: "Failed to fetch blob from storage" },
+        { success: false, error: `Blob not found: ${response.status}` },
         { status: response.status },
       );
     }
 
-    console.log(`✅ Successfully fetched blob ${blobId}`);
-
-    // Get the blob data
-    const blob = await response.blob();
-    const arrayBuffer = await blob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Get content type from Azure response
+    // Get the blob data and content type
+    const buffer = Buffer.from(await response.arrayBuffer());
     const contentType =
-      response.headers.get("content-type") || "application/pdf";
+      response.headers.get("Content-Type") || "application/octet-stream";
 
-    // Determine headers based on blob type
-    const downloadable = isDownloadable(blobId);
+    // Generate appropriate filename based on blob ID
     const filename = getFilenameFromBlobId(blobId);
 
-    const headers = {
-      "Content-Type": contentType,
-      "Content-Length": buffer.length.toString(),
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "Access-Control-Allow-Origin": "*",
-    };
+    console.log(`✅ Successfully fetched blob ${blobId}`);
+    console.log(`📄 Serving blob ${blobId} as "${filename}" (${contentType})`);
 
-    // Only add Content-Disposition for downloadable files (CV, Equipment)
-    if (downloadable) {
-      headers["Content-Disposition"] = `attachment; filename="${filename}"`;
-      console.log(`📄 Serving blob ${blobId} as download: "${filename}"`);
-    } else {
-      // Photos display inline in browser
-      headers["Content-Disposition"] = "inline";
-      console.log(`🖼️  Serving blob ${blobId} for display (${contentType})`);
-    }
-
+    // CRITICAL FIX: Add Content-Disposition header
+    // This tells the browser what filename and extension to use when downloading
     return new NextResponse(buffer, {
-      status: 200,
-      headers,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${filename}"`, // ✅ This fixes the extension issue!
+        "Content-Length": buffer.length.toString(),
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*",
+      },
     });
   } catch (error) {
-    console.error("❌ Error proxying blob:", error);
+    console.error("❌ Blob proxy error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: "Failed to fetch blob" },
       { status: 500 },
     );
   }
 }
 
 /**
- * HEAD method for checking blob existence without downloading
- * More efficient than GET for validation
+ * HEAD /api/blob/[blobId]
+ * Check if a blob exists without downloading it
  */
 export async function HEAD(request, { params }) {
   try {
@@ -125,58 +109,37 @@ export async function HEAD(request, { params }) {
       return new NextResponse(null, { status: 400 });
     }
 
-    // Get the Azure Blob URL with SAS token
     const blobUrl = getBlobUrl(blobId);
 
     if (!blobUrl) {
-      return new NextResponse(null, { status: 404 });
+      return new NextResponse(null, { status: 500 });
     }
 
-    // Check if blob exists using HEAD request (doesn't download content)
-    const response = await fetch(blobUrl, { method: "HEAD" });
+    const response = await fetch(blobUrl, {
+      method: "HEAD",
+    });
 
     if (!response.ok) {
-      console.error(`❌ Blob ${blobId} not found: ${response.status}`);
       return new NextResponse(null, { status: response.status });
     }
 
-    console.log(`✅ Blob ${blobId} exists`);
-
     const contentType =
-      response.headers.get("content-type") || "application/pdf";
-    const downloadable = isDownloadable(blobId);
+      response.headers.get("Content-Type") || "application/octet-stream";
+    const contentLength = response.headers.get("Content-Length") || "0";
     const filename = getFilenameFromBlobId(blobId);
-
-    const headers = {
-      "Content-Type": contentType,
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "Access-Control-Allow-Origin": "*",
-    };
-
-    if (downloadable) {
-      headers["Content-Disposition"] = `attachment; filename="${filename}"`;
-    } else {
-      headers["Content-Disposition"] = "inline";
-    }
 
     return new NextResponse(null, {
       status: 200,
-      headers,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": contentLength,
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*",
+      },
     });
   } catch (error) {
-    console.error("❌ Error checking blob:", error);
+    console.error("❌ HEAD request error:", error);
     return new NextResponse(null, { status: 500 });
   }
-}
-
-// Handle OPTIONS for CORS preflight
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
 }
