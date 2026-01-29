@@ -12,47 +12,59 @@ import {
  * Sends emails to both admin and user via Microsoft Graph API
  */
 export async function POST(request) {
+  console.log("🔷 ========================================");
+  console.log("🔷 CONTACT FORM SUBMISSION START");
+  console.log("🔷 Timestamp:", new Date().toISOString());
+  console.log("🔷 ========================================");
+
   try {
     // Parse form data
+    console.log("📥 Parsing request body...");
     const data = await request.json();
+    console.log("✅ Request parsed successfully");
+    console.log("📊 Raw data fields:", Object.keys(data));
 
     // Validate required fields
     const requiredFields = ["name", "email", "subject", "message"];
     const missingFields = requiredFields.filter((field) => !data[field]);
 
     if (missingFields.length > 0) {
+      console.error("❌ Missing fields:", missingFields);
       return NextResponse.json(
         {
           success: false,
           error: `Missing required fields: ${missingFields.join(", ")}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
+    console.log("✅ All required fields present");
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.email)) {
+      console.error("❌ Invalid email format:", data.email);
       return NextResponse.json(
         {
           success: false,
           error: "Invalid email address",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
+    console.log("✅ Email format valid");
 
     // Check honeypot field (bot detection)
     if (data.honeypot && data.honeypot !== "") {
       console.log("🤖 Bot submission detected via honeypot");
-      // Return success to not reveal the honeypot mechanism
       return NextResponse.json({
         success: true,
         message: "Message received",
       });
     }
+    console.log("✅ Honeypot check passed");
 
-    // Sanitize input (basic XSS prevention)
+    // Sanitize input
     const sanitizedData = {
       name: data.name.trim().substring(0, 100),
       email: data.email.trim().toLowerCase().substring(0, 100),
@@ -61,10 +73,35 @@ export async function POST(request) {
       message: data.message.trim().substring(0, 2000),
     };
 
-    console.log("📧 Contact form submission received:");
-    console.log("Name:", sanitizedData.name);
-    console.log("Email:", sanitizedData.email);
-    console.log("Subject:", sanitizedData.subject);
+    console.log("📧 Sanitized submission data:");
+    console.log("  Name:", sanitizedData.name);
+    console.log("  Email:", sanitizedData.email);
+    console.log("  Phone:", sanitizedData.phone || "(not provided)");
+    console.log("  Subject:", sanitizedData.subject);
+    console.log("  Message length:", sanitizedData.message.length, "chars");
+
+    // Check environment variables
+    console.log("🔧 Environment check:");
+    console.log(
+      "  GRAPH_TENANT_ID:",
+      process.env.GRAPH_TENANT_ID ? "✅ SET" : "❌ MISSING",
+    );
+    console.log(
+      "  GRAPH_CLIENT_ID:",
+      process.env.GRAPH_CLIENT_ID ? "✅ SET" : "❌ MISSING",
+    );
+    console.log(
+      "  GRAPH_CLIENT_SECRET:",
+      process.env.GRAPH_CLIENT_SECRET ? "✅ SET" : "❌ MISSING",
+    );
+    console.log(
+      "  GRAPH_SENDER_EMAIL:",
+      process.env.GRAPH_SENDER_EMAIL || "❌ NOT SET",
+    );
+    console.log(
+      "  ADMIN_EMAIL:",
+      process.env.ADMIN_EMAIL || "Using default: info@freelancers.com.au",
+    );
 
     // ==================================================
     // SEND EMAILS VIA MICROSOFT GRAPH API
@@ -75,50 +112,85 @@ export async function POST(request) {
 
     try {
       // 1. Send notification to admin
-      console.log("📤 Sending notification to admin...");
+      console.log("📤 ========================================");
+      console.log("📤 SENDING ADMIN NOTIFICATION");
+      console.log("📤 ========================================");
+
       const adminEmail = getContactFormNotification(sanitizedData);
       const adminEmailAddress =
         process.env.ADMIN_EMAIL || "info@freelancers.com.au";
 
+      console.log("📬 Admin email address:", adminEmailAddress);
+      console.log("📝 Email subject:", adminEmail.subject);
+
       const adminResult = await sendEmail(adminEmailAddress, adminEmail);
+
+      console.log("📊 Admin email result:", {
+        success: adminResult.success,
+        hasError: !!adminResult.error,
+        errorMessage: adminResult.error || "none",
+      });
 
       if (adminResult.success) {
         console.log("✅ Admin notification sent successfully");
         adminEmailSuccess = true;
       } else {
-        console.error(
-          "❌ Failed to send admin notification:",
-          adminResult.error
-        );
+        console.error("❌ Failed to send admin notification");
+        console.error("Error details:", adminResult.error);
       }
     } catch (error) {
-      console.error("❌ Error sending admin email:", error);
+      console.error("❌ Exception sending admin email:");
+      console.error("  Message:", error.message);
+      console.error("  Stack:", error.stack);
     }
 
     try {
       // 2. Send auto-reply to user
-      console.log("📤 Sending auto-reply to user...");
+      console.log("📤 ========================================");
+      console.log("📤 SENDING USER AUTO-REPLY");
+      console.log("📤 ========================================");
+
       const userEmail = getContactFormAutoReply(sanitizedData);
 
+      console.log("📬 User email address:", sanitizedData.email);
+      console.log("📝 Email subject:", userEmail.subject);
+
       const userResult = await sendEmail(sanitizedData.email, userEmail);
+
+      console.log("📊 User email result:", {
+        success: userResult.success,
+        hasError: !!userResult.error,
+        errorMessage: userResult.error || "none",
+      });
 
       if (userResult.success) {
         console.log("✅ Auto-reply sent successfully");
         userEmailSuccess = true;
       } else {
-        console.error("❌ Failed to send auto-reply:", userResult.error);
+        console.error("❌ Failed to send auto-reply");
+        console.error("Error details:", userResult.error);
       }
     } catch (error) {
-      console.error("❌ Error sending user email:", error);
+      console.error("❌ Exception sending user email:");
+      console.error("  Message:", error.message);
+      console.error("  Stack:", error.stack);
     }
 
     // ==================================================
     // RETURN RESPONSE
     // ==================================================
 
+    console.log("📊 ========================================");
+    console.log("📊 FINAL RESULTS");
+    console.log("📊 ========================================");
+    console.log("  Admin email sent:", adminEmailSuccess ? "✅" : "❌");
+    console.log("  User auto-reply sent:", userEmailSuccess ? "✅" : "❌");
+
     // If admin email failed, this is critical - return error
     if (!adminEmailSuccess) {
-      console.error("❌ Critical: Admin notification failed");
+      console.error(
+        "❌ CRITICAL: Admin notification failed - returning error to user",
+      );
       return NextResponse.json(
         {
           success: false,
@@ -129,12 +201,14 @@ export async function POST(request) {
             autoReplySent: userEmailSuccess,
           },
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // Admin email succeeded - return success even if auto-reply failed
-    console.log("✅ Contact form submission processed successfully");
+    // Admin email succeeded
+    console.log("✅ ========================================");
+    console.log("✅ CONTACT FORM SUBMISSION SUCCESSFUL");
+    console.log("✅ ========================================");
 
     return NextResponse.json({
       success: true,
@@ -147,27 +221,27 @@ export async function POST(request) {
       },
     });
   } catch (error) {
-    console.error("❌ Contact form error:", error);
+    console.error("❌ ========================================");
+    console.error("❌ CONTACT FORM CRITICAL ERROR");
+    console.error("❌ ========================================");
+    console.error("Error type:", error.constructor.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
 
     return NextResponse.json(
       {
         success: false,
         error:
           "An error occurred while processing your request. Please try again later or contact us directly at info@freelancers.com.au",
-        // Only include details in development
         ...(process.env.NODE_ENV === "development" && {
           details: error.message,
         }),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-/**
- * OPTIONS /api/contact
- * CORS preflight handler
- */
 export async function OPTIONS(request) {
   return new NextResponse(null, {
     status: 200,
@@ -178,65 +252,3 @@ export async function OPTIONS(request) {
     },
   });
 }
-
-/**
- * TESTING THE CONTACT FORM:
- *
- * 1. Test from the website:
- *    - Go to https://freelancers.com.au/contact-us
- *    - Fill out and submit the form
- *    - Check console logs
- *    - Check email inbox (info@freelancers.com.au and your test email)
- *
- * 2. Test with curl:
- *    curl -X POST https://freelancers.com.au/api/contact \
- *      -H "Content-Type: application/json" \
- *      -d '{
- *        "name": "Test User",
- *        "email": "test@example.com",
- *        "subject": "Test Subject",
- *        "message": "This is a test message"
- *      }'
- *
- * 3. Test with JavaScript (browser console):
- *    fetch('/api/contact', {
- *      method: 'POST',
- *      headers: { 'Content-Type': 'application/json' },
- *      body: JSON.stringify({
- *        name: 'Test User',
- *        email: 'test@example.com',
- *        subject: 'Test Subject',
- *        message: 'This is a test message',
- *        phone: '0412 345 678'
- *      })
- *    }).then(r => r.json()).then(console.log);
- *
- * TROUBLESHOOTING:
- *
- * If emails are not being sent:
- *
- * 1. Check environment variables are set correctly:
- *    - GRAPH_TENANT_ID
- *    - GRAPH_CLIENT_ID
- *    - GRAPH_CLIENT_SECRET
- *    - GRAPH_SENDER_EMAIL (should be info@freelancers.com.au)
- *    - ADMIN_EMAIL (optional, defaults to info@freelancers.com.au)
- *
- * 2. Verify Azure AD app registration:
- *    - Mail.Send permission is granted
- *    - Admin consent is provided
- *    - Client secret is not expired
- *
- * 3. Check sender mailbox exists:
- *    - info@freelancers.com.au must exist as a mailbox
- *    - The app must have permissions to send from this mailbox
- *
- * 4. Review application logs:
- *    - Look for error messages in console
- *    - Check Azure AD sign-in logs for auth failures
- *
- * 5. Test Graph API connection:
- *    - Create test endpoint (see graphClient.js comments)
- *    - Call GET /api/test-email to verify connection
- *    - Call POST /api/test-email to send test email
- */

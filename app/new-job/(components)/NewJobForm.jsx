@@ -526,16 +526,16 @@ const NewJobForm = () => {
       {submitStatus.error && (
         <div className={styles.errorMessageBox} role="alert">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
+            <circle cx="12" cy="12" r="10" stroke="#dc2626" strokeWidth="2" />
+            <path
+              d="M8 8l8 8M16 8l-8 8"
+              stroke="#dc2626"
               strokeWidth="2"
+              strokeLinecap="round"
             />
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" />
           </svg>
-          <span>{submitStatus.error}</span>
+
+          <span style={{ color: "#dc2626" }}>{submitStatus.error}</span>
         </div>
       )}
 

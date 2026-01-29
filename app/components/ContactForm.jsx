@@ -70,7 +70,7 @@ const ContactForm = () => {
     let firstErrorField = null;
 
     // Check honeypot
-    if (honeypot !== "") {
+    if (formData.honeypot !== "") {
       alert("Bot submission detected");
       return false;
     }

@@ -21,20 +21,37 @@ export const dynamicParams = true;
 const getCachedFreelancerProfile = unstable_cache(
   async (slug) => {
     try {
-      // Use the existing API that already works
       const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const response = await fetch(`${baseUrl}/api/freelancer/${slug}`, {
+      const apiUrl = `${baseUrl}/api/freelancer/${slug}`;
+
+      // ADD THIS LOGGING
+      console.log("🔍 Fetching profile:", {
+        slug,
+        baseUrl,
+        apiUrl,
+        hasNEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
+      });
+
+      const response = await fetch(apiUrl, {
         next: { revalidate: 3600 },
       });
 
+      console.log("📡 API Response:", {
+        status: response.status,
+        ok: response.ok,
+        url: response.url,
+      });
+
       if (!response.ok) {
+        console.error("❌ API returned error:", response.status);
         return null;
       }
 
       const result = await response.json();
+      console.log("✅ Profile data received:", result.data?.name);
       return result.data;
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("❌ Error fetching profile:", error.message, error);
       return null;
     }
   },
