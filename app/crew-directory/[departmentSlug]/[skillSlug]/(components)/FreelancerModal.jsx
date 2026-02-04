@@ -92,10 +92,9 @@ export default function FreelancerModal({ freelancer, onClose }) {
     }
   };
 
-  // ✅ ADDED: Download handler for PDFs
   const handleDownload = async (url, defaultFilename) => {
     try {
-      console.log(`📥 Downloading: ${url}`);
+      console.log(`📥 Processing: ${url}`);
 
       const response = await fetch(url);
 
@@ -116,24 +115,32 @@ export default function FreelancerModal({ freelancer, onClose }) {
         }
       }
 
-      console.log(`💾 Saving as: ${filename}`);
+      console.log(`💾 Processing: ${filename}`);
 
-      // Create download link and trigger it
-      const downloadUrl = window.URL.createObjectURL(blob);
+      // ✅ Create a blob URL with correct MIME type for viewing
+      const pdfBlob = new Blob([blob], { type: "application/pdf" });
+      const blobUrl = window.URL.createObjectURL(pdfBlob);
+
+      // ✅ Open in new tab for viewing
+      window.open(blobUrl, "_blank");
+
+      // ✅ Also trigger download with correct filename
       const link = document.createElement("a");
-      link.href = downloadUrl;
+      link.href = blobUrl;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      // Clean up
-      window.URL.revokeObjectURL(downloadUrl);
+      // ✅ Clean up after a delay (give time for both actions)
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
 
-      console.log(`✅ Download complete: ${filename}`);
+      console.log(`✅ Complete: ${filename}`);
     } catch (error) {
-      console.error("❌ Download error:", error);
-      alert("Failed to download file. Please try again.");
+      console.error("❌ Error:", error);
+      alert("Failed to process file. Please try again.");
     }
   };
 
@@ -413,7 +420,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
               >
                 {/* CV Download - ✅ CHANGED: a tag to button with onClick */}
                 {freelancer.cvUrl && (
-                  <button
+                  <a
                     onClick={() =>
                       handleDownload(
                         freelancer.cvUrl,
@@ -449,14 +456,14 @@ export default function FreelancerModal({ freelancer, onClose }) {
                       />
                     </svg>
                     Download CV
-                  </button>
+                  </a>
                 )}
 
                 {/* Equipment List Download - ✅ CHANGED: a tag to button with onClick */}
                 {!isCheckingEquipment &&
                   hasEquipment &&
                   freelancer.equipmentListUrl && (
-                    <button
+                    <a
                       onClick={() =>
                         handleDownload(
                           freelancer.equipmentListUrl,
@@ -510,7 +517,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
                         />
                       </svg>
                       View Equipment List
-                    </button>
+                    </a>
                   )}
               </div>
             )}

@@ -27,12 +27,23 @@ function EditProfileForm() {
     description: "",
     cv: null,
     cvUrl: null,
+    cvFileName: "",
     equipment: null,
     equipmentUrl: null,
+    equipmentFileName: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // ✅ Helper to properly append cache-busting param
+  const addCacheBuster = (url) => {
+    if (!url) return null;
+
+    const timestamp = Date.now();
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}t=${timestamp}`;
+  };
 
   // Redirect if not logged in
   useEffect(() => {
@@ -51,7 +62,18 @@ function EditProfileForm() {
   const loadUserProfile = async (slug) => {
     setLoading(true);
     try {
-      const editDataResponse = await fetch(`/api/profile/load-for-edit`);
+      // Cache-busting timestamp for API call
+      const timestamp = Date.now();
+      const editDataResponse = await fetch(
+        `/api/profile/load-for-edit?t=${timestamp}`,
+        {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        },
+      );
 
       if (!editDataResponse.ok) {
         throw new Error("Failed to load profile for editing");
@@ -60,9 +82,22 @@ function EditProfileForm() {
       const editResult = await editDataResponse.json();
       const editData = editResult.data;
 
+      // ✅ FIX: Properly add cache-buster to photo URL
+      const photoUrlWithTimestamp = addCacheBuster(editData.photoUrl);
+
+      // Extract file names from URLs for display
+      const cvFileName = editData.cvUrl
+        ? extractFileNameFromUrl(editData.cvUrl) || "Current CV"
+        : "";
+
+      const equipmentFileName = editData.equipmentListUrl
+        ? extractFileNameFromUrl(editData.equipmentListUrl) ||
+          "Current Equipment List"
+        : "";
+
       setFormData({
         photo: null,
-        photoPreview: editData.photoUrl || null,
+        photoPreview: photoUrlWithTimestamp,
         name: editData.name || "",
         role: "Film Crew Member",
         Website: editData.links.Website || "",
@@ -72,14 +107,29 @@ function EditProfileForm() {
         description: editData.bio || "",
         cv: null,
         cvUrl: editData.cvUrl || null,
+        cvFileName: cvFileName,
         equipment: null,
         equipmentUrl: editData.equipmentListUrl || null,
+        equipmentFileName: equipmentFileName,
       });
     } catch (error) {
       console.error("Error loading profile:", error);
       setErrors({ load: error.message });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper function to extract file name from URL
+  const extractFileNameFromUrl = (url) => {
+    if (!url) return "";
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const fileName = pathname.split("/").pop();
+      return fileName || "";
+    } catch (e) {
+      return "";
     }
   };
 
@@ -105,7 +155,6 @@ function EditProfileForm() {
     setErrors({ ...errors, photo: "" });
   };
 
-  // ✅ FIXED: Added type parameter and proper error handling
   const handlePdfChange = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -122,7 +171,13 @@ function EditProfileForm() {
       return;
     }
 
-    setFormData({ ...formData, [type]: file });
+    // Also update the file name when a new file is selected
+    const fileNameKey = type === "cv" ? "cvFileName" : "equipmentFileName";
+    setFormData({
+      ...formData,
+      [type]: file,
+      [fileNameKey]: file.name,
+    });
     setErrors({ ...errors, [type]: "" });
   };
 
@@ -207,10 +262,14 @@ function EditProfileForm() {
 
       console.log(`✅ Profile saved successfully`);
 
+      // Cache busting and navigation
       window.dispatchEvent(new CustomEvent("profileUpdated"));
       console.log("📢 Dispatched profileUpdated event");
 
-      router.push(`/my-account/${session.user.slug}`);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const timestamp = Date.now();
+      router.push(`/my-account/${session.user.slug}?updated=${timestamp}`);
       router.refresh();
     } catch (error) {
       console.error("❌ Error saving profile:", error);
@@ -254,7 +313,11 @@ function EditProfileForm() {
             <div className={styles.uploadArea}>
               {formData.photoPreview ? (
                 <div className={styles.photoPreview}>
-                  <img src={formData.photoPreview} alt="Profile preview" />
+                  <img
+                    src={formData.photoPreview}
+                    alt="Profile preview"
+                    key={formData.photoPreview}
+                  />
                 </div>
               ) : (
                 <div className={styles.uploadPlaceholder}>
@@ -369,14 +432,16 @@ function EditProfileForm() {
             />
           </div>
 
-          {/* CV Upload */}
+          {/* CV and Equipment Upload */}
           <div className={styles.formUploads}>
             <div className={styles.formGroup}>
               <label htmlFor="cv" className={styles.label}>
                 CV / Resume
               </label>
               <label htmlFor="cv" className={styles.uploadButton}>
-                {formData.cv ? formData.cv.name : "Upload CV"}
+                {formData.cv
+                  ? formData.cv.name
+                  : formData.cvFileName || "Upload CV"}
               </label>
               <input
                 type="file"
@@ -389,13 +454,14 @@ function EditProfileForm() {
               {errors.cv && <p className={styles.error}>{errors.cv}</p>}
             </div>
 
-            {/* Equipment List Upload */}
             <div className={styles.formGroup}>
               <label htmlFor="equipment" className={styles.label}>
                 Equipment List
               </label>
               <label htmlFor="equipment" className={styles.uploadButton}>
-                {formData.equipment ? formData.equipment.name : "Upload List"}
+                {formData.equipment
+                  ? formData.equipment.name
+                  : formData.equipmentFileName || "Upload List"}
               </label>
               <input
                 type="file"
@@ -410,81 +476,6 @@ function EditProfileForm() {
               )}
             </div>
           </div>
-
-          {/* CV Upload - ENHANCED
-// <div className={styles.formGroup}>
-//   <label htmlFor="cv" className={styles.label}>
-//     CV / Resume
-//   </label>
-  
-//   {formData.cvUrl && !formData.cv && (
-//     <div className={styles.existingFile}>
-//       <a 
-//         href={formData.cvUrl} 
-//         target="_blank" 
-//         rel="noopener noreferrer"
-//         className={styles.fileLink}
-//       >
-//         📄 View Current CV
-//       </a>
-//     </div>
-//   )}
-  
-//   <label htmlFor="cv" className={styles.uploadButton}>
-//     {formData.cv 
-//       ? formData.cv.name 
-//       : formData.cvUrl 
-//         ? "Replace CV" 
-//         : "Upload CV"
-//     }
-//   </label>
-//   <input
-//     type="file"
-//     id="cv"
-//     accept="application/pdf"
-//     onChange={(e) => handlePdfChange(e, "cv")}
-//     className={styles.fileInput}
-//   />
-//   <p className={styles.helpText}>PDF, Maximum 2.5MB</p>
-//   {errors.cv && <p className={styles.error}>{errors.cv}</p>}
-// </div>
-
-// <div className={styles.formGroup}>
-//   <label htmlFor="equipment" className={styles.label}>
-//     Equipment List
-//   </label>
-  
-//   {formData.equipmentUrl && !formData.equipment && (
-//     <div className={styles.existingFile}>
-//       <a 
-//         href={formData.equipmentUrl} 
-//         target="_blank" 
-//         rel="noopener noreferrer"
-//         className={styles.fileLink}
-//       >
-//         🛠️ View Current Equipment List
-//       </a>
-//     </div>
-//   )}
-  
-//   <label htmlFor="equipment" className={styles.uploadButton}>
-//     {formData.equipment 
-//       ? formData.equipment.name 
-//       : formData.equipmentUrl 
-//         ? "Replace Equipment List" 
-//         : "Upload Equipment List"
-//     }
-//   </label>
-//   <input
-//     type="file"
-//     id="equipment"
-//     accept="application/pdf"
-//     onChange={(e) => handlePdfChange(e, "equipment")}
-//     className={styles.fileInput}
-//   />
-//   <p className={styles.helpText}>PDF, Maximum 2.5MB</p>
-//   {errors.equipment && <p className={styles.error}>{errors.equipment}</p>}
-// </div> */}
 
           {/* Submit */}
           {errors.submit && <p className={styles.error}>{errors.submit}</p>}

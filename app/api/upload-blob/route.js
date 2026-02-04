@@ -1,4 +1,4 @@
-// app/api/upload-blob/route.js - FIXED VERSION
+// app/api/upload-blob/route.js - WITH EQUIPMENT SUPPORT
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
@@ -7,6 +7,7 @@ import {
   validateFile,
   generatePhotoBlobId,
   generateCvBlobId,
+  generateEquipmentBlobId,
 } from "../../lib/azureBlob";
 
 /**
@@ -16,6 +17,7 @@ import {
  * CRITICAL: Blob IDs are FIXED based on FreelancerID:
  * - Photos: P000123 (P + FreelancerID padded to 6 digits)
  * - CVs: C000123 (C + FreelancerID padded to 6 digits)
+ * - Equipment: E000123 (E + FreelancerID padded to 6 digits)
  *
  * Azure Blob automatically OVERWRITES when uploading with same blob ID
  * NO DELETION needed - just upload with the correct blob ID!
@@ -27,7 +29,7 @@ export async function POST(request) {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -40,39 +42,45 @@ export async function POST(request) {
     if (!file) {
       return NextResponse.json(
         { success: false, error: "No file provided" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!type || !["photo", "cv"].includes(type)) {
+    // UPDATED: Now accepts 'photo', 'cv', OR 'equipment'
+    if (!type || !["photo", "cv", "equipment"].includes(type)) {
       return NextResponse.json(
-        { success: false, error: "Invalid type. Must be 'photo' or 'cv'" },
-        { status: 400 }
+        {
+          success: false,
+          error: "Invalid type. Must be 'photo', 'cv', or 'equipment'",
+        },
+        { status: 400 },
       );
     }
 
-    // Validate file
-    const validation = validateFile(file, type === "photo" ? "image" : "cv");
+    // Validate file based on type
+    const validationType = type === "photo" ? "image" : "cv"; // Both cv and equipment use PDF validation
+    const validation = validateFile(file, validationType);
 
     if (!validation.valid) {
       return NextResponse.json(
         { success: false, error: validation.error },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // CRITICAL FIX: Generate FIXED blob ID based on FreelancerID
-    // This ensures the same blob ID is used every time for this freelancer
+    // Generate FIXED blob ID based on FreelancerID and type
     let blobId;
 
     if (type === "photo") {
       blobId = generatePhotoBlobId(freelancerId); // P000123
     } else if (type === "cv") {
       blobId = generateCvBlobId(freelancerId); // C000123
+    } else if (type === "equipment") {
+      blobId = generateEquipmentBlobId(freelancerId); // E000123
     }
 
     console.log(
-      `🔵 Uploading ${type} for freelancer ${freelancerId} as blob ID: ${blobId}`
+      `🔵 Uploading ${type} for freelancer ${freelancerId} as blob ID: ${blobId}`,
     );
 
     // Upload to Azure Blob
@@ -82,7 +90,7 @@ export async function POST(request) {
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -92,7 +100,7 @@ export async function POST(request) {
       success: true,
       blobId: blobId,
       url: result.url,
-      message: `${type === "photo" ? "Photo" : "CV"} uploaded successfully`,
+      message: `${type === "photo" ? "Photo" : type === "cv" ? "CV" : "Equipment list"} uploaded successfully`,
     });
   } catch (error) {
     console.error("❌ Upload error:", error);
@@ -101,7 +109,7 @@ export async function POST(request) {
         success: false,
         error: error.message || "Upload failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

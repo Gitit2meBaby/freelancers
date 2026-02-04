@@ -3,24 +3,23 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import EditProfileButton from "./EditProfileButton";
 import styles from "../../../styles/profile.module.scss";
 import Spinner from "@/app/components/Spinner";
 
 /**
- * ProfileContent Component
- *
- * Client component that validates photo, CV, and equipment list existence
- * Shows default avatar if photo fails to load
- * Shows ALL social links and download buttons with disabled states when not available
- * This encourages profile completion by showing what's possible
+ * ProfileContent Component - FIXED URL CACHE-BUSTING
  */
 export default function ProfileContent({ profileData }) {
+  const searchParams = useSearchParams();
   const [photoError, setPhotoError] = useState(false);
   const [isCheckingPhoto, setIsCheckingPhoto] = useState(
     !!profileData.photoUrl,
   );
+  const [photoUrl, setPhotoUrl] = useState(profileData.photoUrl);
+  const [imageKey, setImageKey] = useState(0);
 
   const [hasCv, setHasCv] = useState(false);
   const [isCheckingCv, setIsCheckingCv] = useState(!!profileData.cvUrl);
@@ -32,9 +31,30 @@ export default function ProfileContent({ profileData }) {
 
   const role = profileData.skills?.[0]?.skillName || "Film Crew Member";
 
+  // ✅ Helper to properly append cache-busting param
+  const addCacheBuster = (url) => {
+    if (!url) return null;
+
+    const timestamp = Date.now();
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}t=${timestamp}`;
+  };
+
+  // Check for update timestamp in URL
+  useEffect(() => {
+    const updated = searchParams.get("updated");
+    if (updated && profileData.photoUrl) {
+      // ✅ FIX: Properly add cache-busting timestamp
+      const urlWithCacheBuster = addCacheBuster(profileData.photoUrl);
+      setPhotoUrl(urlWithCacheBuster);
+      setImageKey((prev) => prev + 1);
+      console.log("✅ ProfileContent: Applied cache-busting timestamp");
+    }
+  }, [searchParams, profileData.photoUrl]);
+
   // Validate photo exists
   useEffect(() => {
-    if (!profileData.photoUrl) {
+    if (!photoUrl) {
       setIsCheckingPhoto(false);
       return;
     }
@@ -50,8 +70,8 @@ export default function ProfileContent({ profileData }) {
       setIsCheckingPhoto(false);
     };
 
-    img.src = profileData.photoUrl;
-  }, [profileData.photoUrl]);
+    img.src = photoUrl;
+  }, [photoUrl]);
 
   // Validate CV exists
   useEffect(() => {
@@ -116,25 +136,25 @@ export default function ProfileContent({ profileData }) {
       <div className={styles.profileContainer}>
         {/* Left: Photo */}
         <div className={styles.photoSection}>
-          {profileData.photoUrl && !photoError && !isCheckingPhoto ? (
+          {photoUrl && !photoError && !isCheckingPhoto ? (
             <Image
-              src={profileData.photoUrl}
+              src={photoUrl}
               alt={profileData.name}
               width={430}
               height={680}
               className={styles.profilePhoto}
               priority={false}
+              key={`photo-${imageKey}`}
+              unoptimized
               onError={() => {
                 setPhotoError(true);
               }}
             />
           ) : isCheckingPhoto ? (
-            // Loading state
             <div className={styles.placeholderPhoto}>
               <Spinner />
             </div>
           ) : (
-            // Default avatar
             <div className={styles.placeholderPhoto}>
               <svg
                 width="200"
@@ -149,7 +169,6 @@ export default function ProfileContent({ profileData }) {
             </div>
           )}
 
-          {/* Edit Profile Button (desktop) */}
           <EditProfileButton
             profileSlug={profileData.slug}
             className={styles.desk}
@@ -162,9 +181,8 @@ export default function ProfileContent({ profileData }) {
           <p className={styles.role}>{role}</p>
           {profileData.bio && <p className={styles.bio}>{profileData.bio}</p>}
 
-          {/* Links - Always show all 4, disable if not available */}
+          {/* Links */}
           <div className={styles.links}>
-            {/* Website Link */}
             {profileData.links?.Website ? (
               <Link
                 href={profileData.links.Website}
@@ -223,7 +241,6 @@ export default function ProfileContent({ profileData }) {
               </span>
             )}
 
-            {/* Instagram Link */}
             {profileData.links?.Instagram ? (
               <Link
                 href={profileData.links.Instagram}
@@ -292,7 +309,6 @@ export default function ProfileContent({ profileData }) {
               </span>
             )}
 
-            {/* IMDb Link */}
             {profileData.links?.Imdb ? (
               <Link
                 href={profileData.links.Imdb}
@@ -355,7 +371,6 @@ export default function ProfileContent({ profileData }) {
               </span>
             )}
 
-            {/* LinkedIn Link */}
             {profileData.links?.LinkedIn ? (
               <Link
                 href={profileData.links.LinkedIn}
@@ -419,11 +434,9 @@ export default function ProfileContent({ profileData }) {
             )}
           </div>
 
-          {/* CV & Equipment Download Section - Always show, disable if not available */}
+          {/* CV & Equipment Download Section */}
           <div className={styles.cvSection}>
-            {/* CV Download - Always show */}
             {isCheckingCv ? (
-              // Loading state
               <button className={styles.cvButton} disabled>
                 <div
                   style={{
@@ -439,7 +452,6 @@ export default function ProfileContent({ profileData }) {
                 Checking CV...
               </button>
             ) : !isCheckingCv && hasCv && profileData.cvUrl ? (
-              // CV available - Active button
               <a
                 href={profileData.cvUrl}
                 target="_blank"
@@ -475,7 +487,6 @@ export default function ProfileContent({ profileData }) {
                 Download CV
               </a>
             ) : (
-              // CV not available - Disabled button
               <button
                 className={`${styles.cvButton} ${styles.disabled}`}
                 disabled
@@ -512,9 +523,7 @@ export default function ProfileContent({ profileData }) {
               </button>
             )}
 
-            {/* Equipment List Download - Always show */}
             {isCheckingEquipment ? (
-              // Loading state
               <button className={styles.cvButton} disabled>
                 <div
                   style={{
@@ -532,7 +541,6 @@ export default function ProfileContent({ profileData }) {
             ) : !isCheckingEquipment &&
               hasEquipment &&
               profileData.equipmentListUrl ? (
-              // Equipment available - Active button
               <a
                 href={profileData.equipmentListUrl}
                 target="_blank"
@@ -568,7 +576,6 @@ export default function ProfileContent({ profileData }) {
                 Equipment List
               </a>
             ) : (
-              // Equipment not available - Disabled button
               <button
                 className={`${styles.cvButton} ${styles.disabled}`}
                 disabled
@@ -608,13 +615,11 @@ export default function ProfileContent({ profileData }) {
         </div>
       </div>
 
-      {/* Edit Profile Button (mobile) */}
       <EditProfileButton
         profileSlug={profileData.slug}
         className={styles.mob}
       />
 
-      {/* Spinner animation */}
       <style jsx>{`
         @keyframes spin {
           0% {

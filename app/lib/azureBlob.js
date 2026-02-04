@@ -120,6 +120,26 @@ export function getNewsBlobId(newsItemId) {
 }
 
 /**
+ * Generates a blob ID for freelancer equipment lists
+ * Format: E + FreelancerID padded to 6 digits
+ * Example: FreelancerID 123 → E000123
+ *
+ * This ID is FIXED and never changes for a freelancer.
+ * Azure Blob automatically overwrites when uploading with the same ID.
+ *
+ * @param {number} freelancerId - The freelancer's ID
+ * @returns {string} Equipment blob ID
+ */
+export function generateEquipmentBlobId(freelancerId) {
+  if (!freelancerId || typeof freelancerId !== "number") {
+    throw new Error("Valid freelancerId required for equipment blob ID");
+  }
+
+  // Pad to 6 digits: E000123
+  return `E${String(freelancerId).padStart(6, "0")}`;
+}
+
+/**
  * Uploads a file to Azure Blob Storage
  * @param {File|Buffer} file - The file to upload
  * @param {string} blobId - The blob identifier (name in storage)

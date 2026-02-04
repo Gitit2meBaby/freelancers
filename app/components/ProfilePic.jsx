@@ -1,4 +1,4 @@
-// app/components/ProfilePic.jsx - WITH EVENT LISTENER
+// app/components/ProfilePic.jsx - FINAL FIX WITH PROPER URL HANDLING
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -14,9 +14,11 @@ const ProfilePic = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [profileImageUrl, setProfileImageUrl] = useState(null);
+  const [imageKey, setImageKey] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
   const dropdownRef = useRef(null);
+  const hasInitiallyFetched = useRef(false);
 
   const isLoggedIn = status === "authenticated";
   const isLoading = status === "loading";
@@ -24,42 +26,53 @@ const ProfilePic = () => {
   // Show profile pic on all pages except home page when logged in
   const shouldRender = pathname !== "/" && isLoggedIn;
 
-  useEffect(() => {
-    if (!isLoggedIn || !session?.user?.id) return;
+  // ✅ FIX: Helper to properly append cache-busting param
+  const addCacheBuster = (url) => {
+    if (!url) return null;
 
-    fetchProfileImage();
-  }, [isLoggedIn, session?.user?.id]);
-
-  // NEW: Listen for profile update events
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      console.log(
-        "📸 ProfilePic: Received profile update event, refreshing..."
-      );
-      fetchProfileImage();
-    };
-
-    window.addEventListener("profileUpdated", handleProfileUpdate);
-
-    return () => {
-      window.removeEventListener("profileUpdated", handleProfileUpdate);
-    };
-  }, []);
+    const timestamp = Date.now();
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}t=${timestamp}`;
+  };
 
   const fetchProfileImage = async () => {
-    if (isFetchingImage) return;
+    if (isFetchingImage) {
+      console.log("⏭️ Skipping fetch - already in progress");
+      return;
+    }
 
     setIsFetchingImage(true);
     try {
-      const response = await fetch("/api/auth/refresh-profile-image", {
-        method: "POST",
-      });
+      const timestamp = Date.now();
+      const response = await fetch(
+        `/api/auth/refresh-profile-image?t=${timestamp}`,
+        {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        },
+      );
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        console.error("❌ Failed to fetch profile image");
+        return;
+      }
 
       const data = await response.json();
       if (data.success) {
-        setProfileImageUrl(data.imageUrl ?? null);
+        // ✅ FIX: Use helper to properly add cache-buster
+        const newImageUrl = addCacheBuster(data.imageUrl);
+
+        setProfileImageUrl(newImageUrl);
+        setImageKey((prev) => prev + 1);
+        console.log(
+          "✅ ProfilePic: Updated to new image:",
+          newImageUrl ? "yes" : "no",
+        );
       }
     } catch (err) {
       console.error("❌ ProfilePic fetch failed:", err);
@@ -68,8 +81,43 @@ const ProfilePic = () => {
     }
   };
 
+  // Initial load - only runs once when user logs in
   useEffect(() => {
-    // Close dropdown when clicking outside
+    if (!isLoggedIn || !session?.user?.id) {
+      hasInitiallyFetched.current = false;
+      return;
+    }
+
+    if (!hasInitiallyFetched.current) {
+      console.log("🔄 ProfilePic: Initial fetch");
+      hasInitiallyFetched.current = true;
+      fetchProfileImage();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, session?.user?.id]);
+
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log(
+        "📸 ProfilePic: Received profile update event, refreshing...",
+      );
+
+      setTimeout(() => {
+        fetchProfileImage();
+      }, 1000);
+    };
+
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
@@ -92,6 +140,7 @@ const ProfilePic = () => {
 
   const handleLogout = async () => {
     setIsOpen(false);
+    hasInitiallyFetched.current = false;
     await signOut({ callbackUrl: "/" });
   };
 
@@ -118,7 +167,8 @@ const ProfilePic = () => {
             height={56}
             className={styles.profilePic}
             priority
-            key={profileImageUrl} // Force re-render when URL changes
+            key={`profile-${imageKey}`}
+            unoptimized
           />
         ) : (
           <Image

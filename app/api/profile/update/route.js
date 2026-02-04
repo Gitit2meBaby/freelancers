@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   executeQuery,
   executeUpdate,
@@ -35,6 +35,7 @@ export async function PUT(request) {
     }
 
     const freelancerId = parseInt(session.user.id);
+    const slug = session.user.slug; // Get slug from session
     const data = await request.json();
 
     let hasChanges = false;
@@ -200,8 +201,25 @@ export async function PUT(request) {
       });
     }
 
-    // CRITICAL: Invalidate the freelancer cache so new data shows immediately
+    // ==================================================
+    // CRITICAL: COMPREHENSIVE CACHE INVALIDATION
+    // ==================================================
+
+    // 1. Invalidate the generic freelancers tag
     revalidateTag("freelancers");
+    console.log(`♻️ Invalidated 'freelancers' tag`);
+
+    // 2. Invalidate specific freelancer's API route path
+    revalidatePath(`/api/freelancer/${slug}`);
+    console.log(`♻️ Revalidated path: /api/freelancer/${slug}`);
+
+    // 3. Invalidate the profile page path
+    revalidatePath(`/my-account/${slug}`);
+    console.log(`♻️ Revalidated path: /my-account/${slug}`);
+
+    // 4. Invalidate the edit profile page
+    revalidatePath("/edit-profile");
+    console.log(`♻️ Revalidated path: /edit-profile`);
 
     return NextResponse.json({
       success: true,
