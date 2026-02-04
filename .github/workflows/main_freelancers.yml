@@ -128,6 +128,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 15
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -144,6 +145,18 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7F5B70189A8245CDB40B9AE7570D679E }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
+
+      # ✅ NEW: Restart App Service before deployment to clear any locks
+      - name: Restart App Service
+        run: |
+          echo "🔄 Restarting App Service to clear any deployment locks..."
+          az webapp restart \
+            --name freelancers \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+          echo "✅ Restart command sent"
+          echo "⏳ Waiting 30 seconds for restart to complete..."
+          sleep 30
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
