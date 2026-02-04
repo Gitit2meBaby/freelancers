@@ -146,17 +146,11 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
 
-      # ✅ NEW: Restart App Service before deployment to clear any locks
-      - name: Restart App Service
+      # ✅ Wait a bit before deploying to ensure any previous deployment has finished
+      - name: Wait before deployment
         run: |
-          echo "🔄 Restarting App Service to clear any deployment locks..."
-          az webapp restart \
-            --name freelancers \
-            --resource-group freelancers-website \
-
-          echo "✅ Restart command sent"
-          echo "⏳ Waiting 30 seconds for restart to complete..."
-          sleep 30
+          echo "⏳ Waiting 10 seconds to ensure previous deployment is complete..."
+          sleep 10
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
