@@ -29,7 +29,8 @@ export default function ProfileContent({ profileData }) {
     !!profileData.equipmentListUrl,
   );
 
-  const role = profileData.skills?.[0]?.skillName || "Film Crew Member";
+  const skills = profileData.skills || [];
+  const hasSkills = skills.length > 0;
 
   // ✅ Helper to properly append cache-busting param
   const addCacheBuster = (url) => {
@@ -178,7 +179,16 @@ export default function ProfileContent({ profileData }) {
         {/* Right: Info */}
         <div className={styles.infoSection}>
           <h2 className={styles.name}>{profileData.name}</h2>
-          <p className={styles.role}>{role}</p>
+          <p className={styles.role}>
+            {hasSkills
+              ? skills.map((skill, index) => (
+                  <span key={skill.skillId}>
+                    {skill.skillName}
+                    {index < skills.length - 1 && <br />}
+                  </span>
+                ))
+              : "Film Crew Member"}
+          </p>
           {profileData.bio && <p className={styles.bio}>{profileData.bio}</p>}
 
           {/* Links */}
