@@ -152,7 +152,7 @@ jobs:
           echo "🔄 Restarting App Service to clear any deployment locks..."
           az webapp restart \
             --name freelancers \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+            --resource-group freelancers-website \
 
           echo "✅ Restart command sent"
           echo "⏳ Waiting 30 seconds for restart to complete..."
