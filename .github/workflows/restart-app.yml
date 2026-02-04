@@ -1,0 +1,28 @@
+name: Restart Azure App Service
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --name freelancers \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+          echo "✅ App Service restarted successfully"
+          echo "Waiting 30 seconds for restart to complete..."
+          sleep 30
+
+      - name: Azure Logout
+        run: az logout
+        if: always()
