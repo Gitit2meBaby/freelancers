@@ -45,7 +45,7 @@ export async function GET() {
           statusCode: tokenResponse.status,
           details: errorText,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -94,7 +94,7 @@ export async function GET() {
             "3. Try sending an email directly - Mail.Send might work even if User.Read fails",
           ],
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -120,7 +120,7 @@ export async function GET() {
         error: error.message,
         stack: error.stack,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -140,7 +140,7 @@ export async function POST(request) {
           error: 'Please provide "to" email address in request body',
           example: { to: "your-email@example.com" },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -176,7 +176,7 @@ export async function POST(request) {
           error: "Failed to get token",
           details: error,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -204,7 +204,7 @@ export async function POST(request) {
           },
         ],
       },
-      saveToSentItems: "true",
+      saveToSentItems: true,
     };
 
     // Send email
@@ -239,7 +239,7 @@ export async function POST(request) {
           from: senderEmail,
           to: to,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -257,7 +257,7 @@ export async function POST(request) {
         success: false,
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

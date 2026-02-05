@@ -321,7 +321,7 @@ export async function POST(request) {
         success: false,
         error:
           "An error occurred while processing your submission. Please try again later or contact us directly at info@freelancers.com.au",
-        ...(process.env.NODE_ENV === "development" && {
+        ...(process.env.NODE_ENV === "production" && {
           details: error.message,
         }),
       },

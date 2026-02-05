@@ -22,7 +22,7 @@ export async function getAccessToken() {
 
   if (!tenantId || !clientId || !clientSecret) {
     throw new Error(
-      "Missing Microsoft Graph credentials. Check GRAPH_TENANT_ID, GRAPH_CLIENT_ID, and GRAPH_CLIENT_SECRET in environment variables."
+      "Missing Microsoft Graph credentials. Check GRAPH_TENANT_ID, GRAPH_CLIENT_ID, and GRAPH_CLIENT_SECRET in environment variables.",
     );
   }
 
@@ -71,7 +71,7 @@ export async function sendGraphEmail(
   to,
   subject,
   htmlContent,
-  textContent = null
+  textContent = null,
 ) {
   try {
     console.log(`📧 Sending email via Microsoft Graph API`);
@@ -98,7 +98,7 @@ export async function sendGraphEmail(
           },
         ],
       },
-      saveToSentItems: "true",
+      saveToSentItems: true,
     };
 
     // Send email using the sender's mailbox
@@ -117,7 +117,7 @@ export async function sendGraphEmail(
       const errorText = await response.text();
       console.error(`❌ Graph API error: ${response.status} - ${errorText}`);
       throw new Error(
-        `Failed to send email: ${response.status} - ${errorText}`
+        `Failed to send email: ${response.status} - ${errorText}`,
       );
     }
 
@@ -158,7 +158,7 @@ export async function sendBulkEmail(from, recipients, subject, htmlContent) {
         from,
         recipient,
         subject,
-        htmlContent
+        htmlContent,
       );
 
       if (result.success) {
@@ -204,7 +204,7 @@ export async function testGraphConnection() {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
