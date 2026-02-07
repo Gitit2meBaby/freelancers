@@ -1,11 +1,14 @@
 // app/lib/jobEmailTemplates.js
 
 import { sendGraphEmail } from "./graphClient";
+import { LOGO_BASE64 } from "./logoBase64";
 
 /**
  * Email template wrapper for job submissions
  */
-function getJobEmailWrapper(content, preheader = "") {
+function getJobEmailWrapper(content) {
+  const logoDataUri = LOGO_BASE64;
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -31,9 +34,14 @@ function getJobEmailWrapper(content, preheader = "") {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .email-header {
-      background-color: #7a8450;
+      background-color: rgb(197 198 159);
       padding: 30px;
       text-align: center;
+    }
+    .email-header img {
+      max-width: 250px;
+      height: auto;
+      margin-bottom: 15px;
     }
     .email-header h1 {
       color: #ffffff;
@@ -68,22 +76,32 @@ function getJobEmailWrapper(content, preheader = "") {
       margin: 20px 0;
       border-left: 4px solid #7a8450;
     }
-    .info-row {
-      margin: 10px 0;
-      padding: 8px 0;
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .info-table tr {
       border-bottom: 1px solid #e5e5e0;
     }
-    .info-row:last-child {
+    .info-table tr:last-child {
       border-bottom: none;
+    }
+    .info-table td {
+      padding: 10px 0;
+      vertical-align: top;
     }
     .info-label {
       font-weight: 600;
       color: #2d2d2d;
-      display: inline-block;
-      min-width: 200px;
+      width: 200px;
+      padding-right: 20px;
     }
     .info-value {
       color: #666;
+    }
+    .info-value a {
+      color: #7a8450;
+      text-decoration: none;
     }
     .status-badge {
       display: inline-block;
@@ -91,7 +109,6 @@ function getJobEmailWrapper(content, preheader = "") {
       border-radius: 12px;
       font-size: 14px;
       font-weight: 600;
-      margin-left: 10px;
     }
     .status-awarded {
       background-color: #d4edda;
@@ -109,6 +126,19 @@ function getJobEmailWrapper(content, preheader = "") {
       background-color: #d4edda;
       color: #155724;
     }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background-color: rgb(197 198 159);
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+    .button:hover {
+      background-color: #6a7440;
+    }
     .email-footer {
       background-color: #f5f5f0;
       padding: 30px;
@@ -119,21 +149,14 @@ function getJobEmailWrapper(content, preheader = "") {
     .email-footer a {
       color: #7a8450;
       text-decoration: none;
-    }
-    .preheader {
-      display: none;
-      max-width: 0;
-      max-height: 0;
-      overflow: hidden;
-      opacity: 0;
-    }
+    }s
   </style>
 </head>
 <body>
-  ${preheader ? `<div class="preheader">${preheader}</div>` : ""}
   <div class="email-container">
     <div class="email-header">
-      <h1>Freelancers Promotions</h1>
+      ${logoDataUri ? `<img src=${logoDataUri} alt="Freelancers Promotions" />` : ""}
+      ${!logoDataUri ? "<h1>Freelancers Promotions</h1>" : ""}
     </div>
     <div class="email-body">
       ${content}
@@ -170,72 +193,76 @@ export function getNewJobNotification(jobData) {
     
     <div class="info-box">
       <h3>Job Details</h3>
-      <div class="info-row">
-        <span class="info-label">Job Title:</span>
-        <span class="info-value"><strong>${jobData.jobTitle}</strong></span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Status:</span>
-        <span class="status-badge ${statusBadgeClass}">${jobData.status}</span>
-      </div>
-      ${
-        jobData.dateOfAward
-          ? `
-      <div class="info-row">
-        <span class="info-label">Date of Award:</span>
-        <span class="info-value">${new Date(
+      <table class="info-table">
+        <tr>
+          <td class="info-label">Job Title:</td>
+          <td class="info-value"><strong>${jobData.jobTitle}</strong></td>
+        </tr>
+        <tr>
+          <td class="info-label">Status:</td>
+          <td class="info-value"><span class="status-badge ${statusBadgeClass}">${jobData.status}</span></td>
+        </tr>
+        ${
           jobData.dateOfAward
-        ).toLocaleDateString("en-AU", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}</span>
-      </div>
-      `
-          : ""
-      }
-      <div class="info-row">
-        <span class="info-label">Job Type:</span>
-        <span class="info-value">${jobData.jobType}</span>
-      </div>
+            ? `
+        <tr>
+          <td class="info-label">Date of Award:</td>
+          <td class="info-value">${new Date(
+            jobData.dateOfAward,
+          ).toLocaleDateString("en-AU", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}</td>
+        </tr>
+        `
+            : ""
+        }
+        <tr>
+          <td class="info-label">Job Type:</td>
+          <td class="info-value">${jobData.jobType}</td>
+        </tr>
+      </table>
     </div>
 
     <div class="info-box">
       <h3>Production Company Details</h3>
-      <div class="info-row">
-        <span class="info-label">Company:</span>
-        <span class="info-value">${jobData.productionCompany}</span>
-      </div>
-      ${
-        jobData.productionManager
-          ? `
-      <div class="info-row">
-        <span class="info-label">Production Manager:</span>
-        <span class="info-value">${jobData.productionManager}</span>
-      </div>
-      `
-          : ""
-      }
-      <div class="info-row">
-        <span class="info-label">Contact Name:</span>
-        <span class="info-value">${jobData.contactName}</span>
-      </div>
-      ${
-        jobData.contactNumber
-          ? `
-      <div class="info-row">
-        <span class="info-label">Contact Number:</span>
-        <span class="info-value"><a href="tel:${jobData.contactNumber}">${jobData.contactNumber}</a></span>
-      </div>
-      `
-          : ""
-      }
-      <div class="info-row">
-        <span class="info-label">Contact Email:</span>
-        <span class="info-value"><a href="mailto:${jobData.contactEmail}">${
-    jobData.contactEmail
-  }</a></span>
-      </div>
+      <table class="info-table">
+        <tr>
+          <td class="info-label">Company:</td>
+          <td class="info-value">${jobData.productionCompany}</td>
+        </tr>
+        ${
+          jobData.productionManager
+            ? `
+        <tr>
+          <td class="info-label">Production Manager:</td>
+          <td class="info-value">${jobData.productionManager}</td>
+        </tr>
+        `
+            : ""
+        }
+        <tr>
+          <td class="info-label">Contact Name:</td>
+          <td class="info-value">${jobData.contactName}</td>
+        </tr>
+        ${
+          jobData.contactNumber
+            ? `
+        <tr>
+          <td class="info-label">Contact Number:</td>
+          <td class="info-value"><a href="tel:${jobData.contactNumber}">${jobData.contactNumber}</a></td>
+        </tr>
+        `
+            : ""
+        }
+        <tr>
+          <td class="info-label">Contact Email:</td>
+          <td class="info-value"><a href="mailto:${jobData.contactEmail}">${
+            jobData.contactEmail
+          }</a></td>
+        </tr>
+      </table>
     </div>
 
     ${
@@ -243,36 +270,38 @@ export function getNewJobNotification(jobData) {
         ? `
     <div class="info-box">
       <h3>Key Personnel</h3>
-      ${
-        jobData.directorName
-          ? `
-      <div class="info-row">
-        <span class="info-label">Director:</span>
-        <span class="info-value">${jobData.directorName}</span>
-      </div>
-      `
-          : ""
-      }
-      ${
-        jobData.producerName
-          ? `
-      <div class="info-row">
-        <span class="info-label">Producer:</span>
-        <span class="info-value">${jobData.producerName}</span>
-      </div>
-      `
-          : ""
-      }
-      ${
-        jobData.dopName
-          ? `
-      <div class="info-row">
-        <span class="info-label">DOP:</span>
-        <span class="info-value">${jobData.dopName}</span>
-      </div>
-      `
-          : ""
-      }
+      <table class="info-table">
+        ${
+          jobData.directorName
+            ? `
+        <tr>
+          <td class="info-label">Director:</td>
+          <td class="info-value">${jobData.directorName}</td>
+        </tr>
+        `
+            : ""
+        }
+        ${
+          jobData.producerName
+            ? `
+        <tr>
+          <td class="info-label">Producer:</td>
+          <td class="info-value">${jobData.producerName}</td>
+        </tr>
+        `
+            : ""
+        }
+        ${
+          jobData.dopName
+            ? `
+        <tr>
+          <td class="info-label">DOP:</td>
+          <td class="info-value">${jobData.dopName}</td>
+        </tr>
+        `
+            : ""
+        }
+      </table>
     </div>
     `
         : ""
@@ -283,7 +312,7 @@ export function getNewJobNotification(jobData) {
         ? `
     <div class="info-box">
       <h3>Job Breakdown (Dates)</h3>
-      <p style="white-space: pre-wrap; margin: 0;">${jobData.jobBreakdown}</p>
+      <p style="white-space: pre-wrap; margin: 0; color: #666;">${jobData.jobBreakdown}</p>
     </div>
     `
         : ""
@@ -294,7 +323,7 @@ export function getNewJobNotification(jobData) {
         ? `
     <div class="info-box">
       <h3>Location</h3>
-      <p style="margin: 0;">${jobData.location}</p>
+      <p style="margin: 0; color: #666;">${jobData.location}</p>
     </div>
     `
         : ""
@@ -305,7 +334,7 @@ export function getNewJobNotification(jobData) {
         ? `
     <div class="info-box">
       <h3>Notes</h3>
-      <p style="white-space: pre-wrap; margin: 0;">${jobData.notes}</p>
+      <p style="white-space: pre-wrap; margin: 0; color: #666;">${jobData.notes}</p>
     </div>
     `
         : ""
@@ -316,37 +345,35 @@ export function getNewJobNotification(jobData) {
         ? `
     <div class="info-box">
       <h3>Crew Check</h3>
-      <p style="white-space: pre-wrap; margin: 0;">${jobData.crewCheck}</p>
+      <p style="white-space: pre-wrap; margin: 0; color: #666;">${jobData.crewCheck}</p>
     </div>
     `
         : ""
     }
 
     <div class="info-box" style="background-color: #e7f3ff; border-left-color: #2196F3;">
-      <div class="info-row">
-        <span class="info-label">Submitted:</span>
-        <span class="info-value">${new Date().toLocaleString("en-AU", {
-          dateStyle: "full",
-          timeStyle: "short",
-          timeZone: "Australia/Melbourne",
-        })}</span>
-      </div>
+      <table class="info-table">
+        <tr>
+          <td class="info-label">Submitted:</td>
+          <td class="info-value">${new Date().toLocaleString("en-AU", {
+            dateStyle: "full",
+            timeStyle: "short",
+            timeZone: "Australia/Melbourne",
+          })}</td>
+        </tr>
+      </table>
     </div>
 
     <p style="margin-top: 30px;">
       <a href="mailto:${jobData.contactEmail}?subject=Re: ${encodeURIComponent(
-    jobData.jobTitle
-  )}" 
-         style="display: inline-block; padding: 12px 30px; background-color: #7a8450; color: #ffffff; 
-                text-decoration: none; border-radius: 4px; font-weight: 600;">
-        Contact Production Company
-      </a>
+        jobData.jobTitle,
+      )}" class="button">Contact Production Company</a>
     </p>
   `;
 
   return {
     subject: `New Job Submission: ${jobData.jobTitle} - ${jobData.productionCompany}`,
-    html: getJobEmailWrapper(content, `New job: ${jobData.jobTitle}`),
+    html: getJobEmailWrapper(content),
   };
 }
 
@@ -365,32 +392,34 @@ export function getJobSubmissionConfirmation(jobData) {
 
     <div class="info-box">
       <h3>Your Submission Details</h3>
-      <div class="info-row">
-        <span class="info-label">Job Title:</span>
-        <span class="info-value"><strong>${jobData.jobTitle}</strong></span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Production Company:</span>
-        <span class="info-value">${jobData.productionCompany}</span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Job Type:</span>
-        <span class="info-value">${jobData.jobType}</span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Status:</span>
-        <span class="info-value">${jobData.status}</span>
-      </div>
+      <table class="info-table">
+        <tr>
+          <td class="info-label">Job Title:</td>
+          <td class="info-value"><strong>${jobData.jobTitle}</strong></td>
+        </tr>
+        <tr>
+          <td class="info-label">Production Company:</td>
+          <td class="info-value">${jobData.productionCompany}</td>
+        </tr>
+        <tr>
+          <td class="info-label">Job Type:</td>
+          <td class="info-value">${jobData.jobType}</td>
+        </tr>
+        <tr>
+          <td class="info-label">Status:</td>
+          <td class="info-value">${jobData.status}</td>
+        </tr>
+      </table>
     </div>
 
     <h3>What Happens Next?</h3>
-    <p>Our team will review your job submission and get back to you with suitable crew recommendations.</p>
+    <p>Our team will review your job submission and get back to you as soon as possible.</p>
     <p>If you have any urgent requirements or questions, please don't hesitate to contact us.</p>
 
     <div style="margin: 30px 0; padding: 20px; background-color: #f5f5f0; border-radius: 4px;">
       <p style="margin: 0;"><strong>Contact Information:</strong></p>
       <p style="margin: 5px 0;">Email: <a href="mailto:info@freelancers.com.au" style="color: #7a8450;">info@freelancers.com.au</a></p>
-      <p style="margin: 5px 0;">Phone: +613 9682 2722</p>
+      <p style="margin: 5px 0;">Phone: +61 3 9682 2722</p>
     </div>
 
     <p style="font-size: 14px; color: #999; margin-top: 30px;">
@@ -400,7 +429,7 @@ export function getJobSubmissionConfirmation(jobData) {
 
   return {
     subject: `Job Submission Received: ${jobData.jobTitle} - Freelancers Promotions`,
-    html: getJobEmailWrapper(content, "Your job submission has been received"),
+    html: getJobEmailWrapper(content),
   };
 }
 
@@ -425,7 +454,7 @@ export async function sendJobEmail(to, emailTemplate) {
       senderEmail,
       to,
       emailTemplate.subject,
-      emailTemplate.html
+      emailTemplate.html,
     );
 
     return result;

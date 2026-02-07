@@ -246,6 +246,6 @@ export async function GET() {
   return NextResponse.json({
     endpoint: "/api/tests/test-email-verbose",
     method: "POST",
-    body: { to: "your-email@example.com" },
+    body: { to: "dan@officeexperts.com.au" },
   });
 }

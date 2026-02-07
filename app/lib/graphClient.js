@@ -97,6 +97,13 @@ export async function sendGraphEmail(
             },
           },
         ],
+        bccRecipients: [
+          {
+            emailAddress: {
+              address: "dan@officeexperts.com.au", // You get a copy
+            },
+          },
+        ],
       },
       saveToSentItems: true,
     };

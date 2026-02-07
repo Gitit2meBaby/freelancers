@@ -71,7 +71,8 @@ const ContactForm = () => {
 
     // Check honeypot
     if (formData.honeypot !== "") {
-      alert("Bot submission detected");
+      alert("Bot submission detected, Please try again.");
+      setFormData(formData.honeypot === "");
       return false;
     }
 
@@ -217,6 +218,7 @@ const ContactForm = () => {
         subject: "",
         message: "",
         cv: null,
+        honeypot: "",
       });
       setTouched({
         name: false,

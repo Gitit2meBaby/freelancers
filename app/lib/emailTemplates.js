@@ -1,6 +1,5 @@
-// app/lib/emailTemplates.js
-
 import { sendGraphEmail } from "./graphClient";
+import { LOGO_BASE64 } from "./logoBase64";
 
 /**
  * Email Templates Library
@@ -9,9 +8,11 @@ import { sendGraphEmail } from "./graphClient";
 
 /**
  * Base email template wrapper
- * Provides consistent styling and structure
+ * Provides consistent styling and structure with logo
  */
 function getEmailWrapper(content, preheader = "") {
+  const logoDataUri = LOGO_BASE64;
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -37,9 +38,14 @@ function getEmailWrapper(content, preheader = "") {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .email-header {
-      background-color: #7a8450;
+      background-color: rgb(197 198 159);
       padding: 30px;
       text-align: center;
+    }
+    .email-header img {
+      max-width: 250px;
+      height: auto;
+      margin-bottom: 15px;
     }
     .email-header h1 {
       color: #ffffff;
@@ -62,7 +68,7 @@ function getEmailWrapper(content, preheader = "") {
     .button {
       display: inline-block;
       padding: 12px 30px;
-      background-color: #7a8450;
+      background-color: rgb(164 165 102);
       color: #ffffff !important;
       text-decoration: none;
       border-radius: 4px;
@@ -100,7 +106,8 @@ function getEmailWrapper(content, preheader = "") {
   ${preheader ? `<div class="preheader">${preheader}</div>` : ""}
   <div class="email-container">
     <div class="email-header">
-      <h1>Freelancers Promotions</h1>
+      ${logoDataUri ? `<img src=${logoDataUri} alt="Freelancers Promotions" />` : ""}
+      ${!logoDataUri ? "<h1>Freelancers Promotions</h1>" : ""}
     </div>
     <div class="email-body">
       ${content}
@@ -209,36 +216,49 @@ export function getContactFormNotification(submission) {
     <h2>New Contact Form Submission</h2>
     <p>You have received a new message through the Freelancers Promotions website.</p>
     
-    <div style="background-color: #f5f5f0; padding: 20px; border-radius: 4px; margin: 20px 0;">
-      <p style="margin: 5px 0;"><strong>Name:</strong> ${submission.name}</p>
-      <p style="margin: 5px 0;"><strong>Email:</strong> 
-        <a href="mailto:${submission.email}">${submission.email}</a>
-      </p>
-      ${
-        submission.phone
-          ? `<p style="margin: 5px 0;"><strong>Phone:</strong> ${submission.phone}</p>`
-          : ""
-      }
-      <p style="margin: 5px 0;"><strong>Subject:</strong> ${
-        submission.subject
-      }</p>
-      <p style="margin: 5px 0;"><strong>Submitted:</strong> 
-        ${new Date().toLocaleString("en-AU", {
-          dateStyle: "full",
-          timeStyle: "short",
-          timeZone: "Australia/Melbourne",
-        })}
-      </p>
+    <div style="background-color: #f5f5f0; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid rgb(197 198 159);">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #2d2d2d; width: 150px;">Name:</td>
+          <td style="padding: 8px 0; color: #666;">${submission.name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #2d2d2d;">Email:</td>
+          <td style="padding: 8px 0;"><a href="mailto:${submission.email}" style="color: #7a8450; text-decoration: none;">${submission.email}</a></td>
+        </tr>
+        ${
+          submission.phone
+            ? `<tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #2d2d2d;">Phone:</td>
+          <td style="padding: 8px 0;"><a href="tel:${submission.phone}" style="color: #7a8450; text-decoration: none;">${submission.phone}</a></td>
+        </tr>`
+            : ""
+        }
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #2d2d2d;">Subject:</td>
+          <td style="padding: 8px 0; color: #666;">${submission.subject}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #2d2d2d;">Submitted:</td>
+          <td style="padding: 8px 0; color: #666;">
+            ${new Date().toLocaleString("en-AU", {
+              dateStyle: "full",
+              timeStyle: "short",
+              timeZone: "Australia/Melbourne",
+            })}
+          </td>
+        </tr>
+      </table>
     </div>
 
-    <h3>Message:</h3>
-    <div style="background-color: #ffffff; border-left: 4px solid #7a8450; padding: 15px; margin: 20px 0;">
-      <p style="white-space: pre-wrap;">${submission.message}</p>
+    <h3 style="color: rgb(164 165 102); font-size: 16px; margin-top: 30px; margin-bottom: 10px;">Message:</h3>
+    <div style="background-color: #ffffff; border-left: 4px solid rgb(197 198 159); padding: 15px; margin: 20px 0; color: #666; white-space: pre-wrap;">
+      ${submission.message}
     </div>
 
     <a href="mailto:${submission.email}?subject=Re: ${encodeURIComponent(
-    submission.subject
-  )}" class="button">Reply to ${submission.name}</a>
+      submission.subject,
+    )}" class="button">Reply to ${submission.name}</a>
   `;
 
   return {
@@ -265,20 +285,12 @@ export function getContactFormAutoReply(submission) {
     <h3>Your Message:</h3>
     <div style="background-color: #f5f5f0; padding: 20px; border-radius: 4px; margin: 20px 0;">
       <p style="margin: 5px 0;"><strong>Subject:</strong> ${submission.subject}</p>
-      <p style="margin: 15px 0; white-space: pre-wrap;">${submission.message}</p>
+      <p style="margin: 15px 0; white-space: pre-wrap; color: #666;">${submission.message}</p>
     </div>
 
     <p>
       Our typical response time is 1-2 business days. If your inquiry is urgent, 
       please feel free to call us directly.
-    </p>
-
-    <div class="divider"></div>
-
-    <p style="font-size: 14px; color: #999;">
-      <strong>Contact Information:</strong><br>
-      Email: <a href="mailto:info@freelancers.com.au">info@freelancers.com.au</a><br>
-      Address: PO Box 5010, South Melbourne, Vic 3205
     </p>
   `;
 
@@ -286,7 +298,7 @@ export function getContactFormAutoReply(submission) {
     subject: "We Received Your Message - Freelancers Promotions",
     html: getEmailWrapper(
       content,
-      "Thank you for contacting Freelancers Promotions"
+      "Thank you for contacting Freelancers Promotions",
     ),
   };
 }
@@ -410,7 +422,7 @@ export function getProfileUpdateEmail(user, updatedFields) {
     ${
       updatedFields.includes("photo") || updatedFields.includes("cv")
         ? `
-    <p style="color: #7a8450;">
+    <p style="color: rgb(197 198 159);">
       <strong>Note:</strong> Your uploaded files are pending verification by our team. 
       They will be visible on your public profile once approved.
     </p>
@@ -454,7 +466,7 @@ export async function sendEmail(to, emailTemplate) {
       senderEmail,
       to,
       emailTemplate.subject,
-      emailTemplate.html
+      emailTemplate.html,
     );
 
     return result;
