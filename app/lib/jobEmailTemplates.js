@@ -1,14 +1,12 @@
 // app/lib/jobEmailTemplates.js
 
 import { sendGraphEmail } from "./graphClient";
-import { LOGO_BASE64 } from "./logoBase64";
+const LOGO_URL = "https://teal-heron-370950.hostingersite.com/images/logo.png";
 
 /**
  * Email template wrapper for job submissions
  */
 function getJobEmailWrapper(content) {
-  const logoDataUri = LOGO_BASE64;
-
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -155,8 +153,7 @@ function getJobEmailWrapper(content) {
 <body>
   <div class="email-container">
     <div class="email-header">
-      ${logoDataUri ? `<img src=${logoDataUri} alt="Freelancers Promotions" />` : ""}
-      ${!logoDataUri ? "<h1>Freelancers Promotions</h1>" : ""}
+          <img src="${LOGO_URL}" alt="Freelancers Promotions" class="email-logo" />
     </div>
     <div class="email-body">
       ${content}
@@ -194,14 +191,18 @@ export function getNewJobNotification(jobData) {
     <div class="info-box">
       <h3>Job Details</h3>
       <table class="info-table">
-        <tr>
-          <td class="info-label">Job Title:</td>
-          <td class="info-value"><strong>${jobData.jobTitle}</strong></td>
-        </tr>
-        <tr>
-          <td class="info-label">Status:</td>
-          <td class="info-value"><span class="status-badge ${statusBadgeClass}">${jobData.status}</span></td>
-        </tr>
+     <tr>
+  <td class="info-label">Job Title:</td>
+  <td class="info-value"><strong>${jobData.jobTitle}</strong></td>
+</tr>
+<tr>
+  <td class="info-label">Submitted By:</td>
+  <td class="info-value"><a href="mailto:${jobData.submitterEmail}">${jobData.submitterEmail}</a></td>
+</tr>
+<tr>
+  <td class="info-label">Status:</td>
+  <td class="info-value"><span class="status-badge ${statusBadgeClass}">${jobData.status}</span></td>
+</tr>
         ${
           jobData.dateOfAward
             ? `
@@ -383,8 +384,8 @@ export function getNewJobNotification(jobData) {
  */
 export function getJobSubmissionConfirmation(jobData) {
   const content = `
-    <h2>Thank You for Your Job Submission</h2>
-    <p>Hello ${jobData.contactName},</p>
+    <h2>New Job Submission</h2>
+    <p>Hi ${jobData.contactName},</p>
     <p>
       Thank you for submitting your job to Freelancers Promotions. 
       We have received your submission and will review it shortly.
@@ -397,10 +398,10 @@ export function getJobSubmissionConfirmation(jobData) {
           <td class="info-label">Job Title:</td>
           <td class="info-value"><strong>${jobData.jobTitle}</strong></td>
         </tr>
-        <tr>
-          <td class="info-label">Production Company:</td>
-          <td class="info-value">${jobData.productionCompany}</td>
-        </tr>
+<tr>
+  <td class="info-label">Production Company Email:</td>
+  <td class="info-value"><a href="mailto:${jobData.contactEmail}">${jobData.contactEmail}</a></td>
+</tr>
         <tr>
           <td class="info-label">Job Type:</td>
           <td class="info-value">${jobData.jobType}</td>

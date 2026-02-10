@@ -8,7 +8,9 @@
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+     "format-logo": "node scripts/formatLogoBase64.js",
+    "format-logo:update": "node scripts/formatLogoBase64.js --update-original"
   },
   "dependencies": {
     "axios": "^1.13.2",

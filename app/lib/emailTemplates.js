@@ -1,5 +1,5 @@
 import { sendGraphEmail } from "./graphClient";
-import { LOGO_BASE64 } from "./logoBase64";
+const LOGO_URL = "https://teal-heron-370950.hostingersite.com/images/logo.png";
 
 /**
  * Email Templates Library
@@ -11,8 +11,6 @@ import { LOGO_BASE64 } from "./logoBase64";
  * Provides consistent styling and structure with logo
  */
 function getEmailWrapper(content, preheader = "") {
-  const logoDataUri = LOGO_BASE64;
-
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -106,8 +104,7 @@ function getEmailWrapper(content, preheader = "") {
   ${preheader ? `<div class="preheader">${preheader}</div>` : ""}
   <div class="email-container">
     <div class="email-header">
-      ${logoDataUri ? `<img src=${logoDataUri} alt="Freelancers Promotions" />` : ""}
-      ${!logoDataUri ? "<h1>Freelancers Promotions</h1>" : ""}
+            <img src="${LOGO_URL}" alt="Freelancers Promotions" class="freelancers logo" />
     </div>
     <div class="email-body">
       ${content}
@@ -273,8 +270,8 @@ export function getContactFormNotification(submission) {
  */
 export function getContactFormAutoReply(submission) {
   const content = `
-    <h2>Thank You for Contacting Us</h2>
-    <p>Hello ${submission.name},</p>
+    <h2>We Got Your Message!</h2>
+    <p>Hi ${submission.name},</p>
     <p>
       Thank you for reaching out to Freelancers Promotions. 
       We have received your message and will respond as soon as possible.

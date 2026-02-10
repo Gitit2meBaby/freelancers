@@ -21,6 +21,7 @@ const NewJobForm = () => {
     location: "",
     notes: "",
     crewCheck: "",
+    submitterEmail: "",
   });
 
   const [showTooltip, setShowTooltip] = useState(null);
@@ -84,6 +85,7 @@ const NewJobForm = () => {
         location: "",
         notes: "",
         crewCheck: "",
+        submitterEmail: "",
       });
 
       // Auto-hide success message after 5 seconds
@@ -121,6 +123,25 @@ const NewJobForm = () => {
           aria-required="true"
           className={styles.input}
           disabled={submitStatus.loading}
+        />
+      </div>
+
+      {/* Submitter Email */}
+      <div className={styles.formGroup}>
+        <label htmlFor="submitterEmail">
+          Contact Email <span className={styles.required}>*</span>
+        </label>
+        <input
+          type="email"
+          id="submitterEmail"
+          name="submitterEmail"
+          value={formData.submitterEmail}
+          onChange={handleChange}
+          required
+          aria-required="true"
+          className={styles.input}
+          disabled={submitStatus.loading}
+          placeholder="your.email@example.com"
         />
       </div>
 

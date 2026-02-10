@@ -1,17 +1,6 @@
 // app/lib/graphClient.js
 
 /**
- * Microsoft Graph API Client
- * Handles authentication and email sending via Microsoft Graph API
- *
- * SETUP INSTRUCTIONS:
- * 1. Register an app in Azure AD (https://portal.azure.com)
- * 2. Add Mail.Send permission
- * 3. Create a client secret
- * 4. Add credentials to .env.local
- */
-
-/**
  * Get access token for Microsoft Graph API
  * Uses client credentials flow (app-only authentication)
  */

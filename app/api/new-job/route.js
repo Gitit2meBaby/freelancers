@@ -24,6 +24,7 @@ export async function POST(request) {
       "productionCompany",
       "contactName",
       "contactEmail",
+      "submitterEmail",
     ];
 
     const missingFields = requiredFields.filter((field) => !data[field]);
@@ -47,6 +48,17 @@ export async function POST(request) {
         {
           success: false,
           error: "Invalid email address",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!emailRegex.test(data.submitterEmail)) {
+      console.error("❌ Invalid submitter email format:", data.submitterEmail);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid submitter email address",
         },
         { status: 400 },
       );
@@ -111,6 +123,10 @@ export async function POST(request) {
       location: data.location?.trim().substring(0, 200) || "",
       notes: data.notes?.trim().substring(0, 2000) || "",
       crewCheck: data.crewCheck?.trim().substring(0, 2000) || "",
+      submitterEmail: data.submitterEmail
+        .trim()
+        .toLowerCase()
+        .substring(0, 100), // Add this
     };
 
     // ==================================================
@@ -146,7 +162,7 @@ export async function POST(request) {
       const confirmationEmail = getJobSubmissionConfirmation(sanitizedData);
 
       const confirmationResult = await sendJobEmail(
-        sanitizedData.contactEmail,
+        sanitizedData.submitterEmail,
         confirmationEmail,
       );
 
