@@ -4,6 +4,7 @@ import {
   getContactFormNotification,
   getContactFormAutoReply,
   sendEmail,
+  sendEmailWithAttachment,
 } from "../../../app/lib/emailTemplates";
 
 /**
@@ -13,8 +14,20 @@ import {
  */
 export async function POST(request) {
   try {
-    // Parse form data
-    const data = await request.json();
+    // Parse form data (CHANGED FROM request.json())
+    const formData = await request.formData();
+
+    // Extract fields
+    const data = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      subject: formData.get("subject"),
+      message: formData.get("message"),
+      phone: formData.get("phone"),
+    };
+
+    // Get CV file if present
+    const cvFile = formData.get("cv");
 
     // Validate required fields
     const requiredFields = ["name", "email", "subject", "message"];
@@ -52,6 +65,18 @@ export async function POST(request) {
       });
     }
 
+    // Validate CV file size if present
+    if (cvFile && cvFile.size > 1024 * 1024) {
+      // 1MB limit
+      return NextResponse.json(
+        {
+          success: false,
+          error: "CV file must be less than 1MB",
+        },
+        { status: 400 },
+      );
+    }
+
     // Sanitize input
     const sanitizedData = {
       name: data.name.trim().substring(0, 100),
@@ -69,13 +94,37 @@ export async function POST(request) {
     let userEmailSuccess = false;
 
     try {
-      // 1. Send notification to admin
-
+      // 1. Send notification to admin (WITH ATTACHMENT if CV present)
       const adminEmail = getContactFormNotification(sanitizedData);
       const adminEmailAddress =
         process.env.ADMIN_EMAIL || "info@freelancers.com.au";
 
-      const adminResult = await sendEmail(adminEmailAddress, adminEmail);
+      let adminResult;
+
+      if (cvFile) {
+        console.log("📎 CV file detected:", cvFile.name, cvFile.size, "bytes");
+
+        // Convert File to Buffer for attachment
+        const arrayBuffer = await cvFile.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        console.log("📎 Buffer created, size:", buffer.length, "bytes");
+
+        adminResult = await sendEmailWithAttachment(
+          adminEmailAddress,
+          adminEmail,
+          {
+            filename: cvFile.name,
+            content: buffer,
+            contentType: cvFile.type,
+          },
+        );
+      } else {
+        console.log("📧 No CV file, sending regular email");
+        adminResult = await sendEmail(adminEmailAddress, adminEmail);
+      }
+
+      console.log("📧 Admin email result:", adminResult); // ADD THIS LINE
 
       if (adminResult.success) {
         adminEmailSuccess = true;
@@ -87,13 +136,12 @@ export async function POST(request) {
       console.error("❌ Exception sending admin email:");
       console.error("  Message:", error.message);
       console.error("  Stack:", error.stack);
+      console.error("  Error object:", error); // ADD THIS LINE
     }
 
     try {
-      // 2. Send auto-reply to user
-
+      // 2. Send auto-reply to user (NO ATTACHMENT)
       const userEmail = getContactFormAutoReply(sanitizedData);
-
       const userResult = await sendEmail(sanitizedData.email, userEmail);
 
       if (userResult.success) {
@@ -139,6 +187,7 @@ export async function POST(request) {
       details: {
         adminEmailSent: adminEmailSuccess,
         autoReplySent: userEmailSuccess,
+        cvAttached: !!cvFile,
         timestamp: new Date().toISOString(),
       },
     });
@@ -155,7 +204,7 @@ export async function POST(request) {
         success: false,
         error:
           "An error occurred while processing your request. Please try again later or contact us directly at info@freelancers.com.au",
-        ...(process.env.NODE_ENV === "production" && {
+        ...(process.env.NODE_ENV !== "production" && {
           details: error.message,
         }),
       },

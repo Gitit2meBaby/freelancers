@@ -1,4 +1,4 @@
-import { sendGraphEmail } from "./graphClient";
+import { sendGraphEmail, sendGraphEmailWithAttachment } from "./graphClient";
 const LOGO_URL = "https://teal-heron-370950.hostingersite.com/images/logo.png";
 
 /**
@@ -469,6 +469,36 @@ export async function sendEmail(to, emailTemplate) {
     return result;
   } catch (error) {
     console.error("❌ Error sending email:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+export async function sendEmailWithAttachment(to, emailTemplate, attachment) {
+  try {
+    const senderEmail =
+      process.env.GRAPH_SENDER_EMAIL || "info@freelancers.com.au";
+
+    console.log("📧 Preparing to send email with attachment:");
+    console.log("From:", senderEmail);
+    console.log("To:", to);
+    console.log("Subject:", emailTemplate.subject);
+    console.log("Attachment:", attachment.filename);
+
+    // Send email via Microsoft Graph API with attachment
+    const result = await sendGraphEmailWithAttachment(
+      senderEmail,
+      to,
+      emailTemplate.subject,
+      emailTemplate.html,
+      attachment,
+    );
+
+    return result;
+  } catch (error) {
+    console.error("❌ Error sending email with attachment:", error);
     return {
       success: false,
       error: error.message,

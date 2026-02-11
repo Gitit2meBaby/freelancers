@@ -47,6 +47,14 @@ export async function getAccessToken() {
 }
 
 /**
+ * Helper function to send email with attachment via Microsoft Graph API
+ * @param {string} to - Recipient email address
+ * @param {Object} emailTemplate - Email template with subject and html
+ * @param {Object} attachment - Attachment object { filename, content (Buffer), contentType }
+ * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ */
+
+/**
  * Send email via Microsoft Graph API
  * @param {string} from - Sender email address (must be a mailbox the app has access to)
  * @param {string} to - Recipient email address
@@ -86,13 +94,13 @@ export async function sendGraphEmail(
             },
           },
         ],
-        // bccRecipients: [
-        //   {
-        //     emailAddress: {
-        //       address: "dan@officeexperts.com.au", // You get a copy
-        //     },
-        //   },
-        // ],
+        bccRecipients: [
+          {
+            emailAddress: {
+              address: "dan@officeexperts.com.au", // You get a copy
+            },
+          },
+        ],
       },
       saveToSentItems: true,
     };
@@ -125,6 +133,106 @@ export async function sendGraphEmail(
     };
   } catch (error) {
     console.error("❌ Error sending email:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Send email with attachment via Microsoft Graph API
+ * @param {string} from - Sender email address
+ * @param {string} to - Recipient email address
+ * @param {string} subject - Email subject
+ * @param {string} htmlContent - Email HTML content
+ * @param {Object} attachment - { filename: string, content: Buffer, contentType: string }
+ * @returns {Promise<{success: boolean, messageId?: string, error?: string}>}
+ */
+export async function sendGraphEmailWithAttachment(
+  from,
+  to,
+  subject,
+  htmlContent,
+  attachment,
+) {
+  try {
+    console.log(`📧 Sending email with attachment via Microsoft Graph API`);
+    console.log(`From: ${from}`);
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(
+      `Attachment: ${attachment.filename} (${attachment.content.length} bytes)`,
+    );
+
+    // Get access token
+    const accessToken = await getAccessToken();
+
+    // Convert buffer to base64
+    const base64Content = attachment.content.toString("base64");
+
+    // Prepare email message with attachment
+    const message = {
+      message: {
+        subject: subject,
+        body: {
+          contentType: "HTML",
+          content: htmlContent,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: to,
+            },
+          },
+        ],
+        bccRecipients: [
+          {
+            emailAddress: {
+              address: "dan@officeexperts.com.au", // You get a copy
+            },
+          },
+        ],
+        attachments: [
+          {
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            name: attachment.filename,
+            contentType: attachment.contentType,
+            contentBytes: base64Content,
+          },
+        ],
+      },
+      saveToSentItems: true,
+    };
+
+    // Send email using the sender's mailbox
+    const sendUrl = `https://graph.microsoft.com/v1.0/users/${from}/sendMail`;
+
+    const response = await fetch(sendUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Graph API error: ${response.status} - ${errorText}`);
+      throw new Error(
+        `Failed to send email: ${response.status} - ${errorText}`,
+      );
+    }
+
+    console.log(`✅ Email with attachment sent successfully to ${to}`);
+
+    return {
+      success: true,
+      message: "Email sent successfully with attachment",
+    };
+  } catch (error) {
+    console.error("❌ Error sending email with attachment:", error);
     return {
       success: false,
       error: error.message,

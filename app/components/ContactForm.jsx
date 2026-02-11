@@ -117,6 +117,7 @@ const ContactForm = () => {
     const { name, value, files } = e.target;
 
     if (name === "cv") {
+      console.log("CV file selected:", files[0]); // ADD THIS
       setFormData((prev) => ({
         ...prev,
         cv: files[0] || null,
@@ -194,12 +195,18 @@ const ContactForm = () => {
     setSubmitStatus({ loading: true, success: false, error: null });
 
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("subject", formData.subject);
+      formDataToSend.append("message", formData.message);
+      if (formData.phone) formDataToSend.append("phone", formData.phone);
+      if (formData.cv) formDataToSend.append("cv", formData.cv);
+
       const response = await fetch("/api/contact", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        // Don't set Content-Type - browser sets it automatically with boundary
+        body: formDataToSend,
       });
 
       const data = await response.json();

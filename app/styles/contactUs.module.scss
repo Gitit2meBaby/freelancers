@@ -249,7 +249,8 @@
   font-size: var(--font-size-base);
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  // white-space: nowrap;
+  max-width: 350px;
 
   &:hover {
     color: #a4a566;
