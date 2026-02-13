@@ -41,8 +41,6 @@ export async function GET(request, { params }) {
       );
     }
 
-    console.log(`📥 Fetching blob: ${blobId}`);
-
     // Get the blob URL with SAS token
     const blobUrl = getBlobUrl(blobId);
 
@@ -73,9 +71,6 @@ export async function GET(request, { params }) {
 
     // Generate appropriate filename based on blob ID
     const filename = getFilenameFromBlobId(blobId);
-
-    console.log(`✅ Successfully fetched blob ${blobId}`);
-    console.log(`📄 Serving blob ${blobId} as "${filename}" (${contentType})`);
 
     // CRITICAL FIX: Add Content-Disposition header
     // This tells the browser what filename and extension to use when downloading

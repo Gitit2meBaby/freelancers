@@ -113,8 +113,6 @@ export default function SearchBar({ onSelectFreelancer }) {
       return;
     }
 
-    console.log("🔍 Fetching full data for:", freelancer.slug);
-
     try {
       // Fetch full freelancer data from API
       const response = await fetch(`/api/freelancer/${freelancer.slug}`);

@@ -16,7 +16,7 @@ const page = () => {
         </p>
         <div className={styles.btns}>
           <Link
-            href="../public/pdf/Motion-Picture-Production-Certified-Agreement-Full-Summary-July-1-2024"
+            href="/pdf/Motion-Picture-Production-Certified-Agreement-Full-Summary-July-1-2024.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.linkButton}
@@ -24,7 +24,7 @@ const page = () => {
             Longform Guidelines
           </Link>
           <Link
-            href="../public/pdf/Crew-Booking-Guidelines-July-25.pdf"
+            href="/pdf/Crew-Booking-Guidelines-July-25.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.linkButton}

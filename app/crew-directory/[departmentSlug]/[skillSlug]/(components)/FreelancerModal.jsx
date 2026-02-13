@@ -256,7 +256,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
             )}
 
             {/* Skills */}
-            {freelancer.skills && freelancer.skills.length > 0 && (
+            {/* {freelancer.skills && freelancer.skills.length > 0 && (
               <div className={styles.skills}>
                 <h3>Skills</h3>
                 <div className={styles.skillsList}>
@@ -267,7 +267,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Links */}
             {(freelancer.links?.Website ||

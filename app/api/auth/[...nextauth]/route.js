@@ -96,7 +96,7 @@ export const authOptions = {
           if (!userHasPassword) {
             const result = await setInitialPassword(
               user.FreelancerID,
-              credentials.password
+              credentials.password,
             );
 
             if (!result.success) {
@@ -117,7 +117,7 @@ export const authOptions = {
           // Step 3b: Returning user - verify password
           const isValidPassword = await verifyPassword(
             credentials.password,
-            passwordHash
+            passwordHash,
           );
 
           if (!isValidPassword) {
@@ -266,7 +266,6 @@ export const authOptions = {
     async signIn({ user, account }) {
       const method =
         account.provider === "google" ? "Google" : "Email/Password";
-      console.log(`✅ ${method} sign-in: ${user.email}`);
     },
     async signOut({ token }) {
       console.log(`👋 Sign-out: ${token.email}`);

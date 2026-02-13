@@ -102,13 +102,9 @@ export async function POST(request) {
       let adminResult;
 
       if (cvFile) {
-        console.log("📎 CV file detected:", cvFile.name, cvFile.size, "bytes");
-
         // Convert File to Buffer for attachment
         const arrayBuffer = await cvFile.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-
-        console.log("📎 Buffer created, size:", buffer.length, "bytes");
 
         adminResult = await sendEmailWithAttachment(
           adminEmailAddress,
@@ -120,11 +116,8 @@ export async function POST(request) {
           },
         );
       } else {
-        console.log("📧 No CV file, sending regular email");
         adminResult = await sendEmail(adminEmailAddress, adminEmail);
       }
-
-      console.log("📧 Admin email result:", adminResult); // ADD THIS LINE
 
       if (adminResult.success) {
         adminEmailSuccess = true;
