@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 export default {
-  siteUrl: process.env.SITE_URL || "https://freelancers.com.au",
+  siteUrl: process.env.SITE_URL || "https://www.freelancers.com.au",
   generateRobotsTxt: true,
   generateIndexSitemap: false,
   exclude: [
