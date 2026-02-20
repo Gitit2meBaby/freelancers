@@ -1,5 +1,164 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# # More GitHub Actions for Azure: https://github.com/Azure/actions
+
+# name: Build and deploy Node.js app to Azure Web App - freelancers
+
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 25
+#     permissions:
+#       contents: read #This is required for actions/checkout
+
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Set up Node.js version
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: "24.x"
+
+#       - name: npm install, build, and test
+#         env:
+#           # Environment
+#           NODE_ENV: production
+
+#           # Database Configuration
+#           DB_SERVER: ${{ secrets.DB_SERVER }}
+#           DB_PORT: ${{ secrets.DB_PORT }}
+#           DB_DATABASE: ${{ secrets.DB_DATABASE }}
+#           DB_USER: ${{ secrets.DB_USER }}
+#           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+#           DB_ENCRYPT: ${{ secrets.DB_ENCRYPT }}
+#           DB_TRUST_SERVER_CERTIFICATE: ${{ secrets.DB_TRUST_SERVER_CERTIFICATE }}
+#           DB_ENABLE_ARITH_ABORT: ${{ secrets.DB_ENABLE_ARITH_ABORT }}
+#           DB_CONNECTION_TIMEOUT: ${{ secrets.DB_CONNECTION_TIMEOUT }}
+#           DB_REQUEST_TIMEOUT: ${{ secrets.DB_REQUEST_TIMEOUT }}
+#           DB_POOL_MAX: ${{ secrets.DB_POOL_MAX }}
+#           DB_POOL_MIN: ${{ secrets.DB_POOL_MIN }}
+#           DB_POOL_IDLE_TIMEOUT: ${{ secrets.DB_POOL_IDLE_TIMEOUT }}
+
+#           # Azure Blob Storage
+#           AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+#           AZURE_BLOB_CONTAINER_NAME: ${{ secrets.AZURE_BLOB_CONTAINER_NAME }}
+#           AZURE_BLOB_SAS_TOKEN: ${{ secrets.AZURE_BLOB_SAS_TOKEN }}
+#           AZURE_BLOB_SAS_URL: ${{ secrets.AZURE_BLOB_SAS_URL }}
+#           AZURE_BLOB_BASE_URL: ${{ secrets.AZURE_BLOB_BASE_URL }}
+
+#           # Database Views
+#           VIEW_FREELANCERS: ${{ secrets.VIEW_FREELANCERS }}
+#           VIEW_FREELANCER_LINKS: ${{ secrets.VIEW_FREELANCER_LINKS }}
+#           VIEW_DEPARTMENTS_SKILLS: ${{ secrets.VIEW_DEPARTMENTS_SKILLS }}
+#           VIEW_FREELANCER_SKILLS: ${{ secrets.VIEW_FREELANCER_SKILLS }}
+#           VIEW_SERVICES: ${{ secrets.VIEW_SERVICES }}
+#           VIEW_CATEGORIES: ${{ secrets.VIEW_CATEGORIES }}
+#           VIEW_SERVICE_CATEGORIES: ${{ secrets.VIEW_SERVICE_CATEGORIES }}
+#           VIEW_STORED_DOCUMENTS: ${{ secrets.VIEW_STORED_DOCUMENTS }}
+
+#           # Database Tables
+#           TABLE_FREELANCER_WEBSITE_DATA: ${{ secrets.TABLE_FREELANCER_WEBSITE_DATA }}
+#           TABLE_FREELANCER_WEBSITE_DATA_LINKS: ${{ secrets.TABLE_FREELANCER_WEBSITE_DATA_LINKS }}
+#           TABLE_STORED_DOCUMENTS: ${{ secrets.TABLE_STORED_DOCUMENTS }}
+
+#           # Status Codes
+#           STATUS_NONE: ${{ secrets.STATUS_NONE }}
+#           STATUS_TO_BE_VERIFIED: ${{ secrets.STATUS_TO_BE_VERIFIED }}
+#           STATUS_VERIFIED: ${{ secrets.STATUS_VERIFIED }}
+#           STATUS_REJECTED: ${{ secrets.STATUS_REJECTED }}
+
+#           # Document Types
+#           DOC_TYPE_PHOTO: ${{ secrets.DOC_TYPE_PHOTO }}
+#           DOC_TYPE_CV: ${{ secrets.DOC_TYPE_CV }}
+#           DOC_TYPE_EQUIPMENT_LIST: ${{ secrets.DOC_TYPE_EQUIPMENT_LIST }}
+
+#           # Link Types
+#           LINK_TYPE_WEBSITE: ${{ secrets.LINK_TYPE_WEBSITE }}
+#           LINK_TYPE_INSTAGRAM: ${{ secrets.LINK_TYPE_INSTAGRAM }}
+#           LINK_TYPE_IMDB: ${{ secrets.LINK_TYPE_IMDB }}
+#           LINK_TYPE_LINKEDIN: ${{ secrets.LINK_TYPE_LINKEDIN }}
+
+#           # Email Configuration
+#           GRAPH_SENDER_EMAIL: ${{ secrets.GRAPH_SENDER_EMAIL }}
+#           GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+#           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+#           GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+#           GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+#           GRAPH_SENDER_TEST_EMAIL: ${{ secrets.GRAPH_SENDER_TEST_EMAIL }}
+
+#           # Authentication
+#           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+#           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+#           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+#           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+
+#           # Next.js Public URLs
+#           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+#           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+#           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+
+#           # File Upload Limits
+#           MAX_FILE_SIZE_IMAGE: ${{ secrets.MAX_FILE_SIZE_IMAGE }}
+#           MAX_FILE_SIZE_CV: ${{ secrets.MAX_FILE_SIZE_CV }}
+#           MAX_FILE_SIZE_EQUIPMENT: ${{ secrets.MAX_FILE_SIZE_EQUIPMENT }}
+#           ALLOWED_IMAGE_TYPES: ${{ secrets.ALLOWED_IMAGE_TYPES }}
+#           ALLOWED_DOCUMENT_TYPES: ${{ secrets.ALLOWED_DOCUMENT_TYPES }}
+
+#           # Miscellaneous
+#           SYSTEM_USER_ID: ${{ secrets.SYSTEM_USER_ID }}
+#           DEFAULT_PAGE_SIZE: ${{ secrets.DEFAULT_PAGE_SIZE }}
+#           MAX_PAGE_SIZE: ${{ secrets.MAX_PAGE_SIZE }}
+#           CACHE_TTL: ${{ secrets.CACHE_TTL }}
+#         run: |
+#           npm install
+#           npm run build --if-present
+#           npm run test --if-present
+
+#       - name: Upload artifact for deployment job
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: node-app
+#           path: .
+
+#   deploy:
+#     runs-on: ubuntu-latest
+#     needs: build
+#     timeout-minutes: 25
+#     permissions:
+#       id-token: write #This is required for requesting the JWT
+#       contents: read #This is required for actions/checkout
+
+#     steps:
+#       - name: Download artifact from build job
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: node-app
+
+#       - name: Login to Azure
+#         uses: azure/login@v2
+#         with:
+#           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7F5B70189A8245CDB40B9AE7570D679E }}
+#           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
+#           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
+
+#       # ✅ Wait a bit before deploying to ensure any previous deployment has finished
+#       - name: Wait before deployment
+#         run: |
+#           echo "⏳ Waiting 10 seconds to ensure previous deployment is complete..."
+#           sleep 10
+
+#       - name: "Deploy to Azure Web App"
+#         id: deploy-to-webapp
+#         uses: azure/webapps-deploy@v3
+#         with:
+#           app-name: "freelancers"
+#           slot-name: "Production"
+#           package: .
 
 name: Build and deploy Node.js app to Azure Web App - freelancers
 
@@ -10,26 +169,37 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      contents: read #This is required for actions/checkout
+      id-token: write # Required for OIDC Azure login
+      contents: read # Required for checkout
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: "24.x"
+          node-version: "20.x" # LTS - more stable than 24 for production
+          cache: "npm" # Caches ~/.npm between runs
 
-      - name: npm install, build, and test
+      # Install all deps including devDependencies (needed for Next.js build)
+      - name: Install dependencies
+        run: npm ci
+
+      # Build the Next.js app
+      # All env vars are needed here because:
+      # - NEXT_PUBLIC_* are embedded into the client bundle at build time
+      # - DB vars are used by generateStaticParams / ISR at build time
+      - name: Build
+        run: npm run build
         env:
-          # Environment
           NODE_ENV: production
 
-          # Database Configuration
+          # Database
           DB_SERVER: ${{ secrets.DB_SERVER }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
@@ -83,7 +253,7 @@ jobs:
           LINK_TYPE_IMDB: ${{ secrets.LINK_TYPE_IMDB }}
           LINK_TYPE_LINKEDIN: ${{ secrets.LINK_TYPE_LINKEDIN }}
 
-          # Email Configuration
+          # Email
           GRAPH_SENDER_EMAIL: ${{ secrets.GRAPH_SENDER_EMAIL }}
           GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
@@ -91,53 +261,51 @@ jobs:
           GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
           GRAPH_SENDER_TEST_EMAIL: ${{ secrets.GRAPH_SENDER_TEST_EMAIL }}
 
-          # Authentication
+          # Auth
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
-          # Next.js Public URLs
+          # Public URLs
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
 
-          # File Upload Limits
+          # File Limits
           MAX_FILE_SIZE_IMAGE: ${{ secrets.MAX_FILE_SIZE_IMAGE }}
           MAX_FILE_SIZE_CV: ${{ secrets.MAX_FILE_SIZE_CV }}
           MAX_FILE_SIZE_EQUIPMENT: ${{ secrets.MAX_FILE_SIZE_EQUIPMENT }}
           ALLOWED_IMAGE_TYPES: ${{ secrets.ALLOWED_IMAGE_TYPES }}
           ALLOWED_DOCUMENT_TYPES: ${{ secrets.ALLOWED_DOCUMENT_TYPES }}
 
-          # Miscellaneous
+          # Misc
           SYSTEM_USER_ID: ${{ secrets.SYSTEM_USER_ID }}
           DEFAULT_PAGE_SIZE: ${{ secrets.DEFAULT_PAGE_SIZE }}
           MAX_PAGE_SIZE: ${{ secrets.MAX_PAGE_SIZE }}
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
+
+      # Remove dev dependencies before packaging
+      # Shrinks node_modules from ~500MB to ~150MB
+      - name: Prune dev dependencies
+        run: npm prune --omit=dev
+
+      # Package only runtime files - exclude source, cache, and maps
+      - name: Create deployment package
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          zip -r deploy.zip \
+            .next \
+            public \
+            node_modules \
+            package.json \
+            package-lock.json \
+            next.config.mjs \
+            next.sitemap.js \
+            -x "*.map" \
+            -x ".next/cache/*" \
+            -x "node_modules/.cache/*"
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: .
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 25
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
+          echo "📦 Package size: $(du -sh deploy.zip | cut -f1)"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -146,16 +314,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
 
-      # ✅ Wait a bit before deploying to ensure any previous deployment has finished
-      - name: Wait before deployment
-        run: |
-          echo "⏳ Waiting 10 seconds to ensure previous deployment is complete..."
-          sleep 10
-
-      - name: "Deploy to Azure Web App"
-        id: deploy-to-webapp
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: "freelancers"
           slot-name: "Production"
-          package: .
+          package: deploy.zip
