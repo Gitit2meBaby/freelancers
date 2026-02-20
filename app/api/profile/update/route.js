@@ -9,7 +9,7 @@ import {
   VIEWS,
   TABLES,
   LINK_TYPES,
-} from "@/app/lib/db";
+} from "../../../lib/db";
 
 /**
  * PUT /api/profile/update

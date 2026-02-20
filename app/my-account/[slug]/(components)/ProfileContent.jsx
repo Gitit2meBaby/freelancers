@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 
 import EditProfileButton from "./EditProfileButton";
 import styles from "../../../styles/profile.module.scss";
-import Spinner from "@/app/components/Spinner";
+import Spinner from "../../../components/Spinner";
 
 /**
  * ProfileContent Component - FIXED URL CACHE-BUSTING

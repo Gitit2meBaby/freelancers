@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { executeUpdate, TABLES, STATUS_CODES } from "@/app/lib/db";
+import { executeUpdate, TABLES, STATUS_CODES } from "../../../lib/db";
 
 /**
  * POST /api/profile/force-verify
@@ -16,7 +16,7 @@ export async function POST() {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -29,7 +29,7 @@ export async function POST() {
         PhotoStatusID: STATUS_CODES.VERIFIED,
         CVStatusID: STATUS_CODES.VERIFIED,
       },
-      { FreelancerID: freelancerId }
+      { FreelancerID: freelancerId },
     );
 
     return NextResponse.json({
@@ -46,7 +46,7 @@ export async function POST() {
         success: false,
         error: error.message || "Failed to update verification status",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

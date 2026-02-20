@@ -2,8 +2,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../[...nextauth]/route";
-import { executeQuery, VIEWS } from "@/app/lib/db";
-import { getBlobUrl } from "@/app/lib/azureBlob";
+import { executeQuery, VIEWS } from "../../../lib/db";
+import { getBlobUrl } from "../../../lib/azureBlob";
 
 /**
  * POST /api/auth/refresh-profile-image
@@ -19,7 +19,7 @@ export async function POST() {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -40,7 +40,7 @@ export async function POST() {
     if (users.length === 0) {
       return NextResponse.json(
         { success: false, error: "User not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -69,7 +69,7 @@ export async function POST() {
         success: false,
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
