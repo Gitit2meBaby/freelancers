@@ -48,3 +48,4 @@ downloaded_media/
 /scripts/output
 /scripts/azure_ready_media
 /scripts/slug_based_media
+/app/api/tests
