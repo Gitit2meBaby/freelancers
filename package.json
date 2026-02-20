@@ -13,7 +13,6 @@
     "format-logo:update": "node scripts/formatLogoBase64.js --update-original"
   },
   "dependencies": {
-    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
     "mssql": "^12.2.0",
