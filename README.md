@@ -67,21 +67,21 @@ This project follows a **component-based architecture** to reduce code repetitio
 This project uses minimal external dependencies to maximize performance:
 
 ```json
-{
   "dependencies": {
-    "axios": "^1.13.2",
-    "cheerio": "^1.1.2",
+    "bcryptjs": "^3.0.3",
+    "exceljs": "^4.4.0",
     "imghash": "^1.1.1",
     "json2csv": "^6.0.0-alpha.2",
     "mssql": "^12.2.0",
     "next": "16.0.5",
+    "next-auth": "^4.24.13",
     "next-sitemap": "^1.6.16",
-    "puppeteer": "^24.31.0",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "nodemailer": "^7.0.12",
+    "pdfkit": "^0.17.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "sass": "^1.97.0"
-  }
-}
+  },
 ```
 
 Additional packages will be added as needed for specific functionality (Azure SDK, ODBC drivers, authentication, email services).
@@ -108,8 +108,6 @@ Additional packages will be added as needed for specific functionality (Azure SD
 
 Images and PDF documents are stored in Azure Blob Storage and retrieved asynchronously. Media files are matched to database records using IDs, with slugs serving as a single source of truth for routing.
 
-_[Details to be added during implementation]_
-
 ### Microsoft Access Database (ODBC)
 
 The site connects to an existing Microsoft Access database via ODBC to retrieve:
@@ -117,8 +115,6 @@ The site connects to an existing Microsoft Access database via ODBC to retrieve:
 - Services list
 - Crew directories
 - Booking management data
-
-_[Connection details, query patterns, and security implementation to be documented]_
 
 ## Development
 

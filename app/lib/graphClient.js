@@ -94,13 +94,6 @@ export async function sendGraphEmail(
             },
           },
         ],
-        bccRecipients: [
-          {
-            emailAddress: {
-              address: "dan@officeexperts.com.au", // You get a copy
-            },
-          },
-        ],
       },
       saveToSentItems: true,
     };
@@ -183,13 +176,6 @@ export async function sendGraphEmailWithAttachment(
           {
             emailAddress: {
               address: to,
-            },
-          },
-        ],
-        bccRecipients: [
-          {
-            emailAddress: {
-              address: "dan@officeexperts.com.au", // You get a copy
             },
           },
         ],

@@ -61,6 +61,13 @@
   }
 }
 
+.hidden {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
 .required {
   color: #d32f2f;
   font-weight: var(--font-weight-medium);

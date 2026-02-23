@@ -185,9 +185,7 @@ export function getNewJobNotification(jobData) {
     }[jobData.status] || "status-quote";
 
   const content = `
-    <h2>New Job Submission</h2>
-    <p>A new job has been submitted through the Freelancers Promotions website.</p>
-    
+    <h2>New Job Submission</h2>    
     <div class="info-box">
       <h3>Job Details</h3>
       <table class="info-table">

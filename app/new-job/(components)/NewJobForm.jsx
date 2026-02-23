@@ -22,6 +22,7 @@ const NewJobForm = () => {
     notes: "",
     crewCheck: "",
     submitterEmail: "",
+    honeypot: "",
   });
 
   const [showTooltip, setShowTooltip] = useState(null);
@@ -48,6 +49,13 @@ const NewJobForm = () => {
     e.preventDefault();
 
     setSubmitStatus({ loading: true, success: false, error: null });
+
+    if (honeypot !== "") {
+      alert("Bot submission detected, Refresh to try again.");
+      setSubmitStatus({ loading: false, success: false, error: null });
+      setFormData(formData.honeypot === "");
+      return;
+    }
 
     try {
       const response = await fetch("/api/new-job", {
@@ -86,12 +94,13 @@ const NewJobForm = () => {
         notes: "",
         crewCheck: "",
         submitterEmail: "",
+        honeypot: "",
       });
 
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
         setSubmitStatus({ loading: false, success: false, error: null });
-      }, 5000);
+      }, 2000);
     } catch (error) {
       console.error("Submit error:", error);
       setSubmitStatus({
@@ -123,6 +132,19 @@ const NewJobForm = () => {
           aria-required="true"
           className={styles.input}
           disabled={submitStatus.loading}
+        />
+      </div>
+
+      {/* Honeypot Input */}
+      <div className={styles.hidden}>
+        <input
+          type="text"
+          name="honeypot"
+          value={formData.honeypot}
+          onChange={handleChange}
+          className={styles.honeypot}
+          aria-hidden="true"
+          tabIndex="-1"
         />
       </div>
 
