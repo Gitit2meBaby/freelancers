@@ -197,6 +197,7 @@ export const authOptions = {
           "accounts@freelancers.com.au",
           "dan@officeexperts.com.au",
           "paul.misfud@officeexperts.com.au",
+          "thisworldofdans@gmail.com",
         ];
         session.user.isAdmin = adminEmails.includes(session.user.email);
       }
