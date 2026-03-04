@@ -27,6 +27,70 @@ jobs:
         run: npm ci
 
       - name: Build app
+        env:
+          NODE_ENV: production
+          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_ENCRYPT: ${{ secrets.DB_ENCRYPT }}
+          DB_TRUST_SERVER_CERTIFICATE: ${{ secrets.DB_TRUST_SERVER_CERTIFICATE }}
+          DB_ENABLE_ARITH_ABORT: ${{ secrets.DB_ENABLE_ARITH_ABORT }}
+          DB_CONNECTION_TIMEOUT: ${{ secrets.DB_CONNECTION_TIMEOUT }}
+          DB_REQUEST_TIMEOUT: ${{ secrets.DB_REQUEST_TIMEOUT }}
+          DB_POOL_MAX: ${{ secrets.DB_POOL_MAX }}
+          DB_POOL_MIN: ${{ secrets.DB_POOL_MIN }}
+          DB_POOL_IDLE_TIMEOUT: ${{ secrets.DB_POOL_IDLE_TIMEOUT }}
+          AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+          AZURE_BLOB_CONTAINER_NAME: ${{ secrets.AZURE_BLOB_CONTAINER_NAME }}
+          AZURE_BLOB_SAS_TOKEN: ${{ secrets.AZURE_BLOB_SAS_TOKEN }}
+          AZURE_BLOB_SAS_URL: ${{ secrets.AZURE_BLOB_SAS_URL }}
+          AZURE_BLOB_BASE_URL: ${{ secrets.AZURE_BLOB_BASE_URL }}
+          VIEW_FREELANCERS: ${{ secrets.VIEW_FREELANCERS }}
+          VIEW_FREELANCER_LINKS: ${{ secrets.VIEW_FREELANCER_LINKS }}
+          VIEW_DEPARTMENTS_SKILLS: ${{ secrets.VIEW_DEPARTMENTS_SKILLS }}
+          VIEW_FREELANCER_SKILLS: ${{ secrets.VIEW_FREELANCER_SKILLS }}
+          VIEW_SERVICES: ${{ secrets.VIEW_SERVICES }}
+          VIEW_CATEGORIES: ${{ secrets.VIEW_CATEGORIES }}
+          VIEW_SERVICE_CATEGORIES: ${{ secrets.VIEW_SERVICE_CATEGORIES }}
+          VIEW_STORED_DOCUMENTS: ${{ secrets.VIEW_STORED_DOCUMENTS }}
+          TABLE_FREELANCER_WEBSITE_DATA: ${{ secrets.TABLE_FREELANCER_WEBSITE_DATA }}
+          TABLE_FREELANCER_WEBSITE_DATA_LINKS: ${{ secrets.TABLE_FREELANCER_WEBSITE_DATA_LINKS }}
+          TABLE_STORED_DOCUMENTS: ${{ secrets.TABLE_STORED_DOCUMENTS }}
+          STATUS_NONE: ${{ secrets.STATUS_NONE }}
+          STATUS_TO_BE_VERIFIED: ${{ secrets.STATUS_TO_BE_VERIFIED }}
+          STATUS_VERIFIED: ${{ secrets.STATUS_VERIFIED }}
+          STATUS_REJECTED: ${{ secrets.STATUS_REJECTED }}
+          DOC_TYPE_PHOTO: ${{ secrets.DOC_TYPE_PHOTO }}
+          DOC_TYPE_CV: ${{ secrets.DOC_TYPE_CV }}
+          DOC_TYPE_EQUIPMENT_LIST: ${{ secrets.DOC_TYPE_EQUIPMENT_LIST }}
+          LINK_TYPE_WEBSITE: ${{ secrets.LINK_TYPE_WEBSITE }}
+          LINK_TYPE_INSTAGRAM: ${{ secrets.LINK_TYPE_INSTAGRAM }}
+          LINK_TYPE_IMDB: ${{ secrets.LINK_TYPE_IMDB }}
+          LINK_TYPE_LINKEDIN: ${{ secrets.LINK_TYPE_LINKEDIN }}
+          GRAPH_SENDER_EMAIL: ${{ secrets.GRAPH_SENDER_EMAIL }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_SENDER_TEST_EMAIL: ${{ secrets.GRAPH_SENDER_TEST_EMAIL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          MAX_FILE_SIZE_IMAGE: ${{ secrets.MAX_FILE_SIZE_IMAGE }}
+          MAX_FILE_SIZE_CV: ${{ secrets.MAX_FILE_SIZE_CV }}
+          MAX_FILE_SIZE_EQUIPMENT: ${{ secrets.MAX_FILE_SIZE_EQUIPMENT }}
+          ALLOWED_IMAGE_TYPES: ${{ secrets.ALLOWED_IMAGE_TYPES }}
+          ALLOWED_DOCUMENT_TYPES: ${{ secrets.ALLOWED_DOCUMENT_TYPES }}
+          SYSTEM_USER_ID: ${{ secrets.SYSTEM_USER_ID }}
+          DEFAULT_PAGE_SIZE: ${{ secrets.DEFAULT_PAGE_SIZE }}
+          MAX_PAGE_SIZE: ${{ secrets.MAX_PAGE_SIZE }}
+          CACHE_TTL: ${{ secrets.CACHE_TTL }}
         run: npm run build
 
       - name: Remove dev dependencies
