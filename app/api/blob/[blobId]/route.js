@@ -1,6 +1,9 @@
-// app/api/blob/[blobId]/route.js - FIXED VERSION
-// This route proxies Azure Blob Storage requests through Next.js
-// Fixes the missing .pdf extension issue by adding Content-Disposition header
+// app/api/blob/[blobId]/route.js
+// Proxies Azure Blob Storage requests through Next.js.
+// Changes from previous version:
+//   1. Photos (P prefix) now served with disposition: inline so <img> tags render them
+//   2. Cache-Control changed from immutable/1yr to 60s for photos, 1hr for documents.
+//      Blob IDs never change on upload so immutable caching guarantees stale images.
 
 import { NextResponse } from "next/server";
 import { getBlobUrl } from "../../../lib/azureBlob";
@@ -9,26 +12,42 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Determines the appropriate filename based on blob ID prefix
- * @param {string} blobId - The blob ID (e.g., "C000003", "E000007", "P000123")
- * @returns {string} Appropriate filename with extension
+ * Returns Content-Disposition and cache behaviour based on blob ID prefix.
+ * Photos must be inline — attachment disposition breaks <img> rendering.
  */
-function getFilenameFromBlobId(blobId) {
+function getBlobMeta(blobId) {
   const prefix = blobId.charAt(0).toUpperCase();
-
   switch (prefix) {
+    case "P":
+      return {
+        disposition: "inline",
+        filename: `photo-${blobId}.jpg`,
+        isPhoto: true,
+      };
     case "C":
-      return `CV-${blobId}.pdf`; // CV PDFs
+      return {
+        disposition: "attachment",
+        filename: `CV-${blobId}.pdf`,
+        isPhoto: false,
+      };
     case "E":
-      return `Equipment-List-${blobId}.pdf`; // Equipment List PDFs
+      return {
+        disposition: "attachment",
+        filename: `Equipment-List-${blobId}.pdf`,
+        isPhoto: false,
+      };
     default:
-      return `download-${blobId}`; // Fallback
+      return {
+        disposition: "attachment",
+        filename: `download-${blobId}`,
+        isPhoto: false,
+      };
   }
 }
 
 /**
  * GET /api/blob/[blobId]
- * Fetches a blob from Azure Blob Storage and serves it with proper headers
+ * Fetches a blob from Azure Blob Storage and serves it with proper headers.
  */
 export async function GET(request, { params }) {
   try {
@@ -41,7 +60,6 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get the blob URL with SAS token
     const blobUrl = getBlobUrl(blobId);
 
     if (!blobUrl) {
@@ -51,10 +69,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Fetch the blob from Azure
-    const response = await fetch(blobUrl, {
-      method: "GET",
-    });
+    const response = await fetch(blobUrl, { method: "GET" });
 
     if (!response.ok) {
       console.error(`❌ Blob fetch failed: ${response.status}`);
@@ -64,22 +79,25 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get the blob data and content type
     const buffer = Buffer.from(await response.arrayBuffer());
     const contentType =
       response.headers.get("Content-Type") || "application/octet-stream";
 
-    // Generate appropriate filename based on blob ID
-    const filename = getFilenameFromBlobId(blobId);
+    const { disposition, filename, isPhoto } = getBlobMeta(blobId);
 
-    // CRITICAL FIX: Add Content-Disposition header
-    // This tells the browser what filename and extension to use when downloading
+    // Short TTL for photos because blob IDs are fixed — the same URL is reused
+    // when a freelancer uploads a new photo. Immutable caching at a fixed URL
+    // means visitors never see the updated image until their cache expires.
+    const cacheControl = isPhoto
+      ? "public, max-age=60, must-revalidate"
+      : "public, max-age=3600, must-revalidate";
+
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${filename}"`, // ✅ This fixes the extension issue!
+        "Content-Disposition": `${disposition}; filename="${filename}"`,
         "Content-Length": buffer.length.toString(),
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": cacheControl,
         "Access-Control-Allow-Origin": "*",
       },
     });
@@ -94,7 +112,7 @@ export async function GET(request, { params }) {
 
 /**
  * HEAD /api/blob/[blobId]
- * Check if a blob exists without downloading it
+ * Check if a blob exists without downloading it.
  */
 export async function HEAD(request, { params }) {
   try {
@@ -110,9 +128,7 @@ export async function HEAD(request, { params }) {
       return new NextResponse(null, { status: 500 });
     }
 
-    const response = await fetch(blobUrl, {
-      method: "HEAD",
-    });
+    const response = await fetch(blobUrl, { method: "HEAD" });
 
     if (!response.ok) {
       return new NextResponse(null, { status: response.status });
@@ -121,15 +137,19 @@ export async function HEAD(request, { params }) {
     const contentType =
       response.headers.get("Content-Type") || "application/octet-stream";
     const contentLength = response.headers.get("Content-Length") || "0";
-    const filename = getFilenameFromBlobId(blobId);
+    const { disposition, filename, isPhoto } = getBlobMeta(blobId);
+
+    const cacheControl = isPhoto
+      ? "public, max-age=60, must-revalidate"
+      : "public, max-age=3600, must-revalidate";
 
     return new NextResponse(null, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `${disposition}; filename="${filename}"`,
         "Content-Length": contentLength,
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": cacheControl,
         "Access-Control-Allow-Origin": "*",
       },
     });

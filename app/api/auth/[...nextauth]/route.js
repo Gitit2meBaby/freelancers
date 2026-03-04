@@ -194,7 +194,7 @@ export const authOptions = {
 
         const adminEmails = [
           "info@freelancers.com.au",
-          "accounts@freelancers.com.au",
+          "accounts@freelancers.com.au", 
           "dan@officeexperts.com.au",
           "paul.misfud@officeexperts.com.au",
           "thisworldofdans@gmail.com",

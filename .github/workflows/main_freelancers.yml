@@ -137,6 +137,13 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
 
+      - name: Clean stale Oryx files
+        run: |
+          az webapp ssh \
+            --resource-group freelancerWebsite \
+            --name freelancers \
+            --command "rm -f /home/site/wwwroot/oryx-manifest.toml && rm -f /home/site/wwwroot/node_modules.tar.gz"
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:

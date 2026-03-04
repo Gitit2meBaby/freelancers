@@ -1,0 +1,4 @@
+# oryx-manifest.toml
+PlatformName="nodejs"
+PlatformVersion="24.13.0"
+CompressedNodeModulesFile="node_modules.tar.gz"
