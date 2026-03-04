@@ -25,9 +25,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
 
-      - name: Deploy to Azure Web App
+      - name: Deploy with build enabled
         uses: azure/webapps-deploy@v3
         with:
           app-name: "freelancers"
           slot-name: "Production"
           package: .
+          enable-oryx-build: true
