@@ -7,16 +7,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.13.0"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+      - name: Remove dev dependencies
+        run: npm prune --production
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -25,10 +39,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
 
-      - name: Deploy with build enabled
+      - name: Deploy built app
         uses: azure/webapps-deploy@v3
         with:
           app-name: "freelancers"
           slot-name: "Production"
           package: .
-          enable-oryx-build: true
