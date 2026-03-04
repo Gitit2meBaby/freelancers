@@ -114,7 +114,6 @@ jobs:
             package-lock.json
             next.config.js
             .deployment
-            oryx-manifest.toml
           if-no-files-found: error
 
   deploy:
