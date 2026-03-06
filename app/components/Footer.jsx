@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import AdminLink from "./AdminLink";
 
 import styles from "../styles/footer.module.scss";
 
@@ -46,7 +47,7 @@ const Footer = () => {
             <Link href="/contact-us">Contact Us</Link>
           </li>
           <li>
-            <Link href="/admin/news">Admin</Link>
+            <AdminLink />
           </li>
           <li>
             <Link href="/privacy-policy">Privacy Policy</Link>

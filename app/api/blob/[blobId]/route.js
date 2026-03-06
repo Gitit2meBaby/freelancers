@@ -53,6 +53,14 @@ export async function GET(request, { params }) {
   try {
     const { blobId } = await params;
 
+    const VALID_BLOB_ID = /^[PCEN]\d{6}$/;
+    if (!blobId || !VALID_BLOB_ID.test(blobId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid blob ID" },
+        { status: 400 },
+      );
+    }
+
     if (!blobId) {
       return NextResponse.json(
         { success: false, error: "Blob ID is required" },
@@ -118,6 +126,13 @@ export async function HEAD(request, { params }) {
   try {
     const { blobId } = await params;
 
+    const VALID_BLOB_ID = /^[PCEN]\d{6}$/;
+    if (!blobId || !VALID_BLOB_ID.test(blobId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid blob ID" },
+        { status: 400 },
+      );
+    }
     if (!blobId) {
       return new NextResponse(null, { status: 400 });
     }

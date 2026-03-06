@@ -91,6 +91,7 @@ jobs:
           DEFAULT_PAGE_SIZE: ${{ secrets.DEFAULT_PAGE_SIZE }}
           MAX_PAGE_SIZE: ${{ secrets.MAX_PAGE_SIZE }}
           CACHE_TTL: ${{ secrets.CACHE_TTL }}
+          NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
         run: npm run build
 
       - name: Remove dev dependencies
