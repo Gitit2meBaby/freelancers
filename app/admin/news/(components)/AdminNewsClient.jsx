@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { checkAdminAuth } from "../../../components/AdminModal";
+import AdminModal from "../../../components/AdminModal";
 import styles from "../../../styles/adminNews.module.scss";
 import Spinner from "../../../components/Spinner";
-import AdminModal from "../../../components/AdminModal";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,6 @@ export default function AdminNewsClient() {
   const [formData, setFormData] = useState({ title: "", pdfFile: null });
   const [uploading, setUploading] = useState(false);
 
-  // Check localStorage auth once on mount (client only)
   useEffect(() => {
     if (checkAdminAuth()) {
       setIsAuthed(true);
@@ -97,14 +96,17 @@ export default function AdminNewsClient() {
         const uploadFormData = new FormData();
         uploadFormData.append("file", formData.pdfFile);
         uploadFormData.append("blobId", editingItem.blobId);
-        uploadFormData.append("type", "news-pdf");
 
-        const uploadResponse = await fetch("/api/upload-blob", {
+        // Use the admin-specific upload route — no NextAuth session required
+        const uploadResponse = await fetch("/api/admin/upload-news", {
           method: "POST",
           body: uploadFormData,
         });
 
-        if (!uploadResponse.ok) throw new Error("Failed to upload PDF");
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || "Failed to upload PDF");
+        }
 
         const uploadResult = await uploadResponse.json();
         newBlobId = uploadResult.blobId;
@@ -140,10 +142,8 @@ export default function AdminNewsClient() {
     }
   };
 
-  // Don't render anything until we've checked localStorage
   if (!authChecked) return null;
 
-  // Show modal if not authed — page content stays hidden behind it
   if (showModal) {
     return (
       <AdminModal
