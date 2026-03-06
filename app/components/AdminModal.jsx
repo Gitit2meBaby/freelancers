@@ -54,7 +54,6 @@ export default function AdminModal({
 
     if (password !== adminPassword) {
       setError("Incorrect credentials. Please try again.");
-      console.log(adminPassword, password);
       return;
     }
 
