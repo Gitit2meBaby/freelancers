@@ -30,7 +30,6 @@ export default function AdminModal({
 
   useEffect(() => {
     emailRef.current?.focus();
-    checkAdminAuth();
   }, []);
 
   useEffect(() => {
@@ -50,19 +49,52 @@ export default function AdminModal({
       return;
     }
 
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-
-    if (password !== adminPassword) {
+    if (!AdminEmails.includes(email.trim().toLowerCase())) {
       setError("Incorrect credentials. Please try again.");
       return;
     }
 
-    setAdminAuth(email.trim());
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      onClose?.();
-      router.push(redirectTo);
+    setLoading(true);
+
+    try {
+      // ── FIX ──────────────────────────────────────────────────────────────────
+      // Password is checked server-side via API route, NOT against
+      // process.env.NEXT_PUBLIC_ADMIN_PASSWORD in the browser bundle.
+      //
+      // The old approach had two problems:
+      // 1. NEXT_PUBLIC_ vars are baked at BUILD TIME — if the var is added or
+      //    changed in Azure App Settings after a build, the bundle still has the
+      //    old value (or undefined) until the next deployment.
+      // 2. The password was visible in the JS bundle to anyone who opened DevTools.
+      //
+      // The API route reads process.env.ADMIN_PASSWORD at REQUEST TIME from
+      // Azure App Settings — always current, never exposed to the browser.
+      // ─────────────────────────────────────────────────────────────────────────
+      const response = await fetch("/api/admin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setError(result.error || "Incorrect credentials. Please try again.");
+        return;
+      }
+
+      setAdminAuth(email.trim());
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onClose?.();
+        router.push(redirectTo);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
