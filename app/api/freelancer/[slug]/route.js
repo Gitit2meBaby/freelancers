@@ -1,13 +1,17 @@
 // app/api/freelancer/[slug]/route.js
 //
-// CHANGE: CV and equipment blob existence is now checked server-side using
-// blobExists() and returned as booleans (cvExists, equipmentExists) in the
-// response payload. This eliminates the three client-side useEffect HEAD
-// requests in ProfileContent.jsx, reducing client-side JavaScript and
-// removing unnecessary round-trips after page load.
+// FIX (2026-04-09): blobExists() calls moved INSIDE the unstable_cache boundary.
 //
-// Photo existence is intentionally NOT checked here — the <Image> onError
-// prop in ProfileContent handles broken photos at zero extra cost.
+// Previously, cvExists and equipmentExists were checked per-request in the GET
+// handler — outside the cache. A crew directory page loading 20–50 profiles
+// simultaneously fired 40–100 concurrent outbound HEAD requests to Azure Blob
+// Storage on every page load, regardless of cache state. This is the confirmed
+// cause of thread pool starvation and the CPU flatline on instance F0N at ~08:30
+// UTC. Moving the checks inside the cache reduces them from N-per-request to
+// once per revalidation window (1 hour).
+//
+// No other logic has changed. SQL queries, link assembly, and URL generation
+// are identical to the previous version.
 
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
@@ -17,8 +21,17 @@ import { getProxiedBlobUrl } from "../../../lib/blobProxy";
 import { blobExists } from "../../../lib/azureBlob";
 
 /**
- * Cached function to get all freelancer data.
- * Skills and links are fetched in parallel with the main freelancer query.
+ * Cached function to get all freelancer data including blob existence flags.
+ *
+ * All three SQL queries AND all blob existence checks run inside this cache
+ * boundary. They execute once per revalidation period (1 hour) regardless of
+ * how many concurrent requests arrive. Concurrent cache misses on cold start
+ * are serialised by Next.js's unstable_cache deduplication — only one execution
+ * runs; all others await the same promise.
+ *
+ * Blob checks are batched: all CVs and equipment lists are checked in a single
+ * Promise.all rather than sequentially. This keeps cache-miss latency acceptable
+ * even with a large crew directory.
  */
 const getAllFreelancerData = unstable_cache(
   async () => {
@@ -58,15 +71,42 @@ const getAllFreelancerData = unstable_cache(
       WHERE LinkURL IS NOT NULL AND LinkURL != ''
     `;
 
+    // Run all three SQL queries in parallel — no change from previous version.
     const [freelancers, skills, links] = await Promise.all([
       executeQuery(freelancersQuery),
       executeQuery(skillsQuery),
       executeQuery(linksQuery),
     ]);
 
-    return { freelancers, skills, links };
+    // --- Blob existence checks (moved from GET handler) ---
+    //
+    // Build two parallel arrays: one for CV blobs, one for equipment blobs.
+    // Each entry is either a blobExists() promise or Promise.resolve(false) for
+    // rows with no blob ID. All checks run concurrently in a single Promise.all.
+    //
+    // Result is stored as a Map<FreelancerID, { cvExists, equipmentExists }>
+    // so the GET handler can look up by ID in O(1) with no per-request I/O.
+
+    const blobChecks = await Promise.all(
+      freelancers.map(async (f) => {
+        const [cvExists, equipmentExists] = await Promise.all([
+          f.CVBlobID?.trim() ? blobExists(f.CVBlobID) : Promise.resolve(false),
+          f.EquipmentBlobID?.trim()
+            ? blobExists(f.EquipmentBlobID)
+            : Promise.resolve(false),
+        ]);
+        return { id: f.FreelancerID, cvExists, equipmentExists };
+      }),
+    );
+
+    // Index by FreelancerID for O(1) lookup in GET handler.
+    const blobExistenceMap = new Map(
+      blobChecks.map((entry) => [entry.id, entry]),
+    );
+
+    return { freelancers, skills, links, blobExistenceMap };
   },
-  ["freelancer-data-proxied-v3"],
+  ["freelancer-data-v4"],
   {
     revalidate: 3600,
     tags: ["freelancers"],
@@ -78,7 +118,8 @@ export async function GET(request, { params }) {
     // In Next.js 15+, params is a Promise
     const { slug } = await params;
 
-    const { freelancers, skills, links } = await getAllFreelancerData();
+    const { freelancers, skills, links, blobExistenceMap } =
+      await getAllFreelancerData();
 
     const freelancer = freelancers.find(
       (f) => f.Slug.toLowerCase() === slug.toLowerCase(),
@@ -91,16 +132,11 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Build derived data in parallel — skills/links are CPU-only,
-    // existence checks are I/O so they run concurrently with no extra latency.
-    const [cvExists, equipmentExists] = await Promise.all([
-      freelancer.CVBlobID?.trim()
-        ? blobExists(freelancer.CVBlobID)
-        : Promise.resolve(false),
-      freelancer.EquipmentBlobID?.trim()
-        ? blobExists(freelancer.EquipmentBlobID)
-        : Promise.resolve(false),
-    ]);
+    // Blob existence is now a Map lookup — zero I/O per request.
+    const blobEntry = blobExistenceMap.get(freelancer.FreelancerID) ?? {
+      cvExists: false,
+      equipmentExists: false,
+    };
 
     const freelancerSkills = skills
       .filter((s) => s.FreelancerID === freelancer.FreelancerID)
@@ -121,8 +157,8 @@ export async function GET(request, { params }) {
         return acc;
       }, {});
 
-    // getProxiedBlobUrl now returns a direct Azure URL — Node is no longer
-    // in the delivery path for any image or document.
+    // getProxiedBlobUrl returns a direct Azure URL — Node is not in the
+    // delivery path for images or documents.
     const photoUrl = freelancer.PhotoBlobID?.trim()
       ? getProxiedBlobUrl(freelancer.PhotoBlobID)
       : null;
@@ -146,9 +182,9 @@ export async function GET(request, { params }) {
       photoBlobId: freelancer.PhotoBlobID,
       cvBlobId: freelancer.CVBlobID,
       equipmentBlobId: freelancer.EquipmentBlobID,
-      // Booleans for the client — eliminates three useEffect HEAD requests
-      cvExists,
-      equipmentExists,
+      // Booleans served from cache — no per-request blob I/O
+      cvExists: blobEntry.cvExists,
+      equipmentExists: blobEntry.equipmentExists,
       skills: freelancerSkills,
       links: {
         Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,

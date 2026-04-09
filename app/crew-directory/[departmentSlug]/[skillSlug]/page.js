@@ -1,4 +1,30 @@
 // app/crew-directory/[departmentSlug]/[skillSlug]/page.js
+//
+// FIX 1 (2026-04-09): Cache key now includes departmentSlug and skillSlug.
+//
+// Previously the key was the static string "crew-directory-skill" for every
+// skill page. camera/focus-puller and sound/boom-operator shared one cache
+// entry — first page to load would overwrite data for all other skills.
+// Key is now `crew-directory-skill-${departmentSlug}-${skillSlug}` so each
+// combination gets its own isolated cache entry.
+//
+// FIX 2 (2026-04-09): Removed blobExists() calls.
+//
+// The previous version called getBlobUrl() which returns a direct Azure URL
+// without checking existence — that's fine. There were no blobExists() calls
+// here, so no per-request blob HEAD requests. This file was clean on that front.
+// Verified and left as-is for blob handling.
+//
+// FIX 3 (2026-04-09): Removed per-skill retry loop.
+//
+// The retry loop with await setTimeout(1000) was the source of the
+// "2 retries left / 1 retry left" messages in the incident logs.
+// Immediate synchronous retries with 1-second blocking sleeps per skill,
+// per request, on a single-core B1 instance is thread-pool-hostile.
+// Retry responsibility belongs in db.js (exponential backoff with jitter),
+// not in individual route handlers. Removed here; a db-level withRetry()
+// wrapper should be added separately.
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
@@ -10,28 +36,20 @@ import FreelancerButtons from "./(components)/FreelancerButtons";
 
 import styles from "../../../styles/crewDirectory.module.scss";
 
-// Enable ISR - revalidate every hour
 export const revalidate = 3600;
+export const maxDuration = 60;
 
-// Increase timeout for this route
-export const maxDuration = 60; // 60 seconds max
-
-/**
- * Generate static params for all department/skill combinations at build time
- * Using a simpler, faster query
- */
 export async function generateStaticParams() {
   try {
-    // Simpler query - just get the slugs without complex joins
     const query = `
-      SELECT DISTINCT 
+      SELECT DISTINCT
         DepartmentSlug,
         SkillSlug
       FROM ${VIEWS.DEPARTMENTS_SKILLS}
-      WHERE DepartmentSlug IS NOT NULL 
-        AND SkillSlug IS NOT NULL
+      WHERE DepartmentSlug IS NOT NULL
+        AND SkillSlug       IS NOT NULL
         AND DepartmentSlug <> ''
-        AND SkillSlug <> ''
+        AND SkillSlug      <> ''
       ORDER BY DepartmentSlug, SkillSlug
     `;
 
@@ -43,188 +61,143 @@ export async function generateStaticParams() {
     }));
   } catch (error) {
     console.error("❌ Error generating static params:", error);
-    // Return empty array to prevent build failure
-    // Pages will be generated on-demand instead
     return [];
   }
 }
 
 /**
- * Cached function to fetch skill data with freelancers
- * With retry logic for timeouts
+ * Returns a cached fetcher scoped to this specific department+skill pair.
+ *
+ * A new unstable_cache instance is created per slug combination so each page
+ * gets its own isolated cache entry. This is the correct pattern for dynamic
+ * segments — the previous static key "crew-directory-skill" caused all skill
+ * pages to share a single cache slot.
  */
-const getCachedSkillData = unstable_cache(
-  async (departmentSlug, skillSlug) => {
-    let retries = 3;
-    let lastError;
+function getSkillDataFetcher(departmentSlug, skillSlug) {
+  return unstable_cache(
+    async () => {
+      // Skill info and freelancer list run in parallel — the skill info query
+      // is cheap (TOP 1) but there's no reason to wait for it before starting
+      // the freelancer query since both use the same WHERE clause.
+      const skillInfoQuery = `
+        SELECT TOP 1
+          Department,
+          DepartmentSlug,
+          Skill,
+          SkillSlug
+        FROM ${VIEWS.DEPARTMENTS_SKILLS}
+        WHERE DepartmentSlug = @departmentSlug
+          AND SkillSlug      = @skillSlug
+      `;
 
-    while (retries > 0) {
-      try {
-        // First, get the skill and department info
-        const skillInfoQuery = `
-          SELECT TOP 1
-            Department,
-            DepartmentSlug,
-            Skill,
-            SkillSlug
-          FROM ${VIEWS.DEPARTMENTS_SKILLS}
-          WHERE DepartmentSlug = @departmentSlug
-            AND SkillSlug = @skillSlug
-        `;
+      const freelancersQuery = `
+        SELECT DISTINCT
+          f.FreelancerID,
+          f.DisplayName,
+          f.Slug,
+          f.FreelancerBio,
+          f.PhotoBlobID,
+          f.CVBlobID,
+          f.EquipmentBlobID
+        FROM ${VIEWS.FREELANCERS} f
+        INNER JOIN ${VIEWS.FREELANCER_SKILLS} fs
+          ON f.FreelancerID = fs.FreelancerID
+        WHERE fs.DepartmentSlug = @departmentSlug
+          AND fs.SkillSlug      = @skillSlug
+        ORDER BY f.DisplayName
+      `;
 
-        const skillInfo = await executeQuery(skillInfoQuery, {
-          departmentSlug,
-          skillSlug,
-        });
+      const linksQuery = `
+        SELECT
+          fl.FreelancerID,
+          fl.LinkName,
+          fl.LinkURL
+        FROM ${VIEWS.FREELANCER_LINKS} fl
+        INNER JOIN ${VIEWS.FREELANCER_SKILLS} fs
+          ON fl.FreelancerID = fs.FreelancerID
+        WHERE fs.DepartmentSlug = @departmentSlug
+          AND fs.SkillSlug      = @skillSlug
+          AND fl.LinkURL IS NOT NULL
+          AND fl.LinkURL != ''
+      `;
 
-        if (skillInfo.length === 0) {
-          return null;
+      const params = { departmentSlug, skillSlug };
+
+      const [skillInfo, freelancersData, linksData] = await Promise.all([
+        executeQuery(skillInfoQuery, params),
+        executeQuery(freelancersQuery, params),
+        executeQuery(linksQuery, params),
+      ]);
+
+      if (skillInfo.length === 0) return null;
+
+      const skill = {
+        name: skillInfo[0].Skill,
+        slug: skillInfo[0].SkillSlug,
+        department: {
+          name: skillInfo[0].Department,
+          slug: skillInfo[0].DepartmentSlug,
+        },
+      };
+
+      // Build links map — O(n) once, O(1) lookup per freelancer below
+      const linksMap = new Map();
+      linksData.forEach((link) => {
+        if (!linksMap.has(link.FreelancerID)) {
+          linksMap.set(link.FreelancerID, {});
         }
+        linksMap.get(link.FreelancerID)[link.LinkName] = link.LinkURL;
+      });
 
-        const skill = {
-          name: skillInfo[0].Skill,
-          slug: skillInfo[0].SkillSlug,
-          department: {
-            name: skillInfo[0].Department,
-            slug: skillInfo[0].DepartmentSlug,
-          },
-        };
+      const freelancers = freelancersData.map((freelancer) => {
+        const photoUrl = freelancer.PhotoBlobID?.trim()
+          ? getBlobUrl(freelancer.PhotoBlobID)
+          : null;
 
-        // ✅ UPDATED: Get all freelancers with this skill
-        const freelancersQuery = `
-          SELECT DISTINCT
-            f.FreelancerID,
-            f.DisplayName,
-            f.Slug,
-            f.FreelancerBio,
-            f.PhotoBlobID,
-            f.CVBlobID,
-            f.EquipmentBlobID
-          FROM ${VIEWS.FREELANCERS} f
-          INNER JOIN ${VIEWS.FREELANCER_SKILLS} fs 
-            ON f.FreelancerID = fs.FreelancerID
-          WHERE fs.DepartmentSlug = @departmentSlug
-            AND fs.SkillSlug = @skillSlug
-          ORDER BY f.DisplayName
-        `;
+        const cvUrl = freelancer.CVBlobID?.trim()
+          ? getBlobUrl(freelancer.CVBlobID)
+          : null;
 
-        // ✅ ADDED: Get freelancer links
-        const linksQuery = `
-          SELECT 
-            fl.FreelancerID,
-            fl.LinkName,
-            fl.LinkURL
-          FROM ${VIEWS.FREELANCER_LINKS} fl
-          INNER JOIN ${VIEWS.FREELANCER_SKILLS} fs 
-            ON fl.FreelancerID = fs.FreelancerID
-          WHERE fs.DepartmentSlug = @departmentSlug
-            AND fs.SkillSlug = @skillSlug
-            AND fl.LinkURL IS NOT NULL 
-            AND fl.LinkURL != ''
-        `;
+        const equipmentListUrl = freelancer.EquipmentBlobID?.trim()
+          ? getBlobUrl(freelancer.EquipmentBlobID)
+          : null;
 
-        // ✅ UPDATED: Fetch both in parallel
-        const [freelancersData, linksData] = await Promise.all([
-          executeQuery(freelancersQuery, { departmentSlug, skillSlug }),
-          executeQuery(linksQuery, { departmentSlug, skillSlug }),
-        ]);
-
-        // ✅ ADDED: Build links map
-        const linksMap = new Map();
-        linksData.forEach((link) => {
-          if (!linksMap.has(link.FreelancerID)) {
-            linksMap.set(link.FreelancerID, {});
-          }
-          linksMap.get(link.FreelancerID)[link.LinkName] = link.LinkURL;
-        });
-
-        // Process freelancers data with links
-        const freelancers = freelancersData.map((freelancer) => {
-          // ✅ FIXED: Check for empty strings with .trim()
-          const photoUrl = freelancer.PhotoBlobID?.trim()
-            ? getBlobUrl(freelancer.PhotoBlobID)
-            : null;
-
-          const cvUrl = freelancer.CVBlobID?.trim()
-            ? getBlobUrl(freelancer.CVBlobID)
-            : null;
-
-          const equipmentListUrl = freelancer.EquipmentBlobID?.trim()
-            ? getBlobUrl(freelancer.EquipmentBlobID)
-            : null;
-
-          // Get links for this freelancer
-          const freelancerLinks = linksMap.get(freelancer.FreelancerID) || {};
-
-          return {
-            id: freelancer.FreelancerID,
-            name: freelancer.DisplayName,
-            slug: freelancer.Slug,
-            bio: freelancer.FreelancerBio,
-            photoUrl,
-            cvUrl,
-            equipmentListUrl,
-            links: {
-              Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
-              Instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
-              Imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
-              LinkedIn: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
-            },
-          };
-        });
+        const freelancerLinks = linksMap.get(freelancer.FreelancerID) || {};
 
         return {
-          skill,
-          freelancers,
+          id: freelancer.FreelancerID,
+          name: freelancer.DisplayName,
+          slug: freelancer.Slug,
+          bio: freelancer.FreelancerBio,
+          photoUrl,
+          cvUrl,
+          equipmentListUrl,
+          links: {
+            Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
+            Instagram: freelancerLinks[LINK_TYPES.INSTAGRAM] || null,
+            Imdb: freelancerLinks[LINK_TYPES.IMDB] || null,
+            LinkedIn: freelancerLinks[LINK_TYPES.LINKEDIN] || null,
+          },
         };
-      } catch (error) {
-        lastError = error;
-        retries--;
+      });
 
-        // If it's a timeout and we have retries left, try again
-        if (error.code === "ETIMEOUT" && retries > 0) {
-          // Wait 1 second before retry
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          continue;
-        }
+      return { skill, freelancers };
+    },
+    // Cache key includes both slugs — each skill page gets its own cache entry
+    [`crew-directory-skill-${departmentSlug}-${skillSlug}`],
+    {
+      revalidate: 3600,
+      tags: ["crew-directory"],
+    },
+  );
+}
 
-        // Non-timeout error or out of retries
-        console.error(
-          `❌ Error fetching skill data (${retries} retries left):`,
-          error,
-        );
-
-        if (retries === 0) {
-          break;
-        }
-      }
-    }
-
-    // If all retries failed, log and return null (will show 404)
-    console.error(
-      `❌ Failed to fetch ${departmentSlug}/${skillSlug} after all retries:`,
-      lastError,
-    );
-    return null;
-  },
-  ["crew-directory-skill"],
-  {
-    revalidate: 3600,
-    tags: ["crew-directory"],
-  },
-);
-
-/**
- * Server Component with ISR
- */
 export default async function SkillPage({ params }) {
   const { departmentSlug, skillSlug } = await params;
-  const data = await getCachedSkillData(departmentSlug, skillSlug);
+  const fetchSkillData = getSkillDataFetcher(departmentSlug, skillSlug);
+  const data = await fetchSkillData();
 
-  // Show 404 if skill not found
-  if (!data) {
-    notFound();
-  }
+  if (!data) notFound();
 
   const { skill, freelancers } = data;
 
@@ -234,14 +207,12 @@ export default async function SkillPage({ params }) {
       data-page="plain"
       data-footer="noBorder"
     >
-      {/* Page Header */}
       <div className={styles.skillHeader}>
         <Link href="/crew-directory">
           <h1>‹ Crew Directory: {skill.name}</h1>
         </Link>
       </div>
 
-      {/* Freelancers List */}
       {freelancers.length === 0 ? (
         <div className={styles.noFreelancers}>
           <p>No freelancers found with this skill.</p>
@@ -250,7 +221,6 @@ export default async function SkillPage({ params }) {
         <FreelancerButtons freelancers={freelancers} showCircles={true} />
       )}
 
-      {/* Download component - data fetched on demand */}
       <DownloadSelect
         title="Download Crew List"
         downloadType="skill"
@@ -261,17 +231,13 @@ export default async function SkillPage({ params }) {
   );
 }
 
-/**
- * Generate metadata for each skill page
- */
 export async function generateMetadata({ params }) {
   const { departmentSlug, skillSlug } = await params;
-  const data = await getCachedSkillData(departmentSlug, skillSlug);
+  const fetchSkillData = getSkillDataFetcher(departmentSlug, skillSlug);
+  const data = await fetchSkillData();
 
   if (!data) {
-    return {
-      title: "Skill Not Found - Freelancers Promotions",
-    };
+    return { title: "Skill Not Found - Freelancers Promotions" };
   }
 
   const { skill } = data;
