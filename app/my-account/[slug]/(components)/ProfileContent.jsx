@@ -7,128 +7,40 @@ import { useSearchParams } from "next/navigation";
 
 import EditProfileButton from "./EditProfileButton";
 import styles from "../../../styles/profile.module.scss";
-import Spinner from "../../../components/Spinner";
 
 /**
- * ProfileContent Component - FIXED URL CACHE-BUSTING
+ * ProfileContent Component
+ *
+ * CHANGES FROM PREVIOUS VERSION:
+ * - Removed useEffect for photo validation (window.Image() pre-load).
+ *   The <Image> onError prop handles broken photos — no extra round-trip needed.
+ * - Removed useEffect for CV existence check.
+ *   profileData.cvExists is now a boolean provided by the server route.
+ * - Removed useEffect for equipment existence check.
+ *   profileData.equipmentExists is now a boolean provided by the server route.
+ * - Removed isCheckingCv, isCheckingEquipment, isCheckingPhoto, imageKey state.
+ * - Removed unoptimized prop from <Image> — src is now a full Azure URL
+ *   covered by remotePatterns in next.config.mjs, so Next.js can optimise it.
+ * - Cache-busting on ?updated= still works; it updates photoUrl state which
+ *   forces <Image> to re-fetch.
  */
 export default function ProfileContent({ profileData }) {
   const searchParams = useSearchParams();
   const [photoError, setPhotoError] = useState(false);
-  const [isCheckingPhoto, setIsCheckingPhoto] = useState(
-    !!profileData.photoUrl,
-  );
   const [photoUrl, setPhotoUrl] = useState(profileData.photoUrl);
-  const [imageKey, setImageKey] = useState(0);
 
-  const [hasCv, setHasCv] = useState(false);
-  const [isCheckingCv, setIsCheckingCv] = useState(!!profileData.cvUrl);
-
-  const [hasEquipment, setHasEquipment] = useState(false);
-  const [isCheckingEquipment, setIsCheckingEquipment] = useState(
-    !!profileData.equipmentListUrl,
-  );
-
-  const skills = profileData.skills || [];
-  const hasSkills = skills.length > 0;
-
-  // ✅ Helper to properly append cache-busting param
-  const addCacheBuster = (url) => {
-    if (!url) return null;
-
-    const timestamp = Date.now();
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}t=${timestamp}`;
-  };
-
-  // Check for update timestamp in URL
+  // Apply cache-busting timestamp when redirected back after a photo update
   useEffect(() => {
     const updated = searchParams.get("updated");
     if (updated && profileData.photoUrl) {
-      // ✅ FIX: Properly add cache-busting timestamp
-      const urlWithCacheBuster = addCacheBuster(profileData.photoUrl);
-      setPhotoUrl(urlWithCacheBuster);
-      setImageKey((prev) => prev + 1);
-      console.log("✅ ProfileContent: Applied cache-busting timestamp");
+      const separator = profileData.photoUrl.includes("?") ? "&" : "?";
+      setPhotoUrl(`${profileData.photoUrl}${separator}t=${Date.now()}`);
+      setPhotoError(false);
     }
   }, [searchParams, profileData.photoUrl]);
 
-  // Validate photo exists
-  useEffect(() => {
-    if (!photoUrl) {
-      setIsCheckingPhoto(false);
-      return;
-    }
-
-    const img = new window.Image();
-
-    img.onload = () => {
-      setIsCheckingPhoto(false);
-    };
-
-    img.onerror = () => {
-      setPhotoError(true);
-      setIsCheckingPhoto(false);
-    };
-
-    img.src = photoUrl;
-  }, [photoUrl]);
-
-  // Validate CV exists
-  useEffect(() => {
-    if (!profileData.cvUrl) {
-      setIsCheckingCv(false);
-      return;
-    }
-
-    const checkCv = async () => {
-      try {
-        const response = await fetch(profileData.cvUrl, {
-          method: "HEAD",
-        });
-
-        if (response.ok) {
-          setHasCv(true);
-        } else {
-          setHasCv(false);
-        }
-      } catch (error) {
-        setHasCv(false);
-      } finally {
-        setIsCheckingCv(false);
-      }
-    };
-
-    checkCv();
-  }, [profileData.cvUrl]);
-
-  // Validate equipment list exists
-  useEffect(() => {
-    if (!profileData.equipmentListUrl) {
-      setIsCheckingEquipment(false);
-      return;
-    }
-
-    const checkEquipment = async () => {
-      try {
-        const response = await fetch(profileData.equipmentListUrl, {
-          method: "HEAD",
-        });
-
-        if (response.ok) {
-          setHasEquipment(true);
-        } else {
-          setHasEquipment(false);
-        }
-      } catch (error) {
-        setHasEquipment(false);
-      } finally {
-        setIsCheckingEquipment(false);
-      }
-    };
-
-    checkEquipment();
-  }, [profileData.equipmentListUrl]);
+  const skills = profileData.skills || [];
+  const hasSkills = skills.length > 0;
 
   return (
     <>
@@ -137,7 +49,7 @@ export default function ProfileContent({ profileData }) {
       <div className={styles.profileContainer}>
         {/* Left: Photo */}
         <div className={styles.photoSection}>
-          {photoUrl && !photoError && !isCheckingPhoto ? (
+          {photoUrl && !photoError ? (
             <Image
               src={photoUrl}
               alt={profileData.name}
@@ -145,16 +57,8 @@ export default function ProfileContent({ profileData }) {
               height={680}
               className={styles.profilePhoto}
               priority={false}
-              key={`photo-${imageKey}`}
-              unoptimized
-              onError={() => {
-                setPhotoError(true);
-              }}
+              onError={() => setPhotoError(true)}
             />
-          ) : isCheckingPhoto ? (
-            <div className={styles.placeholderPhoto}>
-              <Spinner />
-            </div>
           ) : (
             <div className={styles.placeholderPhoto}>
               <svg
@@ -445,23 +349,9 @@ export default function ProfileContent({ profileData }) {
           </div>
 
           {/* CV & Equipment Download Section */}
+          {/* cvExists and equipmentExists are booleans from the server — no client-side HEAD checks needed */}
           <div className={styles.cvSection}>
-            {isCheckingCv ? (
-              <button className={styles.cvButton} disabled>
-                <div
-                  style={{
-                    display: "inline-block",
-                    border: "2px solid #f3f3f3",
-                    borderTop: "2px solid currentColor",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
-                Checking CV...
-              </button>
-            ) : !isCheckingCv && hasCv && profileData.cvUrl ? (
+            {profileData.cvExists && profileData.cvUrl ? (
               <a
                 href={profileData.cvUrl}
                 target="_blank"
@@ -533,24 +423,7 @@ export default function ProfileContent({ profileData }) {
               </button>
             )}
 
-            {isCheckingEquipment ? (
-              <button className={styles.cvButton} disabled>
-                <div
-                  style={{
-                    display: "inline-block",
-                    border: "2px solid #f3f3f3",
-                    borderTop: "2px solid currentColor",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
-                Checking Equipment...
-              </button>
-            ) : !isCheckingEquipment &&
-              hasEquipment &&
-              profileData.equipmentListUrl ? (
+            {profileData.equipmentExists && profileData.equipmentListUrl ? (
               <a
                 href={profileData.equipmentListUrl}
                 target="_blank"
@@ -629,17 +502,6 @@ export default function ProfileContent({ profileData }) {
         profileSlug={profileData.slug}
         className={styles.mob}
       />
-
-      <style jsx>{`
-        @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </>
   );
 }

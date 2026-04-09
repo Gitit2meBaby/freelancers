@@ -1,16 +1,27 @@
-// app/api/freelancer/[slug]/route.js - UPDATED WITH PROXIED URLS
+// app/api/freelancer/[slug]/route.js
+//
+// CHANGE: CV and equipment blob existence is now checked server-side using
+// blobExists() and returned as booleans (cvExists, equipmentExists) in the
+// response payload. This eliminates the three client-side useEffect HEAD
+// requests in ProfileContent.jsx, reducing client-side JavaScript and
+// removing unnecessary round-trips after page load.
+//
+// Photo existence is intentionally NOT checked here — the <Image> onError
+// prop in ProfileContent handles broken photos at zero extra cost.
+
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
 import { executeQuery, VIEWS, LINK_TYPES } from "../../../lib/db";
 import { getProxiedBlobUrl } from "../../../lib/blobProxy";
+import { blobExists } from "../../../lib/azureBlob";
 
 /**
- * Cached function to get all freelancer data
+ * Cached function to get all freelancer data.
+ * Skills and links are fetched in parallel with the main freelancer query.
  */
 const getAllFreelancerData = unstable_cache(
   async () => {
-    // Query to get all freelancers (view already filters by ShowOnWebsite = True)
     const freelancersQuery = `
       SELECT 
         FreelancerID,
@@ -23,7 +34,6 @@ const getAllFreelancerData = unstable_cache(
       FROM ${VIEWS.FREELANCERS}
     `;
 
-    // Query to get all freelancer skills
     const skillsQuery = `
       SELECT 
         fs.FreelancerID,
@@ -39,7 +49,6 @@ const getAllFreelancerData = unstable_cache(
         AND fs.SkillSlug = ds.SkillSlug
     `;
 
-    // Query to get all freelancer links
     const linksQuery = `
       SELECT 
         FreelancerID,
@@ -66,13 +75,11 @@ const getAllFreelancerData = unstable_cache(
 
 export async function GET(request, { params }) {
   try {
-    // IMPORTANT: In Next.js 15+, params is a Promise
+    // In Next.js 15+, params is a Promise
     const { slug } = await params;
 
-    // Get cached data
     const { freelancers, skills, links } = await getAllFreelancerData();
 
-    // Find the freelancer with matching slug
     const freelancer = freelancers.find(
       (f) => f.Slug.toLowerCase() === slug.toLowerCase(),
     );
@@ -84,7 +91,17 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get freelancer's skills
+    // Build derived data in parallel — skills/links are CPU-only,
+    // existence checks are I/O so they run concurrently with no extra latency.
+    const [cvExists, equipmentExists] = await Promise.all([
+      freelancer.CVBlobID?.trim()
+        ? blobExists(freelancer.CVBlobID)
+        : Promise.resolve(false),
+      freelancer.EquipmentBlobID?.trim()
+        ? blobExists(freelancer.EquipmentBlobID)
+        : Promise.resolve(false),
+    ]);
+
     const freelancerSkills = skills
       .filter((s) => s.FreelancerID === freelancer.FreelancerID)
       .map((s) => ({
@@ -96,7 +113,6 @@ export async function GET(request, { params }) {
         departmentSlug: s.DepartmentSlug,
       }));
 
-    // Get freelancer's links
     const freelancerLinks = links
       .filter((l) => l.FreelancerID === freelancer.FreelancerID)
       .reduce((acc, link) => {
@@ -105,7 +121,8 @@ export async function GET(request, { params }) {
         return acc;
       }, {});
 
-    // Use proxied URLs to avoid CORS issues
+    // getProxiedBlobUrl now returns a direct Azure URL — Node is no longer
+    // in the delivery path for any image or document.
     const photoUrl = freelancer.PhotoBlobID?.trim()
       ? getProxiedBlobUrl(freelancer.PhotoBlobID)
       : null;
@@ -118,18 +135,20 @@ export async function GET(request, { params }) {
       ? getProxiedBlobUrl(freelancer.EquipmentBlobID)
       : null;
 
-    // Build complete freelancer object
     const freelancerData = {
       id: freelancer.FreelancerID,
       name: freelancer.DisplayName,
       slug: freelancer.Slug,
       bio: freelancer.FreelancerBio || null,
-      photoUrl: photoUrl,
-      cvUrl: cvUrl,
+      photoUrl,
+      cvUrl,
       equipmentListUrl: equipmentUrl,
       photoBlobId: freelancer.PhotoBlobID,
       cvBlobId: freelancer.CVBlobID,
       equipmentBlobId: freelancer.EquipmentBlobID,
+      // Booleans for the client — eliminates three useEffect HEAD requests
+      cvExists,
+      equipmentExists,
       skills: freelancerSkills,
       links: {
         Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,

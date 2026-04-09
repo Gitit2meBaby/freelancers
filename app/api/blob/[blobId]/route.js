@@ -1,9 +1,15 @@
 // app/api/blob/[blobId]/route.js
 // Proxies Azure Blob Storage requests through Next.js.
-// Changes from previous version:
-//   1. Photos (P prefix) now served with disposition: inline so <img> tags render them
-//   2. Cache-Control changed from immutable/1yr to 60s for photos, 1hr for documents.
-//      Blob IDs never change on upload so immutable caching guarantees stale images.
+//
+// PHOTO CHANGE: Photos (P prefix) are now served via a 302 redirect to the
+// direct Azure URL rather than buffering through Node. blobProxy.js already
+// returns direct Azure URLs, so this route should only be hit by cached links
+// or direct navigation. Redirecting photos means Node never touches image bytes,
+// eliminating the CPU bottleneck that caused the April 2026 outage.
+//
+// DOCUMENT CHANGE: CVs (C prefix) and Equipment Lists (E prefix) are still
+// buffered through Node because they use Content-Disposition: attachment with
+// a meaningful filename — that header must be set server-side.
 
 import { NextResponse } from "next/server";
 import { getBlobUrl } from "../../../lib/azureBlob";
@@ -13,7 +19,6 @@ export const dynamic = "force-dynamic";
 
 /**
  * Returns Content-Disposition and cache behaviour based on blob ID prefix.
- * Photos must be inline — attachment disposition breaks <img> rendering.
  */
 function getBlobMeta(blobId) {
   const prefix = blobId.charAt(0).toUpperCase();
@@ -47,7 +52,9 @@ function getBlobMeta(blobId) {
 
 /**
  * GET /api/blob/[blobId]
- * Fetches a blob from Azure Blob Storage and serves it with proper headers.
+ * Photos: 302 redirect to Azure — Node never buffers image bytes.
+ * Documents: Fetched and returned with Content-Disposition: attachment so the
+ *            browser saves the file with a meaningful filename.
  */
 export async function GET(request, { params }) {
   try {
@@ -61,13 +68,6 @@ export async function GET(request, { params }) {
       );
     }
 
-    if (!blobId) {
-      return NextResponse.json(
-        { success: false, error: "Blob ID is required" },
-        { status: 400 },
-      );
-    }
-
     const blobUrl = getBlobUrl(blobId);
 
     if (!blobUrl) {
@@ -77,6 +77,16 @@ export async function GET(request, { params }) {
       );
     }
 
+    const { isPhoto } = getBlobMeta(blobId);
+
+    // Photos: redirect directly to Azure — removes Node from the image path entirely.
+    // The SAS URL already carries the correct content-type and CORS headers.
+    if (isPhoto) {
+      return NextResponse.redirect(blobUrl);
+    }
+
+    // Documents: buffer through Node so we can set Content-Disposition: attachment
+    // with a human-readable filename (CV-C000123.pdf, Equipment-List-E000456.pdf).
     const response = await fetch(blobUrl, { method: "GET" });
 
     if (!response.ok) {
@@ -91,21 +101,14 @@ export async function GET(request, { params }) {
     const contentType =
       response.headers.get("Content-Type") || "application/octet-stream";
 
-    const { disposition, filename, isPhoto } = getBlobMeta(blobId);
-
-    // Short TTL for photos because blob IDs are fixed — the same URL is reused
-    // when a freelancer uploads a new photo. Immutable caching at a fixed URL
-    // means visitors never see the updated image until their cache expires.
-    const cacheControl = isPhoto
-      ? "public, max-age=60, must-revalidate"
-      : "public, max-age=3600, must-revalidate";
+    const { disposition, filename } = getBlobMeta(blobId);
 
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `${disposition}; filename="${filename}"`,
         "Content-Length": buffer.length.toString(),
-        "Cache-Control": cacheControl,
+        "Cache-Control": "public, max-age=3600, must-revalidate",
         "Access-Control-Allow-Origin": "*",
       },
     });
@@ -132,9 +135,6 @@ export async function HEAD(request, { params }) {
         { success: false, error: "Invalid blob ID" },
         { status: 400 },
       );
-    }
-    if (!blobId) {
-      return new NextResponse(null, { status: 400 });
     }
 
     const blobUrl = getBlobUrl(blobId);
