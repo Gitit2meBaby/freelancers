@@ -94,8 +94,24 @@ jobs:
           NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
         run: npm run build
 
-      - name: Remove dev dependencies
-        run: npm prune --production
+      # Install only production dependencies into a clean folder
+      # This replaces "npm prune --production" and avoids the tar.gz extraction problem
+      - name: Install production dependencies only
+        run: npm ci --omit=dev
+
+      # Stage only what the server needs — no dev files, no source, no test fixtures
+      - name: Stage deployment package
+        run: |
+          mkdir -p deploy_package
+          cp -r .next deploy_package/
+          cp -r public deploy_package/
+          cp package.json deploy_package/
+          cp package-lock.json deploy_package/
+          cp next.config.mjs deploy_package/
+          # Copy node_modules with production deps only
+          cp -r node_modules deploy_package/
+          # Tell Oryx not to run npm install — we've already done it
+          echo "{ \"packageManager\": \"npm\" }" > deploy_package/oryx-manifest.json
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -109,4 +125,4 @@ jobs:
         with:
           app-name: "freelancers"
           slot-name: "Production"
-          package: .
+          package: deploy_package
