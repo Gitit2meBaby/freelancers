@@ -8,6 +8,7 @@ import Navigation from "./components/Navigation";
 import AuthProvider from "./components/SessionProvider";
 
 import "./globals.css";
+import SiteDown from "./components/SiteDown";
 
 // Load Clash Grotesk locally
 const clashGrotesk = localFont({
@@ -149,6 +150,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${clashGrotesk.variable}`}>
+        <SiteDown />
         <Navigation />
         <AuthProvider>
           <Header />
