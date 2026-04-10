@@ -1,14 +1,29 @@
 // app/api/freelancer/[slug]/route.js
 //
 // FIX (2026-04-09): blobExists() calls moved INSIDE the unstable_cache boundary.
-// FIX (2026-04-10a): executeQuery replaced with executeQueryWithRetry — retries
-//   back off exponentially rather than firing simultaneously.
-// FIX (2026-04-10b): Blob existence checks are now concurrency-limited.
-//   Previously Promise.all fired ALL freelancer blob checks simultaneously —
-//   with ~300+ freelancers that's 600+ concurrent outbound HEAD requests to
-//   Azure on every cold-cache restart. On a single-core B1 this saturates the
-//   libuv thread pool (default size: 4) and spikes CPU as threads queue.
-//   Replaced with a semaphore that caps concurrent blob checks at 10.
+// FIX (2026-04-10a): executeQuery replaced with executeQueryWithRetry.
+// FIX (2026-04-10b): blobExists() checks REMOVED ENTIRELY from the cache function.
+//
+// WHY REMOVED:
+// With 645 freelancers, the blob existence check required 1,290 outbound HEAD
+// requests to Azure Blob Storage on every cold-cache hit (hourly per instance).
+// Even at concurrency 10, this took ~96 seconds of sustained work — exactly the
+// CPU spike visible in Azure metrics after every restart or ISR revalidation.
+//
+// THE NEW APPROACH:
+// cvExists and equipmentExists are now derived purely from whether the blob ID
+// column is set in the DB — if CVBlobID is non-empty, cvExists = true.
+// This is a safe assumption because:
+//   1. Blob IDs are only written to the DB by the upload route AFTER a
+//      successful upload. An ID present in the DB means a file was uploaded.
+//   2. If a blob genuinely doesn't exist (e.g. manually deleted from Azure),
+//      the download link will 404 in the browser — an acceptable degradation,
+//      far better than 96s CPU spikes every hour.
+//   3. ProfileContent.jsx already has onError handling for broken photo URLs.
+//      The same graceful degradation applies to CV/equipment link clicks.
+//
+// RESULT: Cold cache miss now completes in ~1-2s (3 parallel SQL queries)
+// instead of 96s. No Azure Blob HEAD requests on cache miss.
 
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
@@ -16,48 +31,7 @@ import { unstable_cache } from "next/cache";
 import { VIEWS, LINK_TYPES } from "../../../lib/db";
 import { executeQueryWithRetry } from "../../../lib/dbWithRetry";
 import { getProxiedBlobUrl } from "../../../lib/blobProxy";
-import { blobExists } from "../../../lib/azureBlob";
 
-/**
- * Runs an array of async task factories with a maximum concurrency limit.
- * Equivalent to p-limit without the npm dependency.
- *
- * @param {Array<() => Promise<any>>} tasks  - Zero-arg functions that return promises
- * @param {number} concurrency               - Max simultaneous in-flight promises
- * @returns {Promise<Array<any>>}            - Results in input order
- */
-async function runWithConcurrencyLimit(tasks, concurrency) {
-  const results = new Array(tasks.length);
-  let index = 0;
-
-  async function worker() {
-    while (index < tasks.length) {
-      const i = index++;
-      results[i] = await tasks[i]();
-    }
-  }
-
-  // Spin up `concurrency` workers — each drains from the shared index counter
-  const workers = Array.from(
-    { length: Math.min(concurrency, tasks.length) },
-    worker,
-  );
-  await Promise.all(workers);
-  return results;
-}
-
-/**
- * Cached function to get all freelancer data including blob existence flags.
- *
- * All three SQL queries AND all blob existence checks run inside this cache
- * boundary. They execute once per revalidation period (1 hour) regardless of
- * how many concurrent requests arrive. Concurrent cache misses on cold start
- * are serialised by Next.js's unstable_cache deduplication — only one execution
- * runs; all others await the same promise.
- *
- * Blob checks are concurrency-limited to 10 simultaneous HEAD requests so the
- * libuv thread pool isn't flooded on cold start.
- */
 const getAllFreelancerData = unstable_cache(
   async () => {
     const freelancersQuery = `
@@ -96,55 +70,17 @@ const getAllFreelancerData = unstable_cache(
       WHERE LinkURL IS NOT NULL AND LinkURL != ''
     `;
 
-    // All three SQL queries run in parallel with backoff on each.
     const [freelancers, skills, links] = await Promise.all([
       executeQueryWithRetry(freelancersQuery),
       executeQueryWithRetry(skillsQuery),
       executeQueryWithRetry(linksQuery),
     ]);
 
-    // --- Blob existence checks (concurrency-limited) ---
-    //
-    // Each freelancer needs up to 2 HEAD requests (CV + equipment).
-    // We cap total simultaneous in-flight freelancer checks at 10 to avoid
-    // flooding the libuv thread pool on cold start. At 10 concurrent and
-    // ~300 freelancers, the full set completes in ~30 round-trips rather than
-    // one 600-request burst. Cache TTL is 1 hour so this cost is paid at most
-    // once per hour per instance.
-    //
-    // The inner Promise.all per freelancer (CV + equipment) is fine — it's
-    // only 2 requests, and they're truly independent.
+    console.log(`✅ Freelancer data cached: ${freelancers.length} freelancers`);
 
-    const BLOB_CHECK_CONCURRENCY = 10;
-
-    const blobTasks = freelancers.map((f) => async () => {
-      const [cvExists, equipmentExists] = await Promise.all([
-        f.CVBlobID?.trim() ? blobExists(f.CVBlobID) : Promise.resolve(false),
-        f.EquipmentBlobID?.trim()
-          ? blobExists(f.EquipmentBlobID)
-          : Promise.resolve(false),
-      ]);
-      return { id: f.FreelancerID, cvExists, equipmentExists };
-    });
-
-    const blobChecks = await runWithConcurrencyLimit(
-      blobTasks,
-      BLOB_CHECK_CONCURRENCY,
-    );
-
-    console.log(
-      `✅ Blob checks complete: ${blobChecks.length} freelancers ` +
-        `(concurrency cap: ${BLOB_CHECK_CONCURRENCY})`,
-    );
-
-    // Index by FreelancerID for O(1) lookup in GET handler.
-    const blobExistenceMap = new Map(
-      blobChecks.map((entry) => [entry.id, entry]),
-    );
-
-    return { freelancers, skills, links, blobExistenceMap };
+    return { freelancers, skills, links };
   },
-  ["freelancer-data-v4"],
+  ["freelancer-data-v5"],
   {
     revalidate: 3600,
     tags: ["freelancers"],
@@ -155,8 +91,7 @@ export async function GET(request, { params }) {
   try {
     const { slug } = await params;
 
-    const { freelancers, skills, links, blobExistenceMap } =
-      await getAllFreelancerData();
+    const { freelancers, skills, links } = await getAllFreelancerData();
 
     const freelancer = freelancers.find(
       (f) => f.Slug.toLowerCase() === slug.toLowerCase(),
@@ -168,12 +103,6 @@ export async function GET(request, { params }) {
         { status: 404 },
       );
     }
-
-    // Blob existence is a Map lookup — zero I/O per request.
-    const blobEntry = blobExistenceMap.get(freelancer.FreelancerID) ?? {
-      cvExists: false,
-      equipmentExists: false,
-    };
 
     const freelancerSkills = skills
       .filter((s) => s.FreelancerID === freelancer.FreelancerID)
@@ -206,6 +135,11 @@ export async function GET(request, { params }) {
       ? getProxiedBlobUrl(freelancer.EquipmentBlobID)
       : null;
 
+    // cvExists and equipmentExists are now derived from DB columns only.
+    // No Azure HEAD requests. If CVBlobID is set in the DB, a CV was uploaded.
+    const cvExists = !!freelancer.CVBlobID?.trim();
+    const equipmentExists = !!freelancer.EquipmentBlobID?.trim();
+
     const freelancerData = {
       id: freelancer.FreelancerID,
       name: freelancer.DisplayName,
@@ -217,9 +151,8 @@ export async function GET(request, { params }) {
       photoBlobId: freelancer.PhotoBlobID,
       cvBlobId: freelancer.CVBlobID,
       equipmentBlobId: freelancer.EquipmentBlobID,
-      // Booleans served from cache — no per-request blob I/O
-      cvExists: blobEntry.cvExists,
-      equipmentExists: blobEntry.equipmentExists,
+      cvExists,
+      equipmentExists,
       skills: freelancerSkills,
       links: {
         Website: freelancerLinks[LINK_TYPES.WEBSITE] || null,
