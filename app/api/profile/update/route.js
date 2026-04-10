@@ -185,17 +185,21 @@ export async function PUT(request) {
         `⚠️ Could not resolve slug for freelancer ${freelancerId} — skipping targeted revalidation`,
       );
     } else {
-      // revalidateTag busts the unstable_cache block in the [slug] API route.
-      // This is the only invalidation that actually matters for ISR-cached pages.
-      // revalidatePath calls below are belt-and-suspenders for page-level ISR.
-      revalidateTag("freelancers");
-      console.log(`♻️ Invalidated tag: freelancers (slug=${slug})`);
-
-      revalidatePath(`/api/freelancer/${slug}`);
+      // Bust only the specific profile page's ISR cache.
+      // Do NOT call revalidateTag("freelancers") — that wipes the shared
+      // getAllFreelancerData cache for all 645 freelancers simultaneously,
+      // causing every instance to rebuild from DB at once (CPU spike).
+      //
+      // The bulk data cache (getAllFreelancerData) has a 1hr TTL and will
+      // expire naturally. The profile page will serve slightly stale data
+      // for up to 1hr after an edit — which is acceptable. If immediate
+      // consistency is required in future, use a per-slug cache tag instead.
       revalidatePath(`/my-account/${slug}`);
-      revalidatePath("/crew-directory"); // crew directory lists ALL freelancers
-      revalidatePath("/edit-profile");
+      revalidatePath(`/api/freelancer/${slug}`);
       console.log(`♻️ Revalidated paths for slug: ${slug}`);
+
+      // crew-directory and edit-profile don't show individual profile data
+      // so no revalidation needed there.
     }
 
     return NextResponse.json({
