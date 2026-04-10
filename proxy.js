@@ -1,4 +1,8 @@
-// middleware.js  (project root — next to package.json, NOT inside app/)
+// proxy.js  (project root — next to package.json, NOT inside app/)
+//
+// FIX (2026-04-10): Renamed from middleware.js to proxy.js per Next.js 16
+// deprecation. Function name updated from `middleware` to `proxy`. All logic
+// is identical — only the file name and export name have changed.
 //
 // Rate limits the data-heavy routes that trigger ODBC queries and Azure Blob
 // fetches. A crawler hammering /crew-directory/ or /screen-services/ is enough
@@ -93,7 +97,7 @@ function getClientIp(request) {
   return request.headers.get("x-real-ip") || "unknown";
 }
 
-export function middleware(request) {
+export function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // Only apply to data-heavy routes
@@ -131,7 +135,7 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
-// Tell Next.js which paths this middleware should run on.
+// Tell Next.js which paths this proxy should run on.
 // Excludes _next internals, static files, images, and favicon.
 export const config = {
   matcher: [

@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     permissions:
       id-token: write
       contents: read
@@ -26,26 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Cache the Next.js build output across runs.
-      # Cache key includes the content hash of all source files so a cache hit
-      # only occurs when nothing has changed. On a hit the build step is skipped
-      # entirely — deploy reuses the cached .next directory.
-      - name: Cache Next.js build
-        id: nextjs-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx', '**/*.scss', '**/*.css', 'package-lock.json') }}
-          restore-keys: |
-            nextjs-${{ runner.os }}-
-
       - name: Build app
         env:
           NODE_ENV: production
-          # Database — present so next.config.mjs can read them, but
-          # generateStaticParams is disabled on skill pages so no DB
-          # connections are made during build. See skill page comment.
           DB_SERVER: ${{ secrets.DB_SERVER }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
@@ -112,10 +95,11 @@ jobs:
         run: npm run build
 
       # Install only production dependencies into a clean folder
+      # This replaces "npm prune --production" and avoids the tar.gz extraction problem
       - name: Install production dependencies only
         run: npm ci --omit=dev
 
-      # Stage only what the server needs
+      # Stage only what the server needs — no dev files, no source, no test fixtures
       - name: Stage deployment package
         run: |
           mkdir -p deploy_package
@@ -124,7 +108,14 @@ jobs:
           cp package.json deploy_package/
           cp package-lock.json deploy_package/
           cp next.config.mjs deploy_package/
+          # FIX (2026-04-10): proxy.js (renamed from middleware.js per Next.js 16
+          # deprecation) was missing from the deploy package. Next.js requires
+          # proxy.js at the project root. Without this line the rate limiter
+          # never ran — crawlers and bots had no protection.
+          cp proxy.js deploy_package/
+          # Copy node_modules with production deps only
           cp -r node_modules deploy_package/
+          # Tell Oryx not to run npm install — we've already done it
           echo "{ \"packageManager\": \"npm\" }" > deploy_package/oryx-manifest.json
 
       - name: Login to Azure

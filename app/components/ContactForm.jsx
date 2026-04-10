@@ -1,10 +1,13 @@
 "use client";
+// NOTE (2026-04-10): Removed `export const dynamic = "force-dynamic"` — that
+// export only takes effect on server components and page files. On a client
+// component ("use client") it is silently ignored. Move it to the page file
+// that renders <ContactForm> if force-dynamic behaviour is needed there.
 
 import React, { useState, useRef } from "react";
 
 import styles from "../styles/contactUs.module.scss";
 
-export const dynamic = "force-dynamic";
 const ContactForm = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -54,7 +57,6 @@ const ContactForm = () => {
         behavior: "smooth",
         block: "center",
       });
-      // Focus the input for better UX
       ref.current.focus();
     }
   };
@@ -69,10 +71,12 @@ const ContactForm = () => {
     let isValid = true;
     let firstErrorField = null;
 
-    // Check honeypot
+    // FIX (2026-04-10): was `setFormData(formData.honeypot === "")` which set
+    // the entire formData state to a boolean (true/false). Now correctly resets
+    // only the honeypot field and leaves all other fields intact.
     if (formData.honeypot !== "") {
-      alert("Bot submission detected, Please try again.");
-      setFormData(formData.honeypot === "");
+      alert("Bot submission detected. Please try again.");
+      setFormData((prev) => ({ ...prev, honeypot: "" }));
       return false;
     }
 
@@ -117,7 +121,7 @@ const ContactForm = () => {
     const { name, value, files } = e.target;
 
     if (name === "cv") {
-      console.log("CV file selected:", files[0]); // ADD THIS
+      console.log("CV file selected:", files[0]);
       setFormData((prev) => ({
         ...prev,
         cv: files[0] || null,
@@ -205,7 +209,7 @@ const ContactForm = () => {
 
       const response = await fetch("/api/contact", {
         method: "POST",
-        // Don't set Content-Type - browser sets it automatically with boundary
+        // Don't set Content-Type — browser sets it automatically with boundary
         body: formDataToSend,
       });
 

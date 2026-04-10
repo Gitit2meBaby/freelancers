@@ -24,23 +24,6 @@
 // Retry responsibility belongs in db.js (exponential backoff with jitter),
 // not in individual route handlers. Removed here; a db-level withRetry()
 // wrapper should be added separately.
-//
-// FIX 4 (2026-04-10): Removed generateStaticParams entirely.
-//
-// generateStaticParams caused next build to query Azure SQL from the GitHub
-// Actions runner for every department/skill combination — potentially hundreds
-// of DB round-trips during build. The runner is an external IP; if Azure SQL
-// firewall is scoped to App Service IPs, every connection hangs until timeout,
-// eating the entire 30-minute build budget.
-//
-// With generateStaticParams removed and dynamicParams left at its default (true),
-// skill pages are generated on first request and cached by ISR (revalidate: 3600).
-// Users get the same cached page after the first hit — behaviour is identical,
-// build time drops from 30+ minutes to under 5 minutes.
-//
-// SEO impact: none in practice. Googlebot follows links from the crew directory
-// and department pages; it does not require pre-rendered HTML at deploy time.
-// The first crawler hit generates and caches the page within the normal ISR window.
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -56,9 +39,31 @@ import styles from "../../../styles/crewDirectory.module.scss";
 export const revalidate = 3600;
 export const maxDuration = 60;
 
-// generateStaticParams intentionally omitted.
-// dynamicParams defaults to true — pages are generated on first request via ISR.
-// See comment at top of file for full rationale.
+export async function generateStaticParams() {
+  try {
+    const query = `
+      SELECT DISTINCT
+        DepartmentSlug,
+        SkillSlug
+      FROM ${VIEWS.DEPARTMENTS_SKILLS}
+      WHERE DepartmentSlug IS NOT NULL
+        AND SkillSlug       IS NOT NULL
+        AND DepartmentSlug <> ''
+        AND SkillSlug      <> ''
+      ORDER BY DepartmentSlug, SkillSlug
+    `;
+
+    const results = await executeQuery(query);
+
+    return results.map((row) => ({
+      departmentSlug: row.DepartmentSlug,
+      skillSlug: row.SkillSlug,
+    }));
+  } catch (error) {
+    console.error("❌ Error generating static params:", error);
+    return [];
+  }
+}
 
 /**
  * Returns a cached fetcher scoped to this specific department+skill pair.

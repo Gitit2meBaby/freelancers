@@ -15,52 +15,63 @@ export const revalidate = 3600;
 export const dynamicParams = true;
 
 /**
- * Cached function to fetch freelancer profile from existing API
- * This avoids schema/column name issues by using the working API
+ * Cached function to fetch freelancer profile from existing API.
+ *
+ * FIX (2026-04-10): Cache key now includes the slug — previously all profiles
+ * shared the key "freelancer-profile", meaning the first profile loaded would
+ * be served to every subsequent slug for up to an hour. This caused users to
+ * see stale/wrong profile data and refresh repeatedly, generating unnecessary
+ * DB hits.
+ *
+ * With per-slug keys, each freelancer gets their own cache entry. ~500 entries
+ * at a few KB each is well within B1 memory limits.
  */
-const getCachedFreelancerProfile = unstable_cache(
-  async (slug) => {
-    try {
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const apiUrl = `${baseUrl}/api/freelancer/${slug}`;
+const getCachedFreelancerProfile = (slug) =>
+  unstable_cache(
+    async () => {
+      try {
+        const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+        const apiUrl = `${baseUrl}/api/freelancer/${slug}`;
 
-      // ADD THIS LOGGING
-      console.log("🔍 Fetching profile:", {
-        slug,
-        baseUrl,
-        apiUrl,
-        hasNEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
-      });
+        console.log("🔍 Fetching profile:", {
+          slug,
+          baseUrl,
+          apiUrl,
+          hasNEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
+        });
 
-      const response = await fetch(apiUrl, {
-        next: { revalidate: 3600 },
-      });
+        const response = await fetch(apiUrl, {
+          next: { revalidate: 3600 },
+        });
 
-      console.log("📡 API Response:", {
-        status: response.status,
-        ok: response.ok,
-        url: response.url,
-      });
+        console.log("📡 API Response:", {
+          status: response.status,
+          ok: response.ok,
+          url: response.url,
+        });
 
-      if (!response.ok) {
-        console.error("❌ API returned error:", response.status);
+        if (!response.ok) {
+          console.error("❌ API returned error:", response.status);
+          return null;
+        }
+
+        const result = await response.json();
+        console.log("✅ Profile data received:", result.data?.name);
+        return result.data;
+      } catch (error) {
+        console.error("❌ Error fetching profile:", error.message, error);
         return null;
       }
-
-      const result = await response.json();
-      console.log("✅ Profile data received:", result.data?.name);
-      return result.data;
-    } catch (error) {
-      console.error("❌ Error fetching profile:", error.message, error);
-      return null;
-    }
-  },
-  ["freelancer-profile"],
-  {
-    revalidate: 3600,
-    tags: ["freelancers"],
-  },
-);
+    },
+    // KEY FIX: include slug in the cache key so each profile gets its own slot.
+    // Previously ["freelancer-profile"] was shared across ALL slugs — the first
+    // profile loaded would be returned for every subsequent slug for up to 1hr.
+    [`freelancer-profile-${slug}`],
+    {
+      revalidate: 3600,
+      tags: ["freelancers"],
+    },
+  )();
 
 /**
  * Server Component - Fetches data with ISR

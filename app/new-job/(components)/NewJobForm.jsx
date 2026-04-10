@@ -50,10 +50,14 @@ const NewJobForm = () => {
 
     setSubmitStatus({ loading: true, success: false, error: null });
 
-    if (honeypot !== "") {
-      alert("Bot submission detected, Refresh to try again.");
+    // FIX (2026-04-10): was `if (honeypot !== "")` which throws ReferenceError
+    // because `honeypot` is undefined in this scope. Correct reference is
+    // `formData.honeypot`. Also fixed the reset below (was setting formData to
+    // a boolean — now correctly clears the honeypot field only).
+    if (formData.honeypot !== "") {
+      alert("Bot submission detected. Refresh to try again.");
       setSubmitStatus({ loading: false, success: false, error: null });
-      setFormData(formData.honeypot === "");
+      setFormData((prev) => ({ ...prev, honeypot: "" }));
       return;
     }
 
