@@ -1,4 +1,5 @@
 import localFont from "next/font/local";
+import Script from "next/script";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -6,9 +7,9 @@ import Copyright from "./components/Copyright";
 import Navigation from "./components/Navigation";
 // import CookieConsent from "./components/CookieConsent";
 import AuthProvider from "./components/SessionProvider";
+import SiteDown from "./components/SiteDown";
 
 import "./globals.css";
-import SiteDown from "./components/SiteDown";
 
 // Load Clash Grotesk locally
 const clashGrotesk = localFont({
@@ -83,7 +84,6 @@ export const metadata = {
     canonical: "https://freelancers.com.au/",
   },
   verification: {
-    // Add your verification codes when you have them
     // google: 'your-google-verification-code',
   },
 };
@@ -159,8 +159,12 @@ export default function RootLayout({ children }) {
         <Footer />
         <Copyright />
         {/* <CookieConsent /> */}
-        {/* Google Tag Manager */}
-        <script
+
+        {/* Google Tag Manager — must use next/script for strategy prop to work.
+            Plain <script strategy="..."> silently breaks because native HTML
+            script elements don't support that prop, causing Next.js runtime
+            errors: "Promise.prototype.then called on incompatible receiver". */}
+        <Script
           id="google-gtag-init"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
@@ -174,7 +178,7 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        <script
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=GT-P3J394W5"
           strategy="afterInteractive"
         />
