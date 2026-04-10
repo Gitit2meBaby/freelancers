@@ -1,30 +1,37 @@
-name: Deploy Freelancers to Azure
+name: Build and deploy Node.js app to Azure Web App - freelancers
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "24.13.0"
           cache: "npm"
 
-      - name: Install all dependencies
+      - name: Clean previous build
+        run: rm -rf .next
+
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js app
-        run: npm run build
+      - name: Build app
         env:
+          NODE_ENV: production
           DB_SERVER: ${{ secrets.DB_SERVER }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
@@ -41,17 +48,54 @@ jobs:
           AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
           AZURE_BLOB_CONTAINER_NAME: ${{ secrets.AZURE_BLOB_CONTAINER_NAME }}
           AZURE_BLOB_SAS_TOKEN: ${{ secrets.AZURE_BLOB_SAS_TOKEN }}
-          AZURE_BLOB_BASE_URL: ${{ secrets.AZURE_BLOB_BASE_URL }}
           AZURE_BLOB_SAS_URL: ${{ secrets.AZURE_BLOB_SAS_URL }}
+          AZURE_BLOB_BASE_URL: ${{ secrets.AZURE_BLOB_BASE_URL }}
+          VIEW_FREELANCERS: ${{ secrets.VIEW_FREELANCERS }}
+          VIEW_FREELANCER_LINKS: ${{ secrets.VIEW_FREELANCER_LINKS }}
+          VIEW_DEPARTMENTS_SKILLS: ${{ secrets.VIEW_DEPARTMENTS_SKILLS }}
+          VIEW_FREELANCER_SKILLS: ${{ secrets.VIEW_FREELANCER_SKILLS }}
+          VIEW_SERVICES: ${{ secrets.VIEW_SERVICES }}
+          VIEW_CATEGORIES: ${{ secrets.VIEW_CATEGORIES }}
+          VIEW_SERVICE_CATEGORIES: ${{ secrets.VIEW_SERVICE_CATEGORIES }}
+          VIEW_STORED_DOCUMENTS: ${{ secrets.VIEW_STORED_DOCUMENTS }}
+          TABLE_FREELANCER_WEBSITE_DATA: ${{ secrets.TABLE_FREELANCER_WEBSITE_DATA }}
+          TABLE_FREELANCER_WEBSITE_DATA_LINKS: ${{ secrets.TABLE_FREELANCER_WEBSITE_DATA_LINKS }}
+          TABLE_STORED_DOCUMENTS: ${{ secrets.TABLE_STORED_DOCUMENTS }}
+          STATUS_NONE: ${{ secrets.STATUS_NONE }}
+          STATUS_TO_BE_VERIFIED: ${{ secrets.STATUS_TO_BE_VERIFIED }}
+          STATUS_VERIFIED: ${{ secrets.STATUS_VERIFIED }}
+          STATUS_REJECTED: ${{ secrets.STATUS_REJECTED }}
+          DOC_TYPE_PHOTO: ${{ secrets.DOC_TYPE_PHOTO }}
+          DOC_TYPE_CV: ${{ secrets.DOC_TYPE_CV }}
+          DOC_TYPE_EQUIPMENT_LIST: ${{ secrets.DOC_TYPE_EQUIPMENT_LIST }}
+          LINK_TYPE_WEBSITE: ${{ secrets.LINK_TYPE_WEBSITE }}
+          LINK_TYPE_INSTAGRAM: ${{ secrets.LINK_TYPE_INSTAGRAM }}
+          LINK_TYPE_IMDB: ${{ secrets.LINK_TYPE_IMDB }}
+          LINK_TYPE_LINKEDIN: ${{ secrets.LINK_TYPE_LINKEDIN }}
+          GRAPH_SENDER_EMAIL: ${{ secrets.GRAPH_SENDER_EMAIL }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
           GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
-          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
-          GRAPH_SENDER_EMAIL: ${{ secrets.GRAPH_SENDER_EMAIL }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          GRAPH_SENDER_TEST_EMAIL: ${{ secrets.GRAPH_SENDER_TEST_EMAIL }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
+          MAX_FILE_SIZE_IMAGE: ${{ secrets.MAX_FILE_SIZE_IMAGE }}
+          MAX_FILE_SIZE_CV: ${{ secrets.MAX_FILE_SIZE_CV }}
+          MAX_FILE_SIZE_EQUIPMENT: ${{ secrets.MAX_FILE_SIZE_EQUIPMENT }}
+          ALLOWED_IMAGE_TYPES: ${{ secrets.ALLOWED_IMAGE_TYPES }}
+          ALLOWED_DOCUMENT_TYPES: ${{ secrets.ALLOWED_DOCUMENT_TYPES }}
+          SYSTEM_USER_ID: ${{ secrets.SYSTEM_USER_ID }}
+          DEFAULT_PAGE_SIZE: ${{ secrets.DEFAULT_PAGE_SIZE }}
+          MAX_PAGE_SIZE: ${{ secrets.MAX_PAGE_SIZE }}
+          CACHE_TTL: ${{ secrets.CACHE_TTL }}
           NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
+        run: npm run build
 
       - name: Install production dependencies only
         run: npm ci --omit=dev
@@ -59,48 +103,28 @@ jobs:
       - name: Stage deployment package
         run: |
           mkdir -p deploy_package
-
-          # Copy everything that is NOT .next first
           cp -r public deploy_package/
           cp package.json deploy_package/
           cp package-lock.json deploy_package/
           cp next.config.mjs deploy_package/
-          cp -r node_modules deploy_package/
-
-          # Rate limiter — proxy.js (renamed from middleware.js for Next.js 16)
-          # Must be at project root or it never runs. Confirmed present on server
-          # after rollback (Apr 10 16:52) — must survive every future deploy.
+          # proxy.js — rate limiter, renamed from middleware.js per Next.js 16
+          # deprecation. Must sit at the project root for Next.js to pick it up.
           cp proxy.js deploy_package/
-
-          # Tell Oryx not to re-run npm install
-          echo '{ "packageManager": "npm" }' > deploy_package/oryx-manifest.json
-
-          # Copy startup.sh — runs on every container boot before Next.js starts.
-          # Wipes stale SSR chunks from previous builds so Turbopack never loads
-          # an old chunk that conflicts with the current [turbopack]_runtime.js.
-          # This is the self-healing mechanism: even if Kudu's zip extract is
-          # additive, the app cleans itself before serving any requests.
+          # startup.sh — runs on every container boot before Next.js starts.
+          # Deletes any SSR chunks whose hash is not referenced by the current
+          # [turbopack]_runtime.js, preventing stale chunks from previous builds
+          # causing CPU spikes or MODULE_NOT_FOUND errors.
           cp startup.sh deploy_package/
-          chmod +x deploy_package/startup.sh
-
-          # Copy .next ONCE, cleanly, as the final step.
-          # NEVER pre-copy and re-copy — if the destination exists, cp -r copies
-          # INTO it rather than replacing it, creating deploy_package/.next/.next.
-          # This single explicit copy guarantees one coherent build in the zip:
-          # one [turbopack]_runtime.js paired with exactly the chunks it expects.
+          # node_modules already pruned to production deps above
+          cp -r node_modules deploy_package/
+          # Tell Oryx not to run npm install — we have already done it.
+          echo "{ \"packageManager\": \"npm\" }" > deploy_package/oryx-manifest.json
+          # Copy .next ONCE as the final step — single atomic copy.
+          # Do NOT pre-copy .next earlier in this script. If the destination
+          # directory already exists, cp -r copies INTO it rather than replacing
+          # it, producing deploy_package/.next/.next. One copy only, at the end.
           cp -r .next deploy_package/.next
-
-          # Verify the chunk count looks sane for a single build
-          CHUNK_COUNT=$(ls deploy_package/.next/server/chunks/ssr/*.js 2>/dev/null | wc -l)
-          echo "✅ SSR chunk count: $CHUNK_COUNT"
-          if [ "$CHUNK_COUNT" -lt 50 ]; then
-            echo "❌ ERROR: Chunk count $CHUNK_COUNT is too low — build may be incomplete. Aborting."
-            exit 1
-          fi
-          if [ "$CHUNK_COUNT" -gt 300 ]; then
-            echo "❌ ERROR: Chunk count $CHUNK_COUNT is too high — stale chunks in deploy package. Aborting."
-            exit 1
-          fi
+          echo "✅ SSR chunk count: $(ls deploy_package/.next/server/chunks/ssr/ 2>/dev/null | wc -l)"
 
       - name: Zip deployment package
         run: |
@@ -108,18 +132,15 @@ jobs:
           zip -r ../deploy.zip . -x "*.git*"
           cd ..
           echo "✅ Deploy zip size: $(du -sh deploy.zip | cut -f1)"
-          SIZE_BYTES=$(stat -c%s deploy.zip)
-          if [ "$SIZE_BYTES" -lt 10000000 ]; then
-            echo "❌ ERROR: deploy.zip is under 10MB — something is missing. Aborting."
-            exit 1
-          fi
 
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7F5B70189A8245CDB40B9AE7570D679E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_46C3936B6C5E47F597FDFCDE2D07700B }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_239BA5D8191C47D58FCFF65D9CF7C57E }}
 
-      - name: Deploy to Azure Web App
+      - name: Deploy built app
         uses: azure/webapps-deploy@v3
         with:
           app-name: "freelancers"

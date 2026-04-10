@@ -48,3 +48,6 @@ fi
 # Start Next.js
 echo "🚀 Starting Next.js..."
 exec node node_modules/.bin/next start
+
+
+# Old Build command - node node_modules/.bin/next start 
