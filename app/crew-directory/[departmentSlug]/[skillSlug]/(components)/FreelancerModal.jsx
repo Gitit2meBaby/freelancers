@@ -5,10 +5,12 @@ import Link from "next/link";
 import styles from "../../../../styles/freelancerModal.module.scss";
 
 export default function FreelancerModal({ freelancer, onClose }) {
-  // Start assuming NO photo or equipment
+  // Start assuming NO photo, CV, or equipment
   const [hasPhoto, setHasPhoto] = useState(false);
+  const [hasCV, setHasCV] = useState(false);
   const [hasEquipment, setHasEquipment] = useState(false);
   const [isCheckingPhoto, setIsCheckingPhoto] = useState(!!freelancer.photoUrl);
+  const [isCheckingCV, setIsCheckingCV] = useState(!!freelancer.cvUrl);
   const [isCheckingEquipment, setIsCheckingEquipment] = useState(
     !!freelancer.equipmentListUrl,
   );
@@ -40,19 +42,46 @@ export default function FreelancerModal({ freelancer, onClose }) {
     const img = new window.Image();
 
     img.onload = () => {
-      console.log("✅ Photo loaded successfully");
       setHasPhoto(true);
       setIsCheckingPhoto(false);
     };
 
     img.onerror = () => {
-      console.log("❌ Photo failed to load");
       setHasPhoto(false);
       setIsCheckingPhoto(false);
     };
 
     img.src = freelancer.photoUrl;
   }, [freelancer.photoUrl]);
+
+  // Check if CV exists when modal opens
+  useEffect(() => {
+    if (!freelancer.cvUrl) {
+      setIsCheckingCV(false);
+      return;
+    }
+
+    const checkCV = async () => {
+      try {
+        const response = await fetch(freelancer.cvUrl, {
+          method: "HEAD",
+        });
+
+        if (response.ok) {
+          setHasCV(true);
+        } else {
+          setHasCV(false);
+        }
+      } catch (error) {
+        console.warn("❌ CV failed to load:", error);
+        setHasCV(false);
+      } finally {
+        setIsCheckingCV(false);
+      }
+    };
+
+    checkCV();
+  }, [freelancer.cvUrl]);
 
   // Check if equipment list exists when modal opens
   useEffect(() => {
@@ -61,7 +90,6 @@ export default function FreelancerModal({ freelancer, onClose }) {
       return;
     }
 
-    // Use fetch with HEAD request to check if file exists
     const checkEquipment = async () => {
       try {
         const response = await fetch(freelancer.equipmentListUrl, {
@@ -69,14 +97,12 @@ export default function FreelancerModal({ freelancer, onClose }) {
         });
 
         if (response.ok) {
-          console.log("✅ Equipment list exists");
           setHasEquipment(true);
         } else {
-          console.log("❌ Equipment list returned", response.status);
           setHasEquipment(false);
         }
       } catch (error) {
-        console.log("❌ Equipment list failed to load:", error);
+        console.warn("❌ Equipment list failed to load:", error);
         setHasEquipment(false);
       } finally {
         setIsCheckingEquipment(false);
@@ -94,8 +120,6 @@ export default function FreelancerModal({ freelancer, onClose }) {
 
   const handleDownload = async (url, defaultFilename) => {
     try {
-      console.log(`📥 Processing: ${url}`);
-
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -114,8 +138,6 @@ export default function FreelancerModal({ freelancer, onClose }) {
           filename = filenameMatch[1];
         }
       }
-
-      console.log(`💾 Processing: ${filename}`);
 
       // ✅ Create a blob URL with correct MIME type for viewing
       const pdfBlob = new Blob([blob], { type: "application/pdf" });
@@ -136,17 +158,15 @@ export default function FreelancerModal({ freelancer, onClose }) {
       setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
       }, 1000);
-
-      console.log(`✅ Complete: ${filename}`);
     } catch (error) {
       console.error("❌ Error:", error);
       alert("Failed to process file. Please try again.");
     }
   };
 
-  // Determine if we should show CV section at all
+  // Show the CV/equipment section only if at least one file is confirmed present
   const showCvSection =
-    freelancer.cvUrl || (!isCheckingEquipment && hasEquipment);
+    (!isCheckingCV && hasCV) || (!isCheckingEquipment && hasEquipment);
 
   return (
     <div className={styles.modalBackdrop} onClick={handleBackdropClick}>
@@ -418,8 +438,8 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   borderTop: "2px solid #e5f4f8",
                 }}
               >
-                {/* CV Download - ✅ CHANGED: a tag to button with onClick */}
-                {freelancer.cvUrl && (
+                {/* CV Download — only shown after HEAD check confirms file exists */}
+                {!isCheckingCV && hasCV && freelancer.cvUrl && (
                   <a
                     onClick={() =>
                       handleDownload(
@@ -459,7 +479,7 @@ export default function FreelancerModal({ freelancer, onClose }) {
                   </a>
                 )}
 
-                {/* Equipment List Download - ✅ CHANGED: a tag to button with onClick */}
+                {/* Equipment List Download — only shown after HEAD check confirms file exists */}
                 {!isCheckingEquipment &&
                   hasEquipment &&
                   freelancer.equipmentListUrl && (

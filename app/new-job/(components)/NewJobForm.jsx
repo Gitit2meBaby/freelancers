@@ -23,6 +23,9 @@ const NewJobForm = () => {
     crewCheck: "",
     submitterEmail: "",
     honeypot: "",
+    // Bot detection: timestamp set at mount time, checked server-side.
+    // Bots submit in milliseconds; humans take at least several seconds.
+    formLoadedAt: Date.now().toString(),
   });
 
   const [showTooltip, setShowTooltip] = useState(null);
@@ -79,7 +82,8 @@ const NewJobForm = () => {
       // Success!
       setSubmitStatus({ loading: false, success: true, error: null });
 
-      // Reset form
+      // Reset form — regenerate formLoadedAt so a second submission
+      // after success also passes the timing check.
       setFormData({
         jobTitle: "",
         status: "",
@@ -99,6 +103,7 @@ const NewJobForm = () => {
         crewCheck: "",
         submitterEmail: "",
         honeypot: "",
+        formLoadedAt: Date.now().toString(),
       });
 
       // Auto-hide success message after 5 seconds

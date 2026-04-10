@@ -97,29 +97,63 @@ jobs:
           NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
         run: npm run build
 
-      # Install only production dependencies into a clean folder
-      # This replaces "npm prune --production" and avoids the tar.gz extraction problem
+      # Install only production dependencies into a clean folder.
+      # This replaces "npm prune --production" and avoids the tar.gz extraction problem.
       - name: Install production dependencies only
         run: npm ci --omit=dev
 
-      # Stage only what the server needs — no dev files, no source, no test fixtures
+      # Stage only what the server needs — no dev files, no source, no test fixtures.
+      # The app start command (node node_modules/.bin/next start) is configured
+      # directly in the Azure App Service startup command setting.
+      #
+      # KEY FIX: We wipe deploy_package/.next entirely and re-copy from the fresh
+      # build AFTER staging everything else. This guarantees the zip contains only
+      # one coherent version of .next — one [turbopack]_runtime.js paired with
+      # exactly the chunks it references. No stale runtime, no missing modules.
       - name: Stage deployment package
         run: |
           mkdir -p deploy_package
-          cp -r .next deploy_package/
           cp -r public deploy_package/
           cp package.json deploy_package/
           cp package-lock.json deploy_package/
           cp next.config.mjs deploy_package/
-          # FIX (2026-04-10): proxy.js (renamed from middleware.js per Next.js 16
-          # deprecation) was missing from the deploy package. Next.js requires
-          # proxy.js at the project root. Without this line the rate limiter
-          # never ran — crawlers and bots had no protection.
+          # proxy.js — rate limiter, renamed from middleware.js per Next.js 16
+          # deprecation. Must sit at the project root for Next.js to pick it up.
           cp proxy.js deploy_package/
-          # Copy node_modules with production deps only
+          # node_modules already pruned to production deps above
           cp -r node_modules deploy_package/
-          # Tell Oryx not to run npm install — we've already done it
+          # Tell Oryx not to run npm install — we have already done it.
           echo "{ \"packageManager\": \"npm\" }" > deploy_package/oryx-manifest.json
+          # Copy the entire fresh .next last, as a single atomic step.
+          # Never copy .next piecemeal — the runtime and chunks must always
+          # come from the same build or MODULE_NOT_FOUND errors will occur.
+          cp -r .next deploy_package/.next
+          echo "✅ SSR chunk count: $(ls deploy_package/.next/server/chunks/ssr/ 2>/dev/null | wc -l)"
+
+      # Zip the deploy package before uploading.
+      #
+      # This is the most important change from the previous YAML.
+      #
+      # When package: points to a directory, azure/webapps-deploy does a slow
+      # file-by-file sync (additive merge). It uploads files one at a time and
+      # never deletes files on the server that are absent from the package.
+      # Azure App Service watches wwwroot for changes and can restart the Node
+      # process mid-sync — at which point the new [turbopack]_runtime.js may be
+      # on disk but only some of the chunks it references have arrived yet.
+      # Confirmed root cause: grep for stale chunk hashes (8c1f7cd5, d03d2993)
+      # on the live server returned nothing — the old runtime was looking for
+      # chunks that the new build never generated.
+      #
+      # When package: points to a ZIP file, Kudu uses its zip deploy API instead.
+      # The zip is uploaded as a single blob, then extracted atomically on the
+      # server in one operation before the process restarts. No partial state,
+      # no mid-upload restart, no stale runtime surviving from a previous build.
+      - name: Zip deployment package
+        run: |
+          cd deploy_package
+          zip -r ../deploy.zip . -x "*.git*"
+          cd ..
+          echo "✅ Deploy zip size: $(du -sh deploy.zip | cut -f1)"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -133,4 +167,4 @@ jobs:
         with:
           app-name: "freelancers"
           slot-name: "Production"
-          package: deploy_package
+          package: deploy.zip

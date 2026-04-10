@@ -1,10 +1,53 @@
-// app/api/new-job/route.js
 import { NextResponse } from "next/server";
 import {
   getNewJobNotification,
   getJobSubmissionConfirmation,
   sendJobEmail,
 } from "../../lib/jobEmailTemplates";
+
+// ==================================================
+// BOT DETECTION HELPERS
+// ==================================================
+
+/**
+ * Detects random alphanumeric strings with no spaces and suspicious
+ * capitalisation patterns. Catches bot-generated values like:
+ *   OatvqNxNgzPcktoVJ, yZCZjymOaBiqucERD, ibtUHFHvWkajaMWmbGADqRwe
+ *
+ * A legitimate job title, company name, or contact name:
+ *   - Almost always contains at least one space
+ *   - Does not alternate caps randomly across 8+ characters with no spaces
+ *
+ * The two checks applied:
+ *   1. No whitespace at all in a string of 8+ characters
+ *   2. More than 3 uppercase letters in a single unspaced run of 8+ chars
+ *      (e.g. "OatvqNxNgzPcktoVJ" has 8 uppercase — humans don't do this)
+ */
+const RANDOM_STRING_RE = /^[A-Za-z0-9]{8,}$/;
+const EXCESSIVE_CAPS_RE = /(?:[A-Z][a-z]*){4,}/; // 4+ CamelCase transitions in one token
+
+function looksRandom(str) {
+  if (!str || !str.trim()) return false;
+  const trimmed = str.trim();
+
+  // Strings with spaces are almost certainly human-written
+  if (/\s/.test(trimmed)) return false;
+
+  // Pure alphanumeric, no spaces, 8+ chars
+  if (!RANDOM_STRING_RE.test(trimmed)) return false;
+
+  // Count uppercase letters — more than 3 in an unspaced token is suspicious
+  const uppercaseCount = (trimmed.match(/[A-Z]/g) || []).length;
+  if (uppercaseCount > 3) return true;
+
+  // Also catch alternating CamelCase transitions (OatvqNxNgzPcktoVJ pattern)
+  if (EXCESSIVE_CAPS_RE.test(trimmed)) return true;
+
+  return false;
+}
+
+// Fields where legitimate values MUST contain spaces or common punctuation.
+const SPAM_CHECKED_FIELDS = ["jobTitle", "productionCompany", "contactName"];
 
 /**
  * POST /api/new-job
@@ -15,6 +58,47 @@ export async function POST(request) {
   try {
     // Parse form data
     const data = await request.json();
+
+    // ==================================================
+    // BOT DETECTION — runs before any email is sent
+    // ==================================================
+
+    // Layer 1: Timing check
+    // NewJobForm.jsx sets formLoadedAt = Date.now() on mount.
+    // Bots submit in <2 seconds. Humans filling 18 fields take much longer.
+    // Threshold set conservatively at 4 seconds to avoid any false positives.
+    const loadedAt = parseInt(data.formLoadedAt || "0", 10);
+    if (loadedAt > 0) {
+      const elapsed = Date.now() - loadedAt;
+      if (elapsed < 4000) {
+        console.warn(`🤖 Bot rejected: submitted in ${elapsed}ms (too fast)`);
+        return NextResponse.json(
+          { success: false, error: "Please try again" },
+          { status: 429 },
+        );
+      }
+    }
+
+    // Layer 2: Random string pattern detection
+    // Checks jobTitle, productionCompany, contactName for bot-generated strings:
+    // no spaces + more than 3 uppercase letters = almost certainly a bot.
+    const spamHits = SPAM_CHECKED_FIELDS.filter((field) =>
+      looksRandom(data[field]),
+    );
+    if (spamHits.length > 0) {
+      console.warn(
+        "🤖 Bot rejected: random string pattern in fields:",
+        spamHits,
+      );
+      return NextResponse.json(
+        { success: false, error: "Invalid submission" },
+        { status: 400 },
+      );
+    }
+
+    // ==================================================
+    // EXISTING VALIDATION (unchanged)
+    // ==================================================
 
     // Validate required fields
     const requiredFields = [
@@ -126,7 +210,7 @@ export async function POST(request) {
       submitterEmail: data.submitterEmail
         .trim()
         .toLowerCase()
-        .substring(0, 100), // Add this
+        .substring(0, 100),
     };
 
     // ==================================================
@@ -138,7 +222,6 @@ export async function POST(request) {
 
     try {
       // 1. Send notification to admin
-
       const adminEmail = getNewJobNotification(sanitizedData);
       const adminEmailAddress =
         process.env.ADMIN_EMAIL || "info@freelancers.com.au";
