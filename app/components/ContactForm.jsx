@@ -16,6 +16,9 @@ const ContactForm = () => {
     message: "",
     cv: null,
     honeypot: "",
+    // Bot detection: timestamp set at mount time, checked server-side.
+    // Bots submit in milliseconds; humans take at least several seconds.
+    formLoadedAt: Date.now().toString(),
   });
 
   const [errors, setErrors] = useState({
@@ -206,6 +209,8 @@ const ContactForm = () => {
       formDataToSend.append("message", formData.message);
       if (formData.phone) formDataToSend.append("phone", formData.phone);
       if (formData.cv) formDataToSend.append("cv", formData.cv);
+      // Bot detection timestamp — read server-side in route.js
+      formDataToSend.append("formLoadedAt", formData.formLoadedAt);
 
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -222,7 +227,8 @@ const ContactForm = () => {
       // Success!
       setSubmitStatus({ loading: false, success: true, error: null });
 
-      // Reset form
+      // Reset form — regenerate formLoadedAt so a second submission
+      // after success also passes the timing check.
       setFormData({
         name: "",
         email: "",
@@ -230,6 +236,7 @@ const ContactForm = () => {
         message: "",
         cv: null,
         honeypot: "",
+        formLoadedAt: Date.now().toString(),
       });
       setTouched({
         name: false,
