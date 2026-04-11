@@ -97,41 +97,29 @@ jobs:
           NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
         run: npm run build
 
+      # Install only production dependencies into a clean folder
+      # This replaces "npm prune --production" and avoids the tar.gz extraction problem
       - name: Install production dependencies only
         run: npm ci --omit=dev
 
+      # Stage only what the server needs — no dev files, no source, no test fixtures
       - name: Stage deployment package
         run: |
           mkdir -p deploy_package
+          cp -r .next deploy_package/
           cp -r public deploy_package/
           cp package.json deploy_package/
           cp package-lock.json deploy_package/
           cp next.config.mjs deploy_package/
-          # proxy.js — rate limiter, renamed from middleware.js per Next.js 16
-          # deprecation. Must sit at the project root for Next.js to pick it up.
+          # FIX (2026-04-10): proxy.js (renamed from middleware.js per Next.js 16
+          # deprecation) was missing from the deploy package. Next.js requires
+          # proxy.js at the project root. Without this line the rate limiter
+          # never ran — crawlers and bots had no protection.
           cp proxy.js deploy_package/
-          # startup.sh — runs on every container boot before Next.js starts.
-          # Deletes any SSR chunks whose hash is not referenced by the current
-          # [turbopack]_runtime.js, preventing stale chunks from previous builds
-          # causing CPU spikes or MODULE_NOT_FOUND errors.
-          cp startup.sh deploy_package/
-          # node_modules already pruned to production deps above
+          # Copy node_modules with production deps only
           cp -r node_modules deploy_package/
-          # Tell Oryx not to run npm install — we have already done it.
+          # Tell Oryx not to run npm install — we've already done it
           echo "{ \"packageManager\": \"npm\" }" > deploy_package/oryx-manifest.json
-          # Copy .next ONCE as the final step — single atomic copy.
-          # Do NOT pre-copy .next earlier in this script. If the destination
-          # directory already exists, cp -r copies INTO it rather than replacing
-          # it, producing deploy_package/.next/.next. One copy only, at the end.
-          cp -r .next deploy_package/.next
-          echo "✅ SSR chunk count: $(ls deploy_package/.next/server/chunks/ssr/ 2>/dev/null | wc -l)"
-
-      - name: Zip deployment package
-        run: |
-          cd deploy_package
-          zip -r ../deploy.zip . -x "*.git*"
-          cd ..
-          echo "✅ Deploy zip size: $(du -sh deploy.zip | cut -f1)"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -145,4 +133,4 @@ jobs:
         with:
           app-name: "freelancers"
           slot-name: "Production"
-          package: deploy.zip
+          package: deploy_package
