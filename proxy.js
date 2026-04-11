@@ -4,39 +4,49 @@
 // deprecation. Function name updated from `middleware` to `proxy`. All logic
 // is identical — only the file name and export name have changed.
 //
-// Rate limits the data-heavy routes that trigger ODBC queries and Azure Blob
-// fetches. A crawler hammering /crew-directory/ or /screen-services/ is enough
-// to saturate CPU on a single-core B1 App Service plan.
+// FIX (2026-04-12): Added rate limiting for auth and contact routes.
+// Previously only data routes (crew-directory, freelancer API, blob) were
+// covered. Bots hammering /api/auth/callback/credentials hit the SQL DB on
+// every attempt with no proxy layer in the way. /api/contact and
+// /api/new-job were also completely unthrottled.
 //
-// Implementation notes for Azure App Service:
-//   - Plain JS (no TypeScript) — avoids transpilation edge cases on Azure
-//   - In-memory store only — no Redis dependency, no external service
-//   - Memory is per-instance so limits are per-worker, not global.
-//     That is fine here: the goal is preventing any single worker from
-//     being overwhelmed, not enforcing a global rate across a cluster.
-//   - The in-memory map is cleaned up on every request to prevent unbounded
-//     growth on long-running instances.
-//
-// Limits (conservative for a B1 plan):
-//   - Data routes (/crew-directory, /screen-services, /api/*):
-//     60 requests per minute per IP
-//   - Static assets and auth routes: not rate-limited
-//
-// To adjust limits, change WINDOW_MS and MAX_REQUESTS below.
+// Rate limits (conservative for a B1 single-core plan):
+//   - Data routes (/crew-directory, /screen-services, /api/freelancer, /api/blob):
+//     60 requests per minute per IP  — unchanged
+//   - Form submission routes (/api/contact, /api/new-job):
+//     10 requests per minute per IP  — a human submitting a form 10x/min is a bot
+//   - Login (/api/auth/callback/credentials):
+//     10 requests per minute per IP  — stops credential stuffing before DB is hit
+//   - Forgot-password (/api/auth/forgot-password):
+//     5 requests per minute per IP   — tighter; no legitimate user needs more
 
 import { NextResponse } from "next/server";
 
-const WINDOW_MS = 60_000; // 1 minute sliding window
-const MAX_REQUESTS = 60; // requests per window per IP on data routes
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
-// In-memory store: Map<ip, { count: number, windowStart: number }>
-// Cleaned on every request — only entries older than WINDOW_MS are pruned,
-// so the map never grows larger than the number of unique IPs in one window.
+const WINDOW_MS = 60_000; // 1 minute sliding window (all route groups)
+
+const LIMITS = {
+  data: 60, // /crew-directory, /screen-services, /api/freelancer, /api/blob
+  form: 10, // /api/contact, /api/new-job
+  login: 10, // /api/auth/callback/credentials
+  forgotPassword: 5, // /api/auth/forgot-password
+};
+
+// ---------------------------------------------------------------------------
+// In-memory store
+// Map<key, { count: number, windowStart: number }>
+// Key format: "<ip>:<route-group>" — separate counters per group per IP.
+// Cleaned on every request; map never grows larger than unique IPs × groups
+// active within one window.
+// ---------------------------------------------------------------------------
+
 const store = new Map();
 
 /**
- * Prunes store entries that have expired. Called on every request so the
- * map size stays bounded without needing a background interval.
+ * Prunes expired entries. Called on every request so the map stays bounded.
  */
 function pruneExpired() {
   const now = Date.now();
@@ -48,72 +58,94 @@ function pruneExpired() {
 }
 
 /**
- * Returns true if the request is within the rate limit, false if exceeded.
- * Increments the counter for the given key on every call.
+ * Returns true if the request is within limit, false if exceeded.
+ * Increments the counter on every call.
  */
-function checkRateLimit(key) {
+function checkRateLimit(key, limit) {
   const now = Date.now();
   const entry = store.get(key);
 
   if (!entry || now - entry.windowStart > WINDOW_MS) {
-    // New window
     store.set(key, { count: 1, windowStart: now });
     return true;
   }
 
   entry.count += 1;
-  if (entry.count > MAX_REQUESTS) {
-    return false;
-  }
-
-  return true;
+  return entry.count <= limit;
 }
 
 /**
- * Returns true for paths that should be rate-limited.
- * Scoped to routes that perform database queries or blob fetches.
- * Static files, auth, and health checks are excluded.
- */
-function isDataRoute(pathname) {
-  return (
-    pathname.startsWith("/crew-directory") ||
-    pathname.startsWith("/screen-services") ||
-    pathname.startsWith("/api/freelancer") ||
-    pathname.startsWith("/api/blob")
-  );
-}
-
-/**
- * Extracts the best available IP from the request headers.
- * Azure App Service forwards the real client IP in x-forwarded-for.
+ * Extracts the real client IP.
+ * Azure App Service forwards it in x-forwarded-for.
  */
 function getClientIp(request) {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    // x-forwarded-for can be a comma-separated list; take the first (client) IP
     return forwarded.split(",")[0].trim();
   }
-  // Fallback — not reliable in production but better than nothing
   return request.headers.get("x-real-ip") || "unknown";
 }
 
+/**
+ * Returns the route group name and its limit for rate-limiting purposes,
+ * or null if the path should not be rate-limited.
+ */
+function getRouteGroup(pathname, method) {
+  // Login — POST only (GET is the NextAuth session check, don't limit that)
+  if (pathname === "/api/auth/callback/credentials" && method === "POST") {
+    return { group: "login", limit: LIMITS.login };
+  }
+
+  // Forgot-password
+  if (pathname === "/api/auth/forgot-password" && method === "POST") {
+    return { group: "forgotPassword", limit: LIMITS.forgotPassword };
+  }
+
+  // Contact and new-job form submissions
+  if (
+    (pathname === "/api/contact" || pathname === "/api/new-job") &&
+    method === "POST"
+  ) {
+    return { group: "form", limit: LIMITS.form };
+  }
+
+  // Data routes — the original coverage, unchanged
+  if (
+    pathname.startsWith("/crew-directory") ||
+    pathname.startsWith("/screen-services") ||
+    pathname.startsWith("/api/freelancer") ||
+    pathname.startsWith("/api/blob")
+  ) {
+    return { group: "data", limit: LIMITS.data };
+  }
+
+  return null; // not rate-limited
+}
+
+// ---------------------------------------------------------------------------
+// Proxy function
+// ---------------------------------------------------------------------------
+
 export function proxy(request) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
 
-  // Only apply to data-heavy routes
-  if (!isDataRoute(pathname)) {
+  const routeInfo = getRouteGroup(pathname, method);
+
+  if (!routeInfo) {
     return NextResponse.next();
   }
 
   pruneExpired();
 
   const ip = getClientIp(request);
-  const key = `${ip}:${pathname.split("/")[1]}`; // group by top-level route
-
-  const allowed = checkRateLimit(key);
+  const key = `${ip}:${routeInfo.group}`;
+  const allowed = checkRateLimit(key, routeInfo.limit);
 
   if (!allowed) {
-    console.warn(`⚠️ Rate limit exceeded: ${ip} on ${pathname}`);
+    console.warn(
+      `⚠️ Rate limit exceeded: ${ip} on ${pathname} (group: ${routeInfo.group})`,
+    );
 
     return new NextResponse(
       JSON.stringify({
@@ -125,7 +157,7 @@ export function proxy(request) {
         headers: {
           "Content-Type": "application/json",
           "Retry-After": "60",
-          "X-RateLimit-Limit": String(MAX_REQUESTS),
+          "X-RateLimit-Limit": String(routeInfo.limit),
           "X-RateLimit-Window": "60s",
         },
       },
@@ -135,13 +167,25 @@ export function proxy(request) {
   return NextResponse.next();
 }
 
-// Tell Next.js which paths this proxy should run on.
-// Excludes _next internals, static files, images, and favicon.
+// ---------------------------------------------------------------------------
+// Matcher — tell Next.js which paths to run this proxy on.
+// Excludes _next internals, static files, images, and favicon automatically
+// via the negative lookahead in the default Next.js behaviour, but we also
+// list paths explicitly so the intent is clear.
+// ---------------------------------------------------------------------------
+
 export const config = {
   matcher: [
+    // Original data routes
     "/crew-directory/:path*",
     "/screen-services/:path*",
     "/api/freelancer/:path*",
     "/api/blob/:path*",
+    // Form submission routes — added 2026-04-12
+    "/api/contact",
+    "/api/new-job",
+    // Auth routes — added 2026-04-12
+    "/api/auth/callback/credentials",
+    "/api/auth/forgot-password",
   ],
 };
