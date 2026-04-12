@@ -59,6 +59,20 @@ const getAllFreelancersWithSkills = unstable_cache(
   },
 );
 
+const getCachedSkillInfo = unstable_cache(
+  async (deptSlug, skillSlug) => {
+    const query = `
+      SELECT Department, Skill, DepartmentID, SkillID
+      FROM ${VIEWS.DEPARTMENTS_SKILLS}
+      WHERE DepartmentSlug = @deptSlug AND SkillSlug = @skillSlug
+    `;
+    const results = await executeQuery(query, { deptSlug, skillSlug });
+    return results[0] || null;
+  },
+  ["crew-directory-skill-info"],
+  { revalidate: 3600, tags: ["crew-directory"] },
+);
+
 export async function GET(request, { params }) {
   try {
     // IMPORTANT: In Next.js 15+, params is a Promise
@@ -86,19 +100,12 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get skill info from departments view
-    const deptSkillsQuery = `
-      SELECT Department, Skill, DepartmentID, SkillID
-      FROM ${VIEWS.DEPARTMENTS_SKILLS}
-      WHERE DepartmentSlug = @deptSlug AND SkillSlug = @skillSlug
-    `;
+    const deptSkillInfo = await getCachedSkillInfo(
+      decodedDeptSlug,
+      decodedSkillSlug,
+    );
 
-    const deptSkillInfo = await executeQuery(deptSkillsQuery, {
-      deptSlug: decodedDeptSlug,
-      skillSlug: decodedSkillSlug,
-    });
-
-    if (deptSkillInfo.length === 0) {
+    if (!deptSkillInfo) {
       return NextResponse.json(
         { success: false, error: "Skill not found" },
         { status: 404 },
@@ -107,12 +114,12 @@ export async function GET(request, { params }) {
 
     // Get skill info
     const skillInfo = {
-      id: deptSkillInfo[0].SkillID,
-      name: deptSkillInfo[0].Skill,
+      id: deptSkillInfo.SkillID,
+      name: deptSkillInfo.Skill,
       slug: decodedSkillSlug,
       department: {
-        id: deptSkillInfo[0].DepartmentID,
-        name: deptSkillInfo[0].Department,
+        id: deptSkillInfo.DepartmentID,
+        name: deptSkillInfo.Department,
         slug: decodedDeptSlug,
       },
     };
