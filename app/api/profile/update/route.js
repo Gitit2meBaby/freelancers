@@ -167,11 +167,6 @@ export async function PUT(request) {
 
     // ==================================================
     // CACHE INVALIDATION
-    //
-    // IMPORTANT: slug must come from DB, not session.
-    // Session slug can be stale or undefined for users who haven't
-    // re-authenticated since their profile was created, causing
-    // revalidatePath to fire on the wrong URL and serve stale images.
     // ==================================================
     const slugResult = await executeQuery(
       `SELECT Slug FROM ${VIEWS.FREELANCERS} WHERE FreelancerID = @freelancerId`,
@@ -186,20 +181,8 @@ export async function PUT(request) {
       );
     } else {
       // Bust only the specific profile page's ISR cache.
-      // Do NOT call revalidateTag("freelancers") — that wipes the shared
-      // getAllFreelancerData cache for all 645 freelancers simultaneously,
-      // causing every instance to rebuild from DB at once (CPU spike).
-      //
-      // The bulk data cache (getAllFreelancerData) has a 1hr TTL and will
-      // expire naturally. The profile page will serve slightly stale data
-      // for up to 1hr after an edit — which is acceptable. If immediate
-      // consistency is required in future, use a per-slug cache tag instead.
       revalidatePath(`/my-account/${slug}`);
       revalidatePath(`/api/freelancer/${slug}`);
-      console.log(`♻️ Revalidated paths for slug: ${slug}`);
-
-      // crew-directory and edit-profile don't show individual profile data
-      // so no revalidation needed there.
     }
 
     return NextResponse.json({

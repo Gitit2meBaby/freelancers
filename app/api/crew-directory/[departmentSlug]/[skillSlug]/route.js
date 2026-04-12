@@ -54,8 +54,8 @@ const getAllFreelancersWithSkills = unstable_cache(
   },
   ["crew-directory-freelancers-raw"],
   {
-    revalidate: 3600,
-    tags: ["crew-directory", "freelancers"],
+    revalidate: 7200,
+    tags: ["crew-directory"],
   },
 );
 
