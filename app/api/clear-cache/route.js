@@ -16,7 +16,7 @@ export async function POST() {
     if (!session || !session.user?.slug) {
       return NextResponse.json(
         { success: false, error: "Not logged in" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -24,8 +24,6 @@ export async function POST() {
     const isAdmin = session.user?.isAdmin || false;
 
     // Revalidate freelancer cache tags
-    revalidateTag("freelancers");
-    revalidateTag("freelancer-data-raw");
     revalidateTag("crew-directory");
     revalidateTag("crew-directory-all");
     revalidateTag("crew-directory-raw-data");
@@ -33,8 +31,6 @@ export async function POST() {
     revalidateTag(`freelancer-${slug}`);
 
     const clearedTags = [
-      "freelancers",
-      "freelancer-data-raw",
       "crew-directory",
       "crew-directory-all",
       "crew-directory-raw-data",
@@ -83,7 +79,7 @@ export async function POST() {
         success: false,
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -93,8 +89,6 @@ export async function GET() {
     message: "This is a POST endpoint. Use POST method to clear cache.",
     usage: "fetch('/api/clear-cache', { method: 'POST' })",
     availableTags: [
-      "freelancers",
-      "freelancer-data-raw",
       "crew-directory",
       "crew-directory-all",
       "crew-directory-raw-data",
