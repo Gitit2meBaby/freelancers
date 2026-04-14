@@ -7,7 +7,6 @@ import Copyright from "./components/Copyright";
 import Navigation from "./components/Navigation";
 // import CookieConsent from "./components/CookieConsent";
 import AuthProvider from "./components/SessionProvider";
-import SiteDown from "./components/SiteDown";
 
 import "./globals.css";
 
@@ -150,7 +149,6 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${clashGrotesk.variable}`}>
-        <SiteDown />
         <Navigation />
         <AuthProvider>
           <Header />
