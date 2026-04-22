@@ -7,7 +7,7 @@ import Spinner from "../components/Spinner";
 import styles from "../styles/memberLogin.module.scss";
 
 export const dynamic = "force-dynamic";
-const page = () => {
+const page = async () => {
   return (
     <section
       className={styles.memberLogin}

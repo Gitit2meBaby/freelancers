@@ -6,7 +6,7 @@ import Spinner from "../components/Spinner";
 
 import styles from "../styles/forgotPassword.module.scss";
 
-const page = () => {
+const page = async () => {
   return (
     <section
       className={styles.loginPage}

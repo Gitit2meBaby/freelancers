@@ -7,7 +7,7 @@ import NewJobForm from "./(components)/NewJobForm";
 import styles from "../styles/newJob.module.scss";
 
 export const dynamic = "force-dynamic";
-const page = () => {
+const page = async () => {
   return (
     <section className={styles.newJob} data-page="plain" data-footer="noBorder">
       <div className={styles.formContainer}>

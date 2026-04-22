@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import styles from "../styles/bookingGuidelines.module.scss";
 
-const page = () => {
+const page = async () => {
   return (
     <section className={styles.bookingGuidelines} data-page="plain">
       <div className={styles.container}>

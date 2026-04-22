@@ -6,8 +6,8 @@ import Banner from "./(components)/Banner";
 import Team from "./(components)/Team";
 
 import styles from "../styles/aboutUs.module.scss";
-const page = () => {
-  return (
+const page = async () => {
+    return (
     <section className={styles.aboutUs} data-page="plain">
       <Hero />
       <Banner />

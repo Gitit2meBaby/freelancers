@@ -4,7 +4,7 @@ import styles from "../styles/contactUs.module.scss";
 
 import ContactForm from "../components/ContactForm";
 import Spinner from "../components/Spinner";
-const page = () => {
+const page = async () => {
   return (
     <section
       className={styles.contactUs}
