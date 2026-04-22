@@ -9,7 +9,7 @@
     "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "eslint",
-     "format-logo": "node scripts/formatLogoBase64.js",
+    "format-logo": "node scripts/formatLogoBase64.js",
     "format-logo:update": "node scripts/formatLogoBase64.js --update-original"
   },
   "dependencies": {
@@ -18,10 +18,10 @@
     "imghash": "^1.1.1",
     "json2csv": "^6.0.0-alpha.2",
     "mssql": "^12.2.0",
-    "next": "16.0.5",
-    "next-auth": "^4.24.13",
+    "next": "^16.2.4",
+    "next-auth": "^4.24.14",
     "next-sitemap": "^1.6.16",
-    "nodemailer": "^7.0.12",
+    "nodemailer": "^8.0.5",
     "pdfkit": "^0.17.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
