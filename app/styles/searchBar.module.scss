@@ -7,6 +7,8 @@
 
   @media screen and (max-width: 768px) {
     display: none;
+    opacity: 0;
+    pointer-events: none;
   }
 }
 
@@ -23,6 +25,12 @@
   &:focus-within {
     border-color: rgba(122, 132, 80, 0.1);
     box-shadow: 0 0 0 3px rgba(122, 132, 80, 0.1);
+  }
+
+  @media screen and (max-width: 768px) {
+    display: none;
+    opacity: none;
+    pointer-events: none;
   }
 }
 
@@ -213,15 +221,6 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .searchContainer {
-    max-width: 100%;
-    margin-bottom: 1.5rem;
-  }
-
-  .searchBar {
-    padding: 0.625rem 0.875rem;
-  }
-
   .searchInput {
     font-size: 0.938rem;
   }
