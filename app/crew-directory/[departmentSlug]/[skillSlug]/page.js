@@ -1,29 +1,4 @@
 // app/crew-directory/[departmentSlug]/[skillSlug]/page.js
-//
-// FIX 1 (2026-04-09): Cache key now includes departmentSlug and skillSlug.
-//
-// Previously the key was the static string "crew-directory-skill" for every
-// skill page. camera/focus-puller and sound/boom-operator shared one cache
-// entry — first page to load would overwrite data for all other skills.
-// Key is now `crew-directory-skill-${departmentSlug}-${skillSlug}` so each
-// combination gets its own isolated cache entry.
-//
-// FIX 2 (2026-04-09): Removed blobExists() calls.
-//
-// The previous version called getBlobUrl() which returns a direct Azure URL
-// without checking existence — that's fine. There were no blobExists() calls
-// here, so no per-request blob HEAD requests. This file was clean on that front.
-// Verified and left as-is for blob handling.
-//
-// FIX 3 (2026-04-09): Removed per-skill retry loop.
-//
-// The retry loop with await setTimeout(1000) was the source of the
-// "2 retries left / 1 retry left" messages in the incident logs.
-// Immediate synchronous retries with 1-second blocking sleeps per skill,
-// per request, on a single-core B1 instance is thread-pool-hostile.
-// Retry responsibility belongs in db.js (exponential backoff with jitter),
-// not in individual route handlers. Removed here; a db-level withRetry()
-// wrapper should be added separately.
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -140,6 +115,9 @@ function getSkillDataFetcher(departmentSlug, skillSlug) {
         },
       };
 
+      const stripInternalNotes = (name) =>
+        name?.replace(/\s*\(.*?\)\s*/g, "").trim() ?? "";
+
       // Build links map — O(n) once, O(1) lookup per freelancer below
       const linksMap = new Map();
       linksData.forEach((link) => {
@@ -166,7 +144,7 @@ function getSkillDataFetcher(departmentSlug, skillSlug) {
 
         return {
           id: freelancer.FreelancerID,
-          name: freelancer.DisplayName,
+          name: stripInternalNotes(freelancer.DisplayName), // ← was: freelancer.DisplayName
           slug: freelancer.Slug,
           bio: freelancer.FreelancerBio,
           photoUrl,

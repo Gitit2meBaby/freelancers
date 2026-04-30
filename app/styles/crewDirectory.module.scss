@@ -6,11 +6,16 @@
   align-items: center;
   padding: 6rem 4rem 4rem 4rem;
   background-color: var(--color-background-pale-blue);
+  width: 100%;
+  box-sizing: border-box;
   h1 {
     font-size: clamp(1.75rem, 1vw + 1rem, 3rem);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary);
     text-align: center;
+  }
+  @media (max-width: 768px) {
+    padding: 3rem 0.5rem 2rem 0.5rem; // ← reduce horizontal padding on mobile
   }
 }
 
@@ -44,6 +49,7 @@
   gap: 1rem;
   justify-content: center;
   max-width: 1400px;
+  max-width: 100%;
   margin: 2rem auto;
   padding: 0 1rem;
 
@@ -67,10 +73,13 @@
     &:active {
       transform: scale(1.1);
     }
+
+    @media (max-width: 768px) {
+      white-space: normal;
+      font-size: var(--font-size-lg); // ← slightly smaller text on mobile
+    }
   }
 }
-
-// Add this to your crewDirectory.module.scss file
 
 .downloadSection {
   display: flex;
