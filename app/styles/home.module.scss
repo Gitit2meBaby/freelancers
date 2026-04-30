@@ -5,6 +5,8 @@
   .buttonContainer {
     flex: 0 0 36%; // flex-grow: 0, flex-shrink: 0, flex-basis: 36%
     background-color: var(--color-background-blue);
+    position: relative;
+    z-index: 10;
   }
 
   .carouselContainer {
