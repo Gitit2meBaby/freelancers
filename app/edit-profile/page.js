@@ -85,14 +85,10 @@ function EditProfileForm() {
       // ✅ FIX: Properly add cache-buster to photo URL
       const photoUrlWithTimestamp = addCacheBuster(editData.photoUrl);
 
-      // Extract file names from URLs for display
-      const cvFileName = editData.cvUrl
-        ? extractFileNameFromUrl(editData.cvUrl) || "Current CV"
-        : "";
-
+      // Use friendly labels — original filenames are not stored in the DB
+      const cvFileName = editData.cvUrl ? "Current CV on file" : "";
       const equipmentFileName = editData.equipmentListUrl
-        ? extractFileNameFromUrl(editData.equipmentListUrl) ||
-          "Current Equipment List"
+        ? "Current Equipment List on file"
         : "";
 
       setFormData({
@@ -441,7 +437,9 @@ function EditProfileForm() {
               <label htmlFor="cv" className={styles.uploadButton}>
                 {formData.cv
                   ? formData.cv.name
-                  : formData.cvFileName || "Upload CV"}
+                  : formData.cvUrl
+                    ? "Upload New CV"
+                    : "Upload CV"}
               </label>
               <input
                 type="file"
@@ -461,7 +459,9 @@ function EditProfileForm() {
               <label htmlFor="equipment" className={styles.uploadButton}>
                 {formData.equipment
                   ? formData.equipment.name
-                  : formData.equipmentFileName || "Upload List"}
+                  : formData.equipmentUrl
+                    ? "Upload New List"
+                    : "Upload List"}
               </label>
               <input
                 type="file"
